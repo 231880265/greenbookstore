@@ -43,6 +43,10 @@
   .header {
     background: #ffffff;
     border-bottom: 1px solid #eee;
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   }
   
   .header-inner {

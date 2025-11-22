@@ -1,296 +1,339 @@
 <template>
     <div class="home-container">
       <HeaderBar />
-      <!-- 顶部 Banner 区 -->
-      <section class="banner-section">
-        <div class="banner-left">
-          <h1 class="title">书籍从 A 到 Z</h1>
-          <p class="desc">
-            在我们的书城，你可以找到任何你喜欢的书。  
-            丰富的种类、舒适的价格、有趣的阅读体验。
-          </p>
   
-          <button class="banner-btn">进入目录</button>
+      <!-- ① 顶部大轮播 -->
+      <section class="top-carousel" @mouseenter="stopAutoPlay" @mouseleave="startAutoPlay">
+        <div
+          class="carousel-track"
+          :style="{ transform: 'translateX(' + -currentSlide * 100 + '%)' }"
+        >
+          <div
+            v-for="(color, index) in carouselColors"
+            :key="index"
+            class="carousel-item"
+            :style="{ background: color }"
+          >
+            <div class="carousel-item-content">
+              <span class="carousel-color-label">轮播图 {{ index + 1 }}</span>
+            </div>
+          </div>
         </div>
   
-        <div class="banner-right">
-          <!-- 图片占位色块 -->
-          <!-- TODO: 将来换成轮播书籍图片 -->
-          <div class="demo-book demo-color-1"></div>
-          <div class="demo-book demo-color-2"></div>
-          <div class="demo-book demo-color-3"></div>
+        <div class="carousel-dots">
+          <span
+            v-for="(color, index) in carouselColors"
+            :key="index"
+            class="dot"
+            :class="{ active: index === currentSlide }"
+            @click="goSlide(index)"
+          ></span>
+        </div>
+      </section>
   
-          <!-- 右下角信息卡片 -->
-          <div class="info-card">
-            <div class="info-title">套装书籍推荐</div>
-            <div class="info-sub">（这里显示书名/描述，替换真实图后更改）</div>
-            <div class="info-price">￥49.9</div>
+      <!-- ② 两行十个小字类别 -->
+      <section class="top-category-section">
+        <div class="category-grid">
+          <div
+            v-for="item in topCategories"
+            :key="item"
+            class="category-item"
+          >
+            {{ item }}
           </div>
         </div>
       </section>
   
-      <!-- 热门分类 -->
-      <section class="hot-section">
-        <h2 class="hot-title">热门上架</h2>
-  
-        <div class="category-nav">
-          <span
-            v-for="item in categoryList"
-            :key="item"
-            :class="{ active: currentCategory === item }"
-            @click="currentCategory = item"
-          >
-            {{ item }}
-          </span>
-        </div>
-  
-        <!-- 横向滑动图书列表 -->
-        <div class="book-list-wrapper">
-          <button class="slide-btn left" @click="scrollLeft">‹</button>
-  
-          <div class="book-list" ref="scrollBox">
-            <div v-for="i in 5" :key="i" class="book-card">
-              <!-- 占位图 -->
-              <!-- TODO: 替换成真实的书籍封面图片 -->
-              <div class="book-img"></div>
-  
-              <div class="book-info">
-                <div class="price">￥{{ mockPrices[i - 1] }}</div>
-                <div class="btn-row">
-                  <button class="add-btn">加入购物车</button>
-                  <span class="fav">♡</span>
-                </div>
-              </div>
+      <!-- ③ 每个类别的区块列表 -->
+      <section class="category-block-section">
+        <div
+          v-for="cat in blockCategories"
+          :key="cat"
+          class="category-block"
+        >
+          <!-- 左侧竖排标题 -->
+          <div class="block-left">
+            <div class="left-text">
+              <span>{{ cat }}</span>
             </div>
           </div>
   
-          <button class="slide-btn right" @click="scrollRight">›</button>
+          <!-- 右侧书籍横向排布 -->
+          <div class="block-right">
+            <div
+              v-for="i in 4"
+              :key="i"
+              class="block-book"
+            >
+              <!-- TODO: 这里将来替换真实封面图片 -->
+              <div class="block-book-img"></div>
+              <div class="block-book-title">书名占位</div>
+            </div>
+  
+            <button class="block-more-btn">
+              ＞
+            </button>
+          </div>
         </div>
       </section>
+  
+      <!-- ④ Footer -->
+      <footer class="footer">
+        <div class="footer-top-line"></div>
+        <div class="footer-links">
+          <span v-for="(item, idx) in footerLinks" :key="item">
+            {{ item }}
+            <span v-if="idx !== footerLinks.length - 1" class="divider">|</span>
+          </span>
+        </div>
+        <div class="footer-copy">
+          Copyright © 2025 GreenBook 书城 | 苏ICP备xxxx号 | 公安网安备 xxxxx 号
+        </div>
+      </footer>
     </div>
   </template>
   
-  <script setup>
-  import { ref } from "vue";
+  <script setup lang="ts">
+  import { ref, onMounted, onBeforeUnmount } from "vue";
   import HeaderBar from "../components/HeaderBar.vue";
-  const categoryList = ["全部", "文学", "科普", "自我成长", "儿童", "有声读物", "其他"];
-  const currentCategory = ref("全部");
   
-  const mockPrices = [39, 25, 18, 48, 79];
+  /** 顶部大轮播颜色占位 - 使用不同颜色的色块 **/
+  const carouselColors = ["#ffd4c4", "#c7e7ff", "#ffe9a7", "#d6ffd6", "#ffb3ba", "#ffdfba", "#ffffba", "#baffc9"];
+  const currentSlide = ref(0);
+  let timer: number | undefined;
   
-  const scrollBox = ref(null);
-  
-  const scrollLeft = () => {
-    scrollBox.value.scrollLeft -= 300;
+  const startAutoPlay = () => {
+    if (timer !== undefined) return;
+    timer = window.setInterval(() => {
+      currentSlide.value = (currentSlide.value + 1) % carouselColors.length;
+    }, 4000);
   };
   
-  const scrollRight = () => {
-    scrollBox.value.scrollLeft += 300;
+  const stopAutoPlay = () => {
+    if (timer !== undefined) {
+      clearInterval(timer);
+      timer = undefined;
+    }
   };
+  
+  const goSlide = (index: number) => {
+    currentSlide.value = index;
+  };
+  
+  /** 分类：两行 10 个 **/
+  const topCategories = [
+    "文学小说",
+    "人文社科",
+    "科技科普",
+    "少儿读物",
+    "青春漫画",
+    "经管励志",
+    "外文原版",
+    "考试教材",
+    "生活美学",
+    "更多分类"
+  ];
+  
+  /** 区块展示的类别 - 使用所有10个类别 **/
+  const blockCategories = topCategories;
+  
+  /** Footer 链接 **/
+  const footerLinks = ["新浪微博", "官方微信", "官方贴吧", "全球粉丝站", "简体中文"];
+  
+  onMounted(() => {
+    startAutoPlay();
+  });
+  
+  onBeforeUnmount(() => {
+    stopAutoPlay();
+  });
   </script>
   
-  <style scoped lang="scss">
+  <style scoped>
   .home-container {
     width: 100%;
-    padding: 20px 0 60px;
+    min-height: 100vh;
     background: #f7f7f7;
+    display: flex;
+    flex-direction: column;
   }
   
-  /* Banner */
-  .banner-section {
+  /* 顶部大轮播 */
+  .top-carousel {
     max-width: 1200px;
-    margin: auto;
+    height: 320px;
+    margin: 20px auto 30px;
+    border-radius: 16px;
+    overflow: hidden;
+    position: relative;
+    background: #eee;
+  }
+  
+  .carousel-track {
     display: flex;
-    padding: 60px 20px;
+    width: 800%;
+    height: 100%;
+    transition: transform 0.6s ease;
+  }
+  
+  .carousel-item {
+    flex: 0 0 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .carousel-item-content {
+    text-align: center;
+  }
+  
+  .carousel-color-label {
+    font-size: 24px;
+    font-weight: bold;
+    color: rgba(0, 0, 0, 0.3);
+  }
+  
+  /* 轮播小圆点 */
+  .carousel-dots {
+    position: absolute;
+    left: 50%;
+    bottom: 16px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+  }
+  
+  .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    border: 1px solid #fff;
+    background: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+  }
+  
+  .dot.active {
+    background: #ff7a00;
+    border-color: #ff7a00;
+  }
+  
+  /* 顶部两行十个分类 */
+  .top-category-section {
+    max-width: 1200px;
+    margin: 0 auto 24px;
+    padding: 0 20px;
+  }
+  
+  .category-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    row-gap: 8px;
+    column-gap: 10px;
+    font-size: 14px;
+    color: #666;
+  }
+  
+  .category-item {
+    text-align: center;
+    cursor: pointer;
+  }
+  
+  /* 每个类别的区块列表 */
+  .category-block-section {
+    max-width: 1200px;
+    margin: 0 auto 40px;
+    padding: 0 20px;
+  }
+  
+  .category-block {
+    display: flex;
     background: #fff;
     border-radius: 14px;
-  
-    .banner-left {
-      flex: 1;
-      padding-right: 30px;
-  
-      .title {
-        font-size: 42px;
-        font-weight: 700;
-        margin-bottom: 20px;
-      }
-      .desc {
-        color: #555;
-        line-height: 1.6;
-        margin-bottom: 25px;
-        max-width: 350px;
-      }
-      .banner-btn {
-        background: #ff7a00;
-        padding: 12px 26px;
-        border-radius: 8px;
-        color: #fff;
-        border: none;
-        cursor: pointer;
-        font-size: 17px;
-      }
-    }
-  
-    .banner-right {
-      flex: 1;
-      position: relative;
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-around;
-  
-      .demo-book {
-        width: 110px;
-        height: 180px;
-        border-radius: 10px;
-        margin: 0 10px;
-      }
-      .demo-color-1 {
-        background: #7cb8ff;
-      }
-      .demo-color-2 {
-        background: #ff8a8a;
-      }
-      .demo-color-3 {
-        background: #ffc55c;
-      }
-  
-      .info-card {
-        position: absolute;
-        bottom: -20px;
-        right: 0;
-        background: #fff7e6;
-        padding: 15px 18px;
-        border-radius: 10px;
-        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-  
-        .info-title {
-          font-weight: 700;
-        }
-        .info-sub {
-          font-size: 13px;
-          color: #666;
-        }
-        .info-price {
-          margin-top: 6px;
-          font-weight: 700;
-          color: #ff7a00;
-        }
-      }
-    }
+    margin-bottom: 20px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   }
   
-  /* 热门上架 */
-  .hot-section {
+  /* 左侧竖排标题 */
+  .block-left {
+    width: 120px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-right: 1px solid #f0f0f0;
+  }
+  
+  .left-text {
+    writing-mode: vertical-rl;
+    text-orientation: mixed;
+    font-size: 18px;
+    letter-spacing: 4px;
+    color: #333;
+  }
+  
+  /* 右侧书籍部分 */
+  .block-right {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    padding: 18px 20px;
+  }
+  
+  .block-book {
+    width: 140px;
+    margin-right: 16px;
+  }
+  
+  .block-book-img {
+    width: 100%;
+    height: 180px;
+    background: #ddd; /* 封面占位 */
+    border-radius: 10px;
+  }
+  
+  .block-book-title {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #333;
+  }
+  
+  /* 右箭头按钮 */
+  .block-more-btn {
+    margin-left: auto;
+    border: none;
+    background: transparent;
+    font-size: 24px;
+    cursor: pointer;
+    color: #ff7a00;
+  }
+  
+  /* Footer */
+  .footer {
+    margin-top: auto;
+    padding: 30px 0 40px;
+    background: #fafafa;
+    font-size: 13px;
+    color: #999;
+    text-align: center;
+  }
+  
+  .footer-top-line {
+    border-top: 1px solid #e6e6e6;
     max-width: 1200px;
-    margin: 60px auto 0;
-    padding: 20px;
+    margin: 0 auto 18px;
+  }
   
-    .hot-title {
-      font-size: 28px;
-      font-weight: 700;
-      margin-bottom: 20px;
-    }
+  .footer-links {
+    margin-bottom: 8px;
+  }
   
-    .category-nav {
-      display: flex;
-      gap: 25px;
-      margin-bottom: 25px;
-      span {
-        cursor: pointer;
-        font-size: 16px;
-        color: #666;
+  .footer-links .divider {
+    margin: 0 10px;
+    color: #ddd;
+  }
   
-        &.active {
-          font-weight: 600;
-          color: #333;
-        }
-      }
-    }
-  
-    /* 横滑区域 */
-    .book-list-wrapper {
-      position: relative;
-  
-      .slide-btn {
-        position: absolute;
-        top: 40%;
-        transform: translateY(-50%);
-        background: #fff;
-        border-radius: 50%;
-        width: 40px;
-        height: 40px;
-        border: none;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-        cursor: pointer;
-        font-size: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-  
-      .left {
-        left: -20px;
-      }
-      .right {
-        right: -20px;
-      }
-  
-      .book-list {
-        display: flex;
-        overflow-x: auto;
-        gap: 20px;
-        padding-bottom: 20px;
-        scroll-behavior: smooth;
-  
-        &::-webkit-scrollbar {
-          display: none;
-        }
-  
-        .book-card {
-          background: #fff;
-          width: 190px;
-          border-radius: 12px;
-          padding: 15px;
-          box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
-  
-          .book-img {
-            width: 100%;
-            height: 230px;
-            border-radius: 10px;
-            background: #ddd; /* 占位色 */
-          }
-  
-          .book-info {
-            margin-top: 12px;
-  
-            .price {
-              font-weight: 700;
-              margin-bottom: 10px;
-            }
-  
-            .btn-row {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-  
-              .add-btn {
-                background: #ff7a00;
-                color: #fff;
-                border: none;
-                padding: 6px 10px;
-                border-radius: 6px;
-                cursor: pointer;
-              }
-              .fav {
-                font-size: 20px;
-                cursor: pointer;
-                color: #ff7a00;
-              }
-            }
-          }
-        }
-      }
-    }
+  .footer-copy {
+    color: #c0c0c0;
   }
   </style>
   
