@@ -1,53 +1,80 @@
 <template>
-    <HeaderBar />
-    <div class="product-container" v-if="productDetail">
-        <img :src="productDetail.cover" alt="二手书封面" class="product-cover" />
+    <div class="page-container">
+        <HeaderBar />
+        <div class="content">
+            <div class="product-container" v-if="productDetail">
+                <img :src="productDetail.cover" alt="二手书封面" class="product-cover" />
 
-        <div class="info-container">
+                <div class="info-container">
 
-            <div class="title-container">
-                <h1 class="product-title">{{ productDetail.title }}</h1>
-                <button class="favor-button">❤ 收藏</button>
-                <div class="price">¥{{ productDetail.price.toFixed(2) }}</div>
+                    <div class="title-container">
+                        <h1 class="product-title">{{ productDetail.title }}</h1>
+                        <div class="price">¥{{ productDetail.price.toFixed(2) }}</div>
+                        <div class="favor-button" @click="toggleFavorite">
+                            <img :src="favorIcon" alt="收藏图标" />
+                            收藏
+                        </div>
+                    </div>
+
+
+                    <div class="detail-container">
+                        <p class="product-author">作者: {{ productDetail.writer }}</p>
+                        <p class="product-listprice">定价: ¥{{ (productDetail.listPrice ?? 0).toFixed(2) }}</p>
+                        <p class="product-category">分类: {{ getCategoryName(productDetail.category ?? '') }}</p>
+                        <p class="product-publisher">出版社: {{ productDetail.publisher }}</p>
+                        <p class="product-publish-time">出版时间: {{ productDetail.publishTime }}</p>
+                        <p class="product-pageNum">页数: {{ productDetail.pageNum }}</p>
+                        <p class="product-wordCount">字数: {{ productDetail.wordCount }}</p>
+                        <p class="product-bookBinding">装帧: {{ productDetail.bookBinding }}</p>
+                        <p class="product-isbn">ISBN: {{ productDetail.isbn }}</p>
+                        <p class="product-sales">销量: {{ productDetail.sales }} 本</p>
+                    </div>
+
+                    <div class="shop-container">
+                        <el-input-number class="num-input" v-model="num" :min="1" :max="productDetail.stock"
+                            @change="handleChange" :step-strictly="true" :value-on-clear="1" />
+                        <button class="buy-now-button">立即购买</button>
+                        <button class="add-to-cart-button">加入购物车</button>
+                    </div>
+
+                </div>
             </div>
 
-
-            <div class="detail-container">
-                <p class="product-author">作者: {{ productDetail.writer }}</p>
-                <p class="product-listprice">定价: ¥{{ productDetail.listPrice.toFixed(2) }}</p>
-                <p class="product-category">分类: {{ getCategoryName(productDetail.category) }}</p>
-                <p class="product-publisher">出版社: {{ productDetail.publisher }}</p>
-                <p class="product-publish-time">出版时间: {{ productDetail.publishTime }}</p>
-                <p class="product-pageNum">页数: {{ productDetail.pageNum }}</p>
-                <p class="product-wordCount">字数: {{ productDetail.wordCount }}</p>
-                <p class="product-bookBinding">装帧: {{ productDetail.bookBinding }}</p>
-                <p class="product-isbn">ISBN: {{ productDetail.isbn }}</p>
-                <p class="product-sales">销量: {{ productDetail.sales }} 本</p>
+            <div class="description-container">
+                <div class="title">内容简介</div>
+                <van-text-ellipsis class="product-description" rows="2" :content="productDetail.description"
+                    expand-text="展开" collapse-text="收起" />
             </div>
 
-            <div class="shop-container">
-                <button class="buy-now-button">立即购买</button>
-                <button class="add-to-cart-button">加入购物车</button>
-            </div>
+            <van-divider class="divider" :style="{ borderColor: '#c8b196', padding: '0 16px' }">相关推荐</van-divider>
 
+            <div class="recommended-list">
+                <a v-for="(item, index) in recommendedProducts" :key="index" class="recommended-item"
+                    :href="`/product-detail/${item.ubId}`">
+                    <img :src="item.cover" :alt="item.title" class="recommended-item-img" />
+                    <div class="wrapper">
+                        <div class="recommended-item-title">{{ item.title }}</div>
+                    </div>
+                    <div class="recommended-item-price">￥{{ item.price.toFixed(2) }}</div>
+                </a>
+            </div>
+            <Footer />
         </div>
     </div>
-
-    <div class="description-container">
-        <h2 class="title">内容简介</h2>
-        <p class="product-description">{{ productDetail.description }}</p>
-    </div>
-
-
 </template>
 
 <script setup lang="ts">
 import HeaderBar from '@/components/HeaderBar.vue';
+import Footer from '@/components/Footer.vue';
 import { ref, computed } from 'vue';
+import favorSvg from '@/assets/favor.svg';
+import unfavorSvg from '@/assets/unfavor.svg';
 import { useRoute } from 'vue-router';
-import { getProductDetail } from '@/api/index';
+import { getProductDetail, getRecommendedProducts } from '@/api/index';
 import type { Product } from '@/api/types';
 import { getCategoryName } from '@/utils';
+import FavorIcon from '@/pages/image/favor.svg';
+import UnfavorIcon from '@/pages/image/unfavor.svg';
 
 const productId = computed(() => {
     // 通过路由参数获取商品ID
@@ -76,28 +103,106 @@ const productDetail = ref<Product>({
     isbn: "9787301160206"
 });
 
-getProductDetail(Number(productId.value)).then(response => {
-    productDetail.value = response.data;
-}).catch(error => {
-    console.error('获取商品详情失败：', error);
-});
+// getProductDetail(Number(productId.value)).then(response => {
+//     productDetail.value = response.data;
+// }).catch(error => {
+//     console.error('获取商品详情失败：', error);
+// });
 
+//相关推荐数量
+const recommendedProducts = ref<Product[]>([
+    {
+        ubId: 43,
+        title: "民法总则",
+        price: 2.49,
+        cover: "https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/9c24/9c24f5a17e3938928b5632efe80f26a9_0_1_300_300.jpg"
+    },
+    {
+        ubId: 53,
+        title: "民法学说与判例研究",
+        price: 3.23,
+        cover: "https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/ff15/ff155f3e09b92e32dc47ac2213f82f4e_0_1_300_300.jpg"
+    },
+    {
+        ubId: 35,
+        title: "法律思维与民法实例:请求权基础理论体系",
+        price: 22.06,
+        cover: "https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/48fa/48fa0474efe9170d4f854bbf42c4793c_0_1_300_300.jpg"
+    },
+    {
+        ubId: 33,
+        title: "债法原理",
+        price: 14.5,
+        cover: "https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/36da/36dacf361f8011dd06a930547e5b1434_0_1_300_300.jpg"
+    }
+]);
+
+// getRecommendedProducts(Number(productId.value)).then(response => {
+//     recommendedProducts.value = response.data;
+// }).catch(error => {
+//     console.error('获取相关推荐失败：', error);
+// });
+
+
+
+/*-- 购买相关 --*/
+// 购买数量
+const num = ref(1);
+
+function handleChange(value: number) {
+    num.value = value;
+}
+
+/*-- 收藏相关 --*/
+const isFavorited = ref(false);
+const favorIcon = computed(() => isFavorited.value ? FavorIcon : UnfavorIcon);
+function toggleFavorite() {
+    isFavorited.value = !isFavorited.value;
+}
 
 </script>
 
 <style scoped lang="scss">
+.page-container {
+    min-height: 100dvh;
+    min-width: 1200px;
+}
+
+.content {
+    background-color: #fff0da;
+    padding: 40px 60px 0;
+}
+
 .product-container {
     display: flex;
     flex-direction: row;
     align-items: center;
-    justify-content: center;
-    margin-top: 40px;
-    gap: 20px;
+    gap: 60px;
 
     .product-cover {
         width: 20%;
     }
 
+}
+
+.description-container {
+    margin-top: 40px;
+    padding: 20px;
+    background-color: #fff;
+    border-radius: 8px;
+    border: 1px solid #c8b196;
+
+    .title {
+        font-size: 20px;
+        font-weight: bold;
+    }
+
+    .product-description {
+        font-size: 16px;
+        line-height: 1.6;
+        color: #555;
+        margin-top: 16px;
+    }
 }
 
 .info-container {
@@ -113,20 +218,34 @@ getProductDetail(Number(productId.value)).then(response => {
         }
 
         .favor-button {
-            background: none;
-            border: none;
-            color: #ff4d4f;
-            font-size: 18px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #2d583f;
+            font-size: 16px;
             cursor: pointer;
-            margin-left: 16px;
+            margin-left: auto;
+            transition: color 0.18s ease;
+
+            img {
+                width: 20px;
+                height: 20px;
+                transition: filter 0.18s ease, opacity 0.18s ease;
+                display: inline-block;
+            }
 
             &:hover {
-                color: #ff7875;
+                color: #4a7d5f;
+            }
+
+            &:hover img {
+                filter: brightness(1.12);
+                opacity: 0.95;
             }
         }
 
         .price {
-            margin-left: auto;
+            margin-left: 24px;
             font-size: 28px;
             color: #2d583f;
             font-weight: bold;
@@ -134,11 +253,9 @@ getProductDetail(Number(productId.value)).then(response => {
     }
 
     .detail-container {
-        width: 100%;
-        max-width: 600px;
         display: grid;
-        grid-template-columns: repeat(2, 1fr);
-        column-gap: 20px;
+        grid-template-columns: repeat(3, 1fr);
+        column-gap: 100px;
 
         p {
             margin: 5px 0;
@@ -150,7 +267,7 @@ getProductDetail(Number(productId.value)).then(response => {
 
 .shop-container {
     display: flex;
-    gap: 20px;
+    gap: 30px;
     margin-top: 20px;
 
     .buy-now-button,
@@ -172,7 +289,73 @@ getProductDetail(Number(productId.value)).then(response => {
     }
 
     .add-to-cart-button {
-        background-color: #1890ff;
+        background-color: #fba101;
+    }
+}
+
+.divider {
+    margin-top: 40px;
+    color: #a8957a;
+}
+
+.recommended-list {
+    display: flex;
+    gap: 60px;
+    justify-content: center;
+    margin-top: 20px;
+
+    .recommended-item {
+        width: 150px;
+        text-align: center;
+        text-decoration: none;
+
+        .recommended-item-img {
+            height: 150px;
+            border-radius: 4px;
+        }
+
+        .wrapper {
+            margin-top: 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            height: 40px;
+        }
+
+        .recommended-item-title {
+            font-size: 14px;
+            color: #333;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            /* 显示两行 */
+            -webkit-box-orient: vertical;
+        }
+
+        .recommended-item-price {
+            margin-top: 6px;
+            font-size: 16px;
+            color: #2d583f;
+            font-weight: bold;
+        }
+    }
+}
+</style>
+
+<style lang="scss">
+.num-input {
+    font-size: 16px;
+
+    .el-input-number__decrease,
+    .el-input-number__increase {
+        background-color: #c8b196;
+        color: #fff;
+    }
+
+    .el-input-number__decrease.is-disabled,
+    .el-input-number__increase.is-disabled {
+        color: #fff;
     }
 }
 </style>
