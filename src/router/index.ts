@@ -6,6 +6,10 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/',
         component: Home
+    },
+    {
+        path: '/orderDetails',
+        component: OrderDetails
     }
 ]
 const router = createRouter({

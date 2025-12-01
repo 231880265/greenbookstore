@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue';
 import axios from 'axios';
 import HeaderBar from "../components/HeaderBar.vue";
+import Footer from "../components/Footer.vue";
 
 // 订单数据类型定义
 interface OrderItem {
@@ -199,6 +200,7 @@ onMounted(() => {
         </div>
       </div>
     </div>
+    <Footer />
   </div>
 </template>
 
@@ -215,6 +217,7 @@ onMounted(() => {
   display: flex;
   gap: 20px;
   margin-top: 40px;
+  margin-bottom: 20px;
   max-width: 1400px;
   margin-left: auto; /* 左侧留白 */
   margin-right: auto; /* 居中对齐 */
