@@ -9,6 +9,10 @@ const routes: RouteRecordRaw[] = [
         component: Home
     },
     {
+        path: '/orderDetails',
+        component: OrderDetails
+    },
+    {
         path: '/product-detail/:id',
         component: ProductDetail
     }
