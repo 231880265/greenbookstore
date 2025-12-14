@@ -25,3 +25,32 @@ export type Product = {
     stock?: number;
     sales?: number;
 }
+
+export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
+
+export interface OrderItemVO {
+    id: number
+    ubId: number
+    title: string
+    writer: string
+    publisher: string
+    quantity: number
+    price: number
+    totalPrice: number
+    cover: string
+}
+
+export interface OrderVO {
+    orderId: number
+    userId: number
+    adId: number
+    leaf: number
+    status: OrderStatus
+    totalAmount: number
+    cover: string
+    createTime: string
+    paymentTime: string
+    paymentMethod: string
+    tradeNo: string
+    orderItems: OrderItemVO[]
+}
