@@ -254,6 +254,15 @@
         </div>
       </div>
     </teleport>
+
+    <!-- 登录成功轻提示 -->
+    <teleport to="body">
+      <transition name="toast-fade">
+        <div v-if="loginSuccess" class="login-success-toast">
+          登录成功，欢迎回来
+        </div>
+      </transition>
+    </teleport>
   </header>
 </template>
 
@@ -393,6 +402,8 @@ const registerForm = reactive<RegisterRequest & { confirmPassword: string }>({
 
 const authError = ref<string | null>(null);
 const uploadingAvatar = ref(false);
+const loginSuccess = ref(false);
+let loginSuccessTimer: number | null = null;
 
 const defaultAvatarUrl = "https://wonderful1.oss-cn-hangzhou.aliyuncs.com/leaf.jpg";
 
@@ -434,12 +445,17 @@ const handleLogin = async () => {
     return;
   }
   try {
-    console.log("登录发送信息", loginForm);
     const res = await login({ ...loginForm });
-    console.log("登录返回信息", res);
     localStorage.setItem(TOKEN_KEY, res.data.toString());
-    console.log("登录成功，设置token", localStorage.getItem(TOKEN_KEY));
     closeAuth();
+    // 显示登录成功提示
+    loginSuccess.value = true;
+    if (loginSuccessTimer) {
+      clearTimeout(loginSuccessTimer);
+    }
+    loginSuccessTimer = window.setTimeout(() => {
+      loginSuccess.value = false;
+    }, 1500);
     router.push("/");
   } catch (e: any) {
     const msg = e?.message || "";
@@ -984,5 +1000,31 @@ const handleAvatarChange = async (event: Event) => {
   font-size: 12px;
   color: #777;
   text-align: center;
+}
+
+/* 登录成功提示 */
+.login-success-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background: rgba(45, 88, 63, 0.96);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 14px;
+  z-index: 5000;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -8px);
 }
 </style>

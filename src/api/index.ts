@@ -9,6 +9,7 @@ import type {
   SoldBookItem,
   OrderVO,
   FavoriteItem,
+  AddressItem,
 } from './types'
 
 /* ----------------- 商品相关 api ----------------- */
@@ -114,3 +115,22 @@ export const getFavoriteList = () => {
     "/favorites"
   );
 };
+
+export const getAddressList = () => {
+    return request.get<ApiResponse<AddressItem[]>>('/address')
+  }
+  
+  export const createAddress = (data: Omit<AddressItem, 'id' | 'userId'>) => {
+    return request.post<ApiResponse<number>>('/address', data)
+  }
+  
+  export const deleteAddress = (id: number) => {
+    return request.delete(`/address/delete/${id}`)
+  }
+  
+  export const updateAddress = (
+    id: number,
+    data: Omit<AddressItem, 'id' | 'userId'>
+  ) => {
+    return request.post(`/address/update/${id}`, data)
+  }

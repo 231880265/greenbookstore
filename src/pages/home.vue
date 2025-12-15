@@ -86,18 +86,18 @@ import book4Img from "../assets/book4.jpg";
 import book5Img from "../assets/book5.jpg";
 import { getCurrentUser } from "@/api";
 import type { UserDetail } from "@/api/types";
-/** 顶部导航分类：一行 10 个 **/
+/** 顶部导航分类：一行 10 个（与后端枚举 ProductCategory 对应） **/
 const topCategories = [
-  "文学小说",
-  "人文社科",
-  "科技科普",
-  "少儿读物",
-  "青春漫画",
-  "经管励志",
-  "外文原版",
-  "考试教材",
-  "生活美学",
-  "更多分类"
+  "地理",           // DILI
+  "法律",           // FALV
+  "经济",           // JINGJI
+  "历史",           // LISHI
+  "社会科学",       // SHEKE
+  "生活",           // SHENGHUO
+  "文学",           // WENXUE
+  "艺术",           // YISHU
+  "政治",           // ZHENGZHI
+  "哲学 / 心理学"   // ZHEXUEXINLIXUE
 ];
 
 // 模拟书籍数据（包含价格）
@@ -120,8 +120,8 @@ const scienceBooks = [
 
 /** 区块展示的类别 - 包含书籍数据 **/
 const blockCategories = [
-    { name: "文学小说", books: fictionBooks },
-    { name: "科技科普", books: scienceBooks },
+    { name: "文学", books: fictionBooks },
+    { name: "生活", books: scienceBooks },
 ];
 
 /** 个人主页入口逻辑 **/
