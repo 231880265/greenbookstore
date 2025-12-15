@@ -1,37 +1,34 @@
-<!-- BookList.vue -->
+<!-- ProductList.vue  –  Detail Polish Edition -->
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import axios from 'axios'
-import { Close, Search, ArrowDown } from '@element-plus/icons-vue'
-import HeaderBar from "../components/HeaderBar.vue";
+import { Close } from '@element-plus/icons-vue'
+import HeaderBar from '../components/HeaderBar.vue'
+import pic1 from '../assets/PL1.jpg'
+import pic2 from '../assets/PL2.jpg'
+import pic3 from '../assets/PL3.jpg'
 
-/* -------------------- 类型 -------------------- */
+/* ---------- 类型 ---------- */
 interface BookItem {
   ubId: number
   title: string
+  price: number
+  listPrice: number
   writer: string
   publisher: string
   publishTime: string
   bookBinding: string
-  price: number
-  listPrice: number
   cover: string
-  category: string
   usedDegree: string
   description: string
-  shop?: string
-  location?: string
-  shipIn24h?: boolean
-  shipRate?: string
-  isNew?: boolean
-  freeShip?: boolean
+  category: string
 }
 
-/* -------------------- 数据 -------------------- */
+/* ---------- 数据 ---------- */
 const allBooks = ref<BookItem[]>([])
 const filteredBooks = ref<BookItem[]>([])
 
-/* -------------------- 分类下拉 -------------------- */
+/* ---------- 分类下拉 ---------- */
 const categoryMap = {
   经济: 'JINGJI',
   历史: 'LISHI',
@@ -43,14 +40,25 @@ const categoryMap = {
   政治: 'ZHNEGZHI',
   哲学心理学: 'ZHEXUEXINLIXUE',
 }
-const currentCategory = ref<string | null>(null) // null 表示“所有分类”
+const currentCategory = ref<string | null>(null)
 const showCategoryDropdown = ref(false)
-
-/* -------------------- 筛选项 -------------------- */
-const open = ref({ quality: false, price: false, binding: false })
-const toggle = (key: keyof typeof open.value) => {
-  open.value[key] = !open.value[key]
+let dropdownEl: HTMLElement | null = null
+const openDropdown = () => {
+  showCategoryDropdown.value = true
+  nextTick(() => {
+    dropdownEl = document.querySelector('.category-dropdown')
+    dropdownEl?.addEventListener('mouseleave', closeDropdown)
+  })
 }
+const closeDropdown = () => {
+  showCategoryDropdown.value = false
+  dropdownEl?.removeEventListener('mouseleave', closeDropdown)
+  dropdownEl = null
+}
+
+/* ---------- 筛选项 ---------- */
+const open = ref({ quality: false, price: false, binding: false })
+const toggle = (k: keyof typeof open.value) => (open.value[k] = !open.value[k])
 
 const qualityOptions = [
   { label: '所有', value: null },
@@ -66,615 +74,697 @@ const bindingOptions = [
   { label: '线装', value: '线装' },
 ]
 
-/* 真正生效的筛选值 */
 const filter = ref({
   quality: null as string | null,
-  priceMin: null as number | null,
-  priceMax: null as number | null,
-  binding: null as string | null,
+  priceMin: 0,
+  priceMax: 999,
 })
 
-/* 价格输入框临时值 */
-const tempPrice = ref({ min: null as number | null, max: null as number | null })
-const confirmPrice = () => {
-  filter.value.priceMin = tempPrice.value.min
-  filter.value.priceMax = tempPrice.value.max
-  open.value.price = false
+/* ---------- 滑块同步 ---------- */
+const sliderMin = ref(0)
+const sliderMax = ref(999)
+const syncSlider = () => {
+  sliderMin.value = filter.value.priceMin
+  sliderMax.value = filter.value.priceMax
 }
+const syncInput = () => {
+  filter.value.priceMin = sliderMin.value
+  filter.value.priceMax = sliderMax.value
+}
+watch(() => [filter.value.priceMin, filter.value.priceMax], syncSlider, { immediate: true })
+watch([sliderMin, sliderMax], syncInput)
 
-/* -------------------- 动态标签 -------------------- */
+/* ---------- 动态标签 ---------- */
 const activeTags = computed(() => {
-  const tags: { key: keyof typeof filter.value; label: string }[] = []
+  const tags: { key: string; label: string }[] = []
   if (filter.value.quality) {
     const q = qualityOptions.find(o => o.value === filter.value.quality)?.label
     tags.push({ key: 'quality', label: `品相：${q}` })
   }
-  if (filter.value.priceMin !== null || filter.value.priceMax !== null) {
-    const min = filter.value.priceMin ?? ''
-    const max = filter.value.priceMax ?? ''
-    tags.push({ key: 'price', label: `价格：¥${min}-${max}` })
+  if (filter.value.priceMin !== 0 || filter.value.priceMax !== 999) {
+    tags.push({ key: 'price', label: `价格：¥${filter.value.priceMin}-¥${filter.value.priceMax}` })
   }
   if (filter.value.binding) {
     tags.push({ key: 'binding', label: `装帧：${filter.value.binding}` })
   }
   return tags
 })
-
-const removeTag = (key: keyof typeof filter.value) => {
-  if (key === 'price') {
-    filter.value.priceMin = null
-    filter.value.priceMax = null
-    tempPrice.value.min = null
-    tempPrice.value.max = null
-  } else {
-    ;(filter.value as any)[key] = null
+const removeTag = (k: string) => {
+  if (k === 'price') {
+    filter.value.priceMin = 0
+    filter.value.priceMax = 999
+  } else if (k === 'quality') {
+    filter.value.quality = null
+  } else if (k === 'binding') {
+    filter.value.binding = null
   }
 }
+const resetAll = () => {
+  filter.value = { quality: null, priceMin: 0, priceMax: 999 }
+  currentCategory.value = null
+}
 
-/* -------------------- 拉取数据 -------------------- */
+/* ---------- 数据拉取 ---------- */
+// const fetchBooks = async () => {
+//   try {
+//     const params = currentCategory.value ? { category: currentCategory.value } : {}
+//     const { data } = await axios.get('/api/used_books/category', { params })
+//     allBooks.value = data.data
+//   } catch (e) {
+//     console.error(e)
+//   }
+// }
+
+/* ---------- 拉取数据（死数据版） ---------- */
 const fetchBooks = async () => {
-  try {
-    const params = currentCategory.value ? { category: currentCategory.value } : {}
-    const { data } = await axios.get('/api/used_books/category', { params })
-    allBooks.value = data.data.map((b: any) => ({
-      ...b,
-      shop: '兴文书店',
-      location: '北京市东城区',
-      shipIn24h: Math.random() > 0.5,
-      shipRate: (Math.random() * 20 + 80).toFixed(2),
-      isNew: true,
-      freeShip: Math.random() > 0.8,
-    }))
-  } catch (e) {
-    console.error(e)
-  }
+  // 模拟网络延迟
+  await new Promise(r => setTimeout(r, 300))
+
+  // 与接口字段 100% 对齐
+  allBooks.value = [
+    {
+      ubId: 1,
+      title: 'Java编程思想',
+      price: 39.90,
+      listPrice: 89.00,
+      writer: 'Bruce Eckel',
+      pageNum: 880,
+      ISBN: '9787111213826',
+      wordCount: 1200000,
+      publisher: '机械工业出版社',
+      bookBinding: '平装',
+      publishTime: '2007-06',
+      cover: pic1,
+      category: 'WENXUE',
+      usedDegree: '9',
+      description: '经典 Java 入门与进阶教程',
+    },
+    {
+      ubId: 2,
+      title: '深入理解计算机系统',
+      price: 89.00,
+      listPrice: 139.00,
+      writer: 'Randal E. Bryant',
+      pageNum: 1080,
+      ISBN: '9787111544937',
+      wordCount: 1500000,
+      publisher: '机械工业出版社',
+      bookBinding: '精装',
+      publishTime: '2016-11',
+      cover: pic2,
+      category: 'SHEKE',
+      usedDegree: '95',
+      description: 'CSAPP 权威教材',
+    },
+    {
+      ubId: 3,
+      title: '算法导论',
+      price: 128.00,
+      listPrice: 168.00,
+      writer: 'Thomas H. Cormen',
+      pageNum: 1312,
+      ISBN: '9787111407010',
+      wordCount: 1800000,
+      publisher: '机械工业出版社',
+      bookBinding: '线装',
+      publishTime: '2013-01',
+      cover: pic3,
+      category: 'JINGJI',
+      usedDegree: '85',
+      description: '算法圣经',
+    },
+  ]
 }
 
-/* -------------------- 筛选逻辑 -------------------- */
 const applyFilter = () => {
   let list = [...allBooks.value]
-
   if (filter.value.quality) {
     const min = Number(filter.value.quality)
     list = list.filter(b => Number(b.usedDegree) >= min)
   }
-
-  if (filter.value.priceMin !== null) {
-    list = list.filter(b => b.price >= filter.value.priceMin!)
-  }
-  if (filter.value.priceMax !== null) {
-    list = list.filter(b => b.price <= filter.value.priceMax!)
-  }
-
+  list = list.filter(b => b.price >= filter.value.priceMin && b.price <= filter.value.priceMax)
   if (filter.value.binding) {
     list = list.filter(b => b.bookBinding === filter.value.binding)
   }
-
   filteredBooks.value = list
 }
 
-watch([filter, currentCategory], applyFilter, { deep: true })
+/* ---------- 收藏状态 ---------- */
+const favoritedSet = ref<Set<number>>(new Set())      // 已收藏的 ubId
+const favoriteIdMap = ref<Record<number, number>>({}) // ubId -> favoriteId
 
+/* 获取当前用户收藏列表（用于回显） */
+const loadFavorites = async () => {
+  try {
+    const { data } = await axios.get('/api/favorites', {
+      headers: { token: localStorage.getItem('token') || '' }
+    })
+    // 假设返回结构与之前一致：{ data: [{ favoriteId, ubId }] }
+    data.data.forEach((f: any) => {
+      favoritedSet.value.add(f.ubId)
+      favoriteIdMap.value[f.ubId] = f.favoriteId
+    })
+  } catch (e) {
+    console.error('loadFavorites', e)
+  }
+}
+
+/* 切换收藏状态 */
+const toggleFavorite = async (book: BookItem) => {
+  const token = localStorage.getItem('token') || ''
+  if (favoritedSet.value.has(book.ubId)) {
+    // 取消收藏
+    const fid = favoriteIdMap.value[book.ubId]
+    try {
+      await axios.delete(`/api/favorites/${fid}`, { headers: { token } })
+      favoritedSet.value.delete(book.ubId)
+      delete favoriteIdMap.value[book.ubId]
+    } catch (e) {
+      console.error('取消收藏失败', e)
+    }
+  } else {
+    // 添加收藏
+    try {
+      const { data } = await axios.post('/api/favorites', { ubId: book.ubId }, { headers: { token } })
+      favoritedSet.value.add(book.ubId)
+      favoriteIdMap.value[book.ubId] = data.data  // 后端返回 favoriteId
+    } catch (e) {
+      console.error('收藏失败', e)
+    }
+  }
+}
+
+
+watch([filter, currentCategory], applyFilter, { deep: true })
 onMounted(async () => {
   await fetchBooks()
+  await loadFavorites()
   applyFilter()
 })
 </script>
 
 <template>
-  <div class="page">
+  <div class="detail-page">
     <HeaderBar />
-    <!-- 面包屑 + 分类下拉 -->
-    <div class="breadcrumb-wrapper">
-      <el-breadcrumb separator=">">
-        <el-breadcrumb-item>
-          <span
-              class="category-trigger"
-              @mouseenter="$event.currentTarget.classList.add('hover')"
-              @mouseleave="$event.currentTarget.classList.remove('hover')"
-              @click="showCategoryDropdown = !showCategoryDropdown"
-          >
-            所有分类
-            <el-icon class="arrow" :class="{ up: showCategoryDropdown }"><ArrowDown /></el-icon>
-          </span>
-          <transition name="fade">
-            <ul v-if="showCategoryDropdown" class="category-dropdown">
-              <li
-                  v-for="(code, name) in categoryMap"
-                  :key="code"
-                  :class="{ active: currentCategory === code }"
-                  @click="currentCategory = code; showCategoryDropdown = false"
-              >
-                {{ name }}
-              </li>
-              <li
-                  :class="{ active: currentCategory === null }"
-                  @click="currentCategory = null; showCategoryDropdown = false"
-              >
-                全部分类
-              </li>
-            </ul>
-          </transition>
-        </el-breadcrumb-item>
-        <el-breadcrumb-item>
-          {{ currentCategory ? Object.keys(categoryMap).find(k => categoryMap[k as keyof typeof categoryMap] === currentCategory) : '文学' }}
-        </el-breadcrumb-item>
-      </el-breadcrumb>
-    </div>
-
-    <!-- 已选条件 -->
-    <div class="selected-filters">
+    <!-- 面包屑 -->
+    <nav class="breadcrumb">
       <span
-          v-for="tag in activeTags"
-          :key="tag.key"
-          class="item"
+          class="crumb"
+          :class="{ hover: showCategoryDropdown }"
+          @mouseenter="openDropdown"
+          @click="openDropdown"
       >
-        {{ tag.label }}
-        <el-icon class="close" @click="removeTag(tag.key)"><Close /></el-icon>
+        所有分类
       </span>
-      <span class="result">{{ filteredBooks.length }} 条结果</span>
-      <el-input
-          placeholder="在结果中查找"
-          size="small"
-          class="search-in-result"
-      >
-        <template #suffix>
-          <el-icon><Search /></el-icon>
-        </template>
-      </el-input>
-    </div>
-
-    <div class="main">
-      <!-- 左侧筛选 -->
-      <aside class="filter-side">
-        <!-- 品相 -->
-        <section class="filter-item" :class="{ open: open.quality }">
-          <div
-              class="filter-title"
-              @mouseenter="$event.currentTarget.classList.add('hover')"
-              @mouseleave="$event.currentTarget.classList.remove('hover')"
-              @click="toggle('quality')"
+      <transition name="fade">
+        <ul
+            v-if="showCategoryDropdown"
+            class="dropdown"
+            @mouseleave="closeDropdown"
+        >
+          <li
+              v-for="(code, name) in categoryMap"
+              :key="code"
+              :class="{ active: currentCategory === code }"
+              @click.stop="currentCategory = code; closeDropdown()"
           >
-            品相
-            <el-icon class="arrow" :class="{ up: open.quality }"><ArrowDown /></el-icon>
-          </div>
-          <transition name="slide">
-            <ul v-if="open.quality" class="options">
-              <li
-                  v-for="opt in qualityOptions"
-                  :key="opt.value ?? 'all'"
-                  :class="{ active: filter.quality === opt.value }"
-                  @click="filter.quality = opt.value"
-              >
-                {{ opt.label }}
-              </li>
-            </ul>
-          </transition>
+            {{ name }}
+          </li>
+          <li
+              :class="{ active: currentCategory === null }"
+              @click.stop="currentCategory = null; closeDropdown()"
+          >
+            全部分类
+          </li>
+        </ul>
+      </transition>
+
+      <!-- 第二级 -->
+      <template v-if="currentCategory">
+        <span class="sep">|</span>
+        <span class="crumb">
+      {{ Object.keys(categoryMap).find(k => categoryMap[k as keyof typeof categoryMap] === currentCategory) }}
+    </span>
+      </template>
+    </nav>
+    <!-- 新增：分隔线 -->
+    <div class="divider"></div>
+
+    <div class="layout-grid">
+      <!-- 顶部标签栏 -->
+      <div class="top-bar">
+        <div class="left">
+          <span class="label">筛选</span>
+          <span class="count">{{ filteredBooks.length }} 个结果</span>
+          <button class="reset" @click="resetAll">重置所有标签： </button>
+          <!-- 已选标签 -->
+          <span
+              v-for="tag in activeTags"
+              :key="tag.key"
+              class="tag"
+          >
+          {{ tag.label }}
+          <Close class="close" @click="removeTag(tag.key)" />
+        </span>
+        </div>
+
+        <div class="right">
+
+          <el-input
+              placeholder="从筛选结果中搜索"
+              size="small"
+              class="search"
+              clearable
+          >
+            <template #prefix>
+              <el-icon><Search /></el-icon>
+            </template>
+          </el-input>
+        </div>
+      </div>
+
+      <!-- 左侧筛选卡片 -->
+      <aside class="filter-card">
+        <!-- 品相 -->
+        <section class="group">
+          <h3>品相</h3>
+          <ul class="list">
+            <li
+                v-for="opt in qualityOptions"
+                :key="opt.value ?? 'all'"
+                :class="{ active: filter.quality === opt.value }"
+                @click="filter.quality = opt.value"
+            >
+              <span class="checkbox" :class="{ checked: filter.quality === opt.value }" />
+              {{ opt.label }}
+            </li>
+          </ul>
         </section>
 
         <!-- 价格 -->
-        <section class="filter-item" :class="{ open: open.price }">
-          <div
-              class="filter-title"
-              @mouseenter="$event.currentTarget.classList.add('hover')"
-              @mouseleave="$event.currentTarget.classList.remove('hover')"
-              @click="toggle('price')"
-          >
-            价格
-            <el-icon class="arrow" :class="{ up: open.price }"><ArrowDown /></el-icon>
+        <section class="group">
+          <h3>价格</h3>
+          <div class="price-input">
+            <input v-model.number="filter.priceMin" type="number" />
+            <span>to</span>
+            <input v-model.number="filter.priceMax" type="number" />
           </div>
-          <transition name="slide">
-            <div v-if="open.price" class="price-box">
-              <input
-                  v-model.number="tempPrice.min"
-                  type="number"
-                  placeholder="最低价"
-              />
-              <span>-</span>
-              <input
-                  v-model.number="tempPrice.max"
-                  type="number"
-                  placeholder="最高价"
-              />
-              <button @click="confirmPrice">确定</button>
-            </div>
-          </transition>
+          <div class="slider">
+            <input
+                type="range"
+                min="0"
+                max="999"
+                v-model.number="sliderMin"
+                class="range-min"
+            />
+            <input
+                type="range"
+                min="0"
+                max="999"
+                v-model.number="sliderMax"
+                class="range-max"
+            />
+          </div>
+          <button class="reset-price" @click="filter.priceMin = 0; filter.priceMax = 999">RESET</button>
         </section>
 
         <!-- 装帧 -->
-        <section class="filter-item" :class="{ open: open.binding }">
-          <div
-              class="filter-title"
-              @mouseenter="$event.currentTarget.classList.add('hover')"
-              @mouseleave="$event.currentTarget.classList.remove('hover')"
-              @click="toggle('binding')"
-          >
-            装帧
-            <el-icon class="arrow" :class="{ up: open.binding }"><ArrowDown /></el-icon>
-          </div>
-          <transition name="slide">
-            <ul v-if="open.binding" class="options">
-              <li
-                  v-for="opt in bindingOptions"
-                  :key="opt.value ?? 'all'"
-                  :class="{ active: filter.binding === opt.value }"
-                  @click="filter.binding = opt.value"
-              >
-                {{ opt.label }}
-              </li>
-            </ul>
-          </transition>
+        <section class="group">
+          <h3>装帧</h3>
+          <ul class="list">
+            <li
+                v-for="opt in bindingOptions"
+                :key="opt.value ?? 'all'"
+                :class="{ active: filter.binding === opt.value }"
+                @click="filter.binding = opt.value"
+            >
+              <span class="checkbox" :class="{ checked: filter.binding === opt.value }" />
+              {{ opt.label }}
+            </li>
+          </ul>
         </section>
-
-        <div class="more-filter">展开更多筛选 ▼</div>
       </aside>
 
-      <!-- 右侧列表 -->
-      <div class="list-area">
-        <div class="book-list">
-          <div v-for="book in filteredBooks" :key="book.ubId" class="book-item">
-            <div class="cover-wrap">
-              <img :src="book.cover" alt="cover" />
-              <div v-if="book.isNew" class="new-badge">全新</div>
+      <!-- 右侧网格 -->
+      <!-- 右侧网格 -->
+      <main class="grid">
+        <div
+            v-for="book in filteredBooks"
+            :key="book.ubId"
+            class="card"
+        >
+          <div class="img-wrap">
+            <img :src="book.cover" :alt="book.title" />
+            <!-- 收藏按钮 -->
+            <span
+                class="favorite-btn"
+                :class="{ active: favoritedSet.has(book.ubId) }"
+                @click.stop="toggleFavorite(book)"
+            >
+        <svg viewBox="0 0 24 24" width="18" height="18">
+          <path
+              :fill="favoritedSet.has(book.ubId) ? '#e53935' : 'none'"
+              stroke="#e53935"
+              stroke-width="2"
+              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+          />
+        </svg>
+      </span>
+          </div>
+          <div class="meta">
+            <p class="author">{{ book.writer }}</p>
+            <h3 class="title">{{ book.title }}</h3>
+            <div class="price-row">
+              <span class="price">¥{{ book.price.toFixed(2) }}</span>
+              <span class="origin">¥{{ book.listPrice.toFixed(2) }}</span>
             </div>
-            <div class="info">
-              <h3 class="title">{{ book.title }}</h3>
-              <p class="sub">闪电发货·正版保障·假一赔十·电子发票·七天退换无忧</p>
-              <p class="meta">
-                {{ book.writer }} / {{ book.publisher }} / {{ book.publishTime }} / {{ book.bookBinding }}
-              </p>
-              <div class="shop-line">
-                <span class="shop">{{ book.shop }}</span>
-                <span class="location">{{ book.location }}</span>
-                <span v-if="book.shipIn24h" class="ship-tag">24小时内发货</span>
-                <span class="rate">{{ book.shipRate }}%成功完成</span>
-              </div>
-            </div>
-            <div class="price-col">
-              <div class="price">
-                <span class="symbol">¥</span>
-                <span class="num">{{ book.price.toFixed(2) }}</span>
-              </div>
-              <div class="origin">定价: ¥{{ book.listPrice?.toFixed(2) }}</div>
-              <div class="promo">满49.90减1</div>
-              <div class="fee">
-                快递 ¥4.50
-                <span v-if="book.freeShip" class="free">包邮</span>
-              </div>
-              <div class="date">2025-11-22 上书</div>
-              <div class="actions">
-                <el-button size="small">立即购买</el-button>
-                <el-button size="small">加入购物车</el-button>
-              </div>
-            </div>
-            <div class="extra">
-              <i class="icon-heart" />
-              <i class="icon-share" />
+            <div class="tags">
+              <span>{{ book.bookBinding }}</span>
+              <span>{{ book.usedDegree }} 成新</span>
             </div>
           </div>
         </div>
-      </div>
+      </main>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* ========== 分类下拉 ========== */
-.breadcrumb-wrapper {
-  position: relative;
-  margin: 8px 0;
-}
-.category-trigger {
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.category-trigger.hover {
-  color: #c30;
-}
-.category-dropdown {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  z-index: 10;
+/* ========== 全局 ========== */
+.detail-page {
   background: #fff;
-  border: 1px solid #e5e5e5;
-  list-style: none;
-  padding: 4px 0;
-  margin: 0;
-  min-width: 100px;
-}
-.category-dropdown li {
-  padding: 4px 12px;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.category-dropdown li:hover {
-  color: #c30;
-}
-.category-dropdown li.active {
-  color: #c30;
-  font-weight: bold;
-}
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s;
-}
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+  color: #000;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* ========== 页面框架 ========== */
-.page {
-  width: 1200px;
-  margin: 0 auto;
-  font-size: 12px;
-  color: #333;
-}
-.el-breadcrumb {
-  margin: 8px 0;
-}
-.top-tags {
-  display: flex;
-  border-bottom: 1px solid #e5e5e5;
-  margin-bottom: 8px;
-}
-.tag {
-  padding: 8px 24px;
-  cursor: pointer;
-}
-.tag.active {
-  border-bottom: 2px solid #c30;
-  color: #c30;
-}
-.selected-filters {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 12px;
-}
-.selected-filters .item {
-  border: 1px solid #ddd;
-  padding: 2px 6px;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-.result {
-  color: #999;
-  margin-left: 12px;
-}
-.search-in-result {
-  width: 180px;
-  margin-left: auto;
-}
-.main {
-  display: flex;
-  gap: 12px;
-}
-
-/* ========== 左侧交互筛选栏 ========== */
-.filter-side {
-  width: 200px;
-  border: 1px solid #e5e5e5;
-  padding: 8px;
-  user-select: none;
-}
-.filter-item {
-  border-bottom: 1px dashed #e5e5e5;
-}
-.filter-title {
-  position: relative;
-  padding: 8px 4px;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.filter-title.hover {
-  color: #c30;
-}
-.arrow {
-  position: absolute;
-  right: 4px;
-  top: 50%;
-  transform: translateY(-50%) rotate(0deg);
-  transition: transform 0.2s;
-}
-.arrow.up {
-  transform: translateY(-50%) rotate(180deg);
-}
-.options {
-  margin: 0;
-  padding: 0 0 4px 12px;
-  list-style: none;
-}
-.options li {
-  padding: 4px 0;
-  cursor: pointer;
-  transition: color 0.2s;
-}
-.options li:hover {
-  color: #c30;
-}
-.options li.active {
-  color: #c30;
-  font-weight: bold;
-}
-.price-box {
-  padding: 8px 12px;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.price-box input {
-  width: 60px;
-  padding: 2px 4px;
-  border: 1px solid #ccc;
-}
-.price-box button {
-  margin-left: 4px;
-  padding: 2px 6px;
-  cursor: pointer;
-}
-.slide-enter-active,
-.slide-leave-active {
-  transition: all 0.2s ease;
-}
-.slide-enter-from,
-.slide-leave-to {
-  opacity: 0;
-  transform: translateY(-4px);
-}
-.more-filter {
-  color: #36c;
-  cursor: pointer;
-  margin-top: 8px;
-}
-
-/* ========== 右侧列表 ========== */
-.list-area {
-  flex: 1;
-}
-.toolbar {
+/* 顶部栏 */
+.top-bar {
+  grid-column: 2 / 3;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border: 1px solid #e5e5e5;
-  padding: 6px 8px;
-  margin-bottom: 8px;
+  margin-bottom: 0;          /* 已用 gap 控制 */
 }
-.sort-item {
-  margin-right: 12px;
-  cursor: pointer;
-}
-.sort-item.active {
-  color: #c30;
-}
-.filter-tag {
-  border: 1px solid #ddd;
-  padding: 2px 6px;
-  margin-right: 6px;
-  cursor: pointer;
-}
-.pager {
-  margin: 0 8px;
-}
-.sub-search {
+
+.left {
   display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
   align-items: center;
-  border: 1px solid #e5e5e5;
-  padding: 6px 8px;
-  margin-bottom: 8px;
+  gap: 12px;
+  flex-wrap: wrap;
 }
-.book-list {
-  border: 1px solid #e5e5e5;
-}
-.book-item {
+.right {
   display: flex;
-  padding: 12px;
-  border-bottom: 1px solid #e5e5e5;
+  align-items: center;
+  gap: 16px;
+  margin-left: auto;   /* 推到最右 */
 }
-.cover-wrap {
+.search {
+  width: 200px;
+}
+
+.label {
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: #666;
+}
+.count {
+  font-size: 12px;
+  color: #999;
+}
+.tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.close {
+  width: 12px;
+  height: 12px;
+  cursor: pointer;
+}
+.reset {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #666;
+  cursor: pointer;
+}
+.reset:hover {
+  color: #000;
+}
+
+/* 分隔线 */
+.divider {
+  height: 1px;
+  background: #eee;
+  margin: 0 60px 24px;
+}
+
+/* 三栏布局 */
+.layout-grid {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  grid-template-rows: auto 1fr;
+  gap: 24px 48px;
+  margin: 0 60px 40px;
+}
+/* 左侧筛选卡片 */
+.filter-card {
+  grid-row: 1 / -1;          /* 跨两行 */
+  background: rgba(244, 238, 216, 0.44);
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  align-self: start;         /* 高度随内容 */
+}
+
+.group {
+  margin-bottom: 40px;
+}
+.group h3 {
+  font-size: 12px;
+  letter-spacing: 1px;
+  margin-bottom: 16px;
+  color: #000;
+}
+.list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+.list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 14px;
+  cursor: pointer;
+  color: #333;
+}
+.checkbox {
+  width: 14px;
+  height: 14px;
+  border: 1px solid #bbb;
+  border-radius: 2px;
   position: relative;
-  width: 120px;
-  height: 160px;
-  margin-right: 12px;
 }
-.cover-wrap img {
+.checkbox.checked::after {
+  content: "✓";
+  position: absolute;
+  top: -2px;
+  left: 2px;
+  font-size: 12px;
+  color: #000;
+}
+.price-input {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.price-input input {
+  width: 40px;
+  padding: 6px 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+}
+.price-input span {
+  font-size: 12px;
+  color: #666;
+}
+.slider {
+  position: relative;
+  height: 4px;
+  background: #eee;
+  border-radius: 2px;
+  margin-bottom: 16px;
+  width: 160px;
+}
+.slider input[type="range"] {
+  position: absolute;
+  width: 100%;
+  height: 4px;
+  background: transparent;
+  -webkit-appearance: none;
+  pointer-events: none;
+}
+.slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #000;
+  border-radius: 50%;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.reset-price {
+  background: none;
+  border: none;
+  font-size: 11px;
+  color: #666;
+  cursor: pointer;
+}
+.reset-price:hover {
+  color: #000;
+}
+
+/* 右侧网格 */
+.grid {
+  grid-column: 2 / 3;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 32px;
+}
+.card {
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  transition: transform 0.3s;
+}
+.card:hover {
+  transform: translateY(-4px);
+}
+.img-wrap {
+  aspect-ratio: 3/4;
+  overflow: hidden;
+}
+.img-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.new-badge {
-  position: absolute;
-  top: 0;
-  right: 0;
-  background: #c30;
-  color: #fff;
-  font-size: 11px;
-  padding: 1px 4px;
+.meta {
+  padding: 12px 0;
 }
-.info {
-  flex: 1;
+.author {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 4px;
 }
 .title {
   font-size: 14px;
-  color: #36c;
-  margin: 0 0 4px;
+  margin-bottom: 8px;
+  line-height: 1.3;
 }
-.sub {
+.price-row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+.price {
+  font-size: 15px;
+  font-weight: 600;
+}
+.origin {
+  font-size: 11px;
+  color: #9999;
+  text-decoration: line-through;
+}
+.tags {
+  display: flex;
+  gap: 8px;
+  font-size: 10px;
   color: #666;
-  margin: 2px 0;
 }
-.meta {
-  color: #999;
-  margin: 2px 0;
+.tags span {
+  padding: 2px 6px;
+  border: 1px solid #ddd;
+  border-radius: 3px;
 }
-.shop-line {
+
+/* 面包屑 */
+.breadcrumb {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
+  padding: 16px 60px 0;
+  font-size: 14px;
+  color: #000;
+  margin-bottom: 20px;
 }
-.shop {
-  color: #36c;
+.crumb {
+  cursor: pointer;
+  transition: color 0.2s;
 }
-.location {
-  color: #999;
+.crumb.hover {
+  color: #b8860b;
 }
-.ship-tag {
-  background: #ffe4d0;
-  color: #f60;
-  padding: 0 4px;
-  font-size: 11px;
+.sep {
+  color: #bbb;
 }
-.rate {
-  color: #999;
+.dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 30;
+  background: #fff;
+  border: 1px solid #e5e5e5;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  list-style: none;
+  padding: 6px 0;
+  margin: 4px 0 0;
+  min-width: 120px;
 }
-.price-col {
-  width: 160px;
-  text-align: right;
+.dropdown li {
+  padding: 6px 16px;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.2s;
 }
-.price {
-  color: #c30;
-  font-size: 16px;
+.dropdown li:hover {
+  background: #f5f5f5;
 }
-.symbol {
-  font-size: 12px;
+.dropdown li.active {
+  color: #b8860b;
+  font-weight: 600;
 }
-.origin {
-  color: #999;
-  text-decoration: line-through;
-  margin: 2px 0;
-}
-.promo {
-  color: #f60;
-  font-size: 11px;
-}
-.fee {
-  color: #666;
-}
-.free {
-  color: #090;
-  margin-left: 4px;
-}
-.date {
-  color: #999;
-  margin: 2px 0;
-}
-.actions {
-  margin-top: 6px;
-}
-.actions .el-button {
-  margin-left: 6px;
-}
-.extra {
+/* 收藏按钮 */
+.favorite-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
   display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  margin-left: 12px;
-  color: #999;
-  font-size: 16px;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.card:hover .favorite-btn {
+  opacity: 1;
+}
+.favorite-btn.active {
+  opacity: 1;
 }
 </style>
