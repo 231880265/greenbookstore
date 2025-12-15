@@ -5,6 +5,7 @@ import Order from "../pages/Order.vue";
 import OrderDetails from "../pages/OrderDetails.vue";
 import ProductDetail from "../pages/ProductDetail.vue";
     import UserProfile from "../pages/UserProfile.vue";
+    import UsedBookOrder from "../pages/UsedBookOrder.vue";
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
