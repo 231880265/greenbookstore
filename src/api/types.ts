@@ -28,6 +28,8 @@ export type Product = {
 
 export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
 
+export type UsedBookOrderStatus = 'CHECKING' | 'SHIPPED' | 'COMPLETED';
+
 export interface OrderItemVO {
     id: number
     ubId: number
@@ -54,3 +56,18 @@ export interface OrderVO {
     tradeNo: string
     orderItems: OrderItemVO[]
 }
+
+export interface UsedBookOrderVO {
+    id: number
+    sellerId: number
+    adId: number
+    status: UsedBookOrderStatus
+    price: number
+    listPrice: number
+    cover: string
+    title: string
+    writer: string
+    usedDegree: number
+    ISBN: string
+}
+

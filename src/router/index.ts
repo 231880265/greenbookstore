@@ -4,6 +4,8 @@ import Home from '../pages/home.vue'
 import Order from "../pages/Order.vue";
 import OrderDetails from "../pages/OrderDetails.vue";
 import ProductDetail from "../pages/ProductDetail.vue";
+import UsedBookOrder from "../pages/UsedBookOrder.vue";
+
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
@@ -12,6 +14,10 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/orders',
         component: Order
+    },
+    {
+        path: '/usedBook/orders',
+        component: UsedBookOrder
     },
     {
         path: '/orderDetails',

@@ -1,5 +1,5 @@
 import { request } from './request';
-import type { ApiResponse, Product } from './types';
+import type { ApiResponse, Product, UsedBookOrderStatus, UsedBookOrderVO } from './types';
 import type { OrderVO, OrderStatus } from './types';
 
 
@@ -15,7 +15,15 @@ export const getRecommendedProducts = (id: number) => {
 }
 
 export const getMyOrders = (status?: OrderStatus) => {
-    return request.get<OrderVO[]>('/orders/my', {
+    return request.get<ApiResponse<OrderVO[]>>('/orders/my', {
         params: { status }
     })
 }
+
+export const getUsedBookOrders = (status?: UsedBookOrderStatus) => {
+    return request.get<ApiResponse<UsedBookOrderVO[]>>('/used_books/orders', {
+        params: { status }
+    })
+}
+
+
