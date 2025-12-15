@@ -4,6 +4,7 @@ import Home from '../pages/home.vue'
 import Order from "../pages/Order.vue";
 import OrderDetails from "../pages/OrderDetails.vue";
 import ProductDetail from "../pages/ProductDetail.vue";
+    import UserProfile from "../pages/UserProfile.vue";
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
@@ -20,8 +21,11 @@ const routes: RouteRecordRaw[] = [
     {
         path: '/product-detail/:id',
         component: ProductDetail
+    },
+    {
+        path: '/profile',
+        component: UserProfile
     }
-
 ]
 const router = createRouter({
     history: createWebHistory(),

@@ -48,12 +48,34 @@
       </div>
     </section>
 
+    <!-- 登录后在首页展示的个人主页入口 -->
+    <section
+      v-if="isLoggedIn && currentUser"
+      class="profile-summary-section"
+    >
+      <div class="profile-summary-card">
+        <div class="profile-summary-text">
+          <div class="hello">
+            欢迎回来，{{ currentUser.username || "叶子" }}
+          </div>
+          <div class="meta">
+            <span>手机号：{{ currentUser.telephone }}</span>
+            <span class="leaf">小绿叶：{{ currentUser.leaf }}</span>
+          </div>
+        </div>
+        <button class="profile-summary-btn" @click="goProfile">
+          进入个人主页 →
+        </button>
+      </div>
+    </section>
+
     <Footer />
   </div>
 </template>
 
 <script setup lang="ts">
-// 保持 script 不变
+import { ref, onMounted } from "vue";
+import { useRouter } from "vue-router";
 import HeaderBar from "../components/HeaderBar.vue";
 import HomeCarousel from "../components/HomeCarousel.vue";
 import Footer from "../components/Footer.vue";
@@ -62,6 +84,8 @@ import book2Img from "../assets/book2.jpg";
 import book3Img from "../assets/book3.jpg";
 import book4Img from "../assets/book4.jpg";
 import book5Img from "../assets/book5.jpg";
+import { getCurrentUser } from "@/api";
+import type { UserDetail } from "@/api/types";
 /** 顶部导航分类：一行 10 个 **/
 const topCategories = [
   "文学小说",
@@ -99,6 +123,29 @@ const blockCategories = [
     { name: "文学小说", books: fictionBooks },
     { name: "科技科普", books: scienceBooks },
 ];
+
+/** 个人主页入口逻辑 **/
+const router = useRouter();
+const currentUser = ref<UserDetail | null>(null);
+const isLoggedIn = ref(false);
+
+onMounted(async () => {
+  const token = localStorage.getItem("GB_TOKEN");
+  if (!token) return;
+  isLoggedIn.value = true;
+  try {
+    const res = await getCurrentUser();
+    currentUser.value = res.data;
+  } catch {
+    // token 失效则视为未登录
+    localStorage.removeItem("GB_TOKEN");
+    isLoggedIn.value = false;
+  }
+});
+
+const goProfile = () => {
+  router.push("/profile");
+};
 
 </script>
 
@@ -296,5 +343,53 @@ const blockCategories = [
     font-size: 16px;
     color: #c0392b; 
     font-weight: 700;
+}
+
+/* 首页下方个人主页入口区块 */
+.profile-summary-section {
+  width: 100%;
+  background: transparent;
+  margin-bottom: 40px;
+}
+
+.profile-summary-card {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 18px 20px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, #f6f7f2, #f2efe7);
+  border: 1px solid rgba(200, 177, 150, 0.35);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 6px 18px rgba(45, 88, 63, 0.08);
+}
+
+.profile-summary-text .hello {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d583f;
+  margin-bottom: 6px;
+}
+
+.profile-summary-text .meta {
+  font-size: 13px;
+  color: #555;
+  display: flex;
+  gap: 16px;
+}
+
+.profile-summary-text .leaf {
+  color: #7a6b5c;
+}
+
+.profile-summary-btn {
+  border-radius: 999px;
+  border: none;
+  padding: 8px 18px;
+  font-size: 14px;
+  cursor: pointer;
+  background: #2d583f;
+  color: #fff;
 }
 </style>

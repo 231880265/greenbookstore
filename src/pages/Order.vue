@@ -85,9 +85,9 @@ import { ref, onMounted } from 'vue'
 // import { getMyOrders } from '@/api/index' // 暂时注释掉，使用本地假数据调试
 import type { OrderStatus } from '@/api/types'
 import type { OrderVO } from '@/api/types'
-import book2Img from "../assets/book2.webp";
-import book3Img from "../assets/book3.webp";
-import book4Img from "../assets/book4.webp";
+import book2Img from "../assets/book2.jpg" ;
+import book3Img from "../assets/book3.jpg";
+import book4Img from "../assets/book4.jpg"; 
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
@@ -125,6 +125,7 @@ const statusText = {
 const mockOrders: OrderVO[] = [
   {
     orderId: 100001,
+    addId: 1,
     userId: 1,
     adId: 0,
     leaf: 0,
@@ -162,6 +163,7 @@ const mockOrders: OrderVO[] = [
   },
   {
     orderId: 100002,
+    addId: 2,
     userId: 1,
     adId: 0,
     leaf: 0,
