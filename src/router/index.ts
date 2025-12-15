@@ -15,6 +15,10 @@ const routes: RouteRecordRaw[] = [
         component: Order
     },
     {
+        path: '/usedBook/orders',
+        component: UsedBookOrder
+    },
+    {
         path: '/orderDetails',
         component: OrderDetails
     },

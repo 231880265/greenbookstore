@@ -193,7 +193,7 @@ const mockOrders: OrderVO[] = [
 const loadOrders = async () => {
   // 原先调用接口的代码（注释）：
   // const res = await getMyOrders(activeStatus.value)
-  // orders.value = res
+  // orders.value = res.data
   const filtered = mockOrders.filter(o => !activeStatus.value || o.status === activeStatus.value)
   orders.value = filtered
 }
@@ -208,15 +208,10 @@ onMounted(loadOrders)
 
 <style scoped>
 .order-page {
-  width: 1080px;
+  width: 80%;
   margin: 0 auto;
   padding: 10px 0 48px;
   background: #fff;
-}
-
-.page-title {
-  font-size: 22px;
-  margin-bottom: 20px;
 }
 
 .status-tabs {
@@ -226,7 +221,7 @@ onMounted(loadOrders)
 }
 
 .tabs-container {
-    width: 1080px;
+    width: 80%;
     margin: 0 auto;
     padding: 0 20px;
     position: relative;
@@ -255,8 +250,6 @@ onMounted(loadOrders)
   height: 1px;
   /* background: #eee; */
 }
-
-
 
 .tab {
   margin-right: 36px;
