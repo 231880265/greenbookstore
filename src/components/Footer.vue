@@ -21,16 +21,17 @@ const footerLinks = ["新浪微博", "官方微信", "官方贴吧", "全球粉�
 <style scoped>
 /* Footer */
 .footer {
+  height: 100px;
   margin-top: auto;
   padding: 30px 0 40px;
-  background: #fff0da;
+  background: #2d583f;
   font-size: 13px;
-  color: #2d583f;
+  color: #fff;
   text-align: center;
 }
 
-.footer-top-line {
-  border-top: 1px solid #c8b196;
+.footer-top-line {  
+    border-top: 1px solid #fff;
   max-width: 1200px;
   margin: 0 auto 18px;
 }
@@ -41,12 +42,12 @@ const footerLinks = ["新浪微博", "官方微信", "官方贴吧", "全球粉�
 
 .footer-links .divider {
   margin: 0 10px;
-  color: #c8b196;
+  color: #fff;
 }
 
 .footer-copy {
-  color: #c8b196;
-  opacity: 0.8;
+  color: #fff;
+  opacity: 1;
 }
 </style>
 
