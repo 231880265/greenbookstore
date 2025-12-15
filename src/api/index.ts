@@ -1,5 +1,6 @@
 import { request } from './request';
 import type { ApiResponse, Product } from './types';
+import type { OrderVO, OrderStatus } from './types';
 
 
 /*--商品相关api--*/
@@ -7,3 +8,14 @@ import type { ApiResponse, Product } from './types';
 export const getProductDetail = (id: number) => {
     return request.get<ApiResponse<Product>>(`/used_books/${id}`);
 };
+
+// 获取商品相关推荐
+export const getRecommendedProducts = (id: number) => {
+    return request.get<ApiResponse<Product[]>>(`/used_books/recommend/${id}`);
+}
+
+export const getMyOrders = (status?: OrderStatus) => {
+    return request.get<OrderVO[]>('/orders/my', {
+        params: { status }
+    })
+}
