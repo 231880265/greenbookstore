@@ -1,12 +1,10 @@
-<!-- ProductList.vue  –  Detail Polish Edition -->
+<!-- ProductList.vue  –  Final Edition -->
+<!--待实现：按品相筛选、收藏、分类面包屑、界面美化-->
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import axios from 'axios'
-import { Close } from '@element-plus/icons-vue'
+import { Close, Search } from '@element-plus/icons-vue'
 import HeaderBar from '../components/HeaderBar.vue'
-import pic1 from '../assets/PL1.jpg'
-import pic2 from '../assets/PL2.jpg'
-import pic3 from '../assets/PL3.jpg'
 
 /* ---------- 类型 ---------- */
 interface BookItem {
@@ -26,20 +24,28 @@ interface BookItem {
 
 /* ---------- 数据 ---------- */
 const allBooks = ref<BookItem[]>([])
-const filteredBooks = ref<BookItem[]>([])
 
 /* ---------- 分类下拉 ---------- */
 const categoryMap = {
+  法律: 'FALV',
   经济: 'JINGJI',
   历史: 'LISHI',
   社科: 'SHEKE',
-  生活: 'SHNEGHUO',
+  生活: 'SHENGHUO',
   文学: 'WENXUE',
   小说: 'XIAOSHUO',
   艺术: 'YISHU',
-  政治: 'ZHNEGZHI',
+  政治: 'ZHENGZHI',
   哲学心理学: 'ZHEXUEXINLIXUE',
 }
+
+const bindingMap = {
+  线装: 'THREAD',
+  平装: 'PAPERBACK',
+  精装: 'HARDCOVER',
+  其他: 'OTHER',
+}
+
 const currentCategory = ref<string | null>(null)
 const showCategoryDropdown = ref(false)
 let dropdownEl: HTMLElement | null = null
@@ -47,37 +53,39 @@ const openDropdown = () => {
   showCategoryDropdown.value = true
   nextTick(() => {
     dropdownEl = document.querySelector('.category-dropdown')
-    dropdownEl?.addEventListener('mouseleave', closeDropdown)
+    document.addEventListener('click', closeDropdown)
   })
 }
-const closeDropdown = () => {
+const closeDropdown = (e?: MouseEvent) => {
+  if (e && dropdownEl?.contains(e.target as Node)) return
   showCategoryDropdown.value = false
-  dropdownEl?.removeEventListener('mouseleave', closeDropdown)
+  document.removeEventListener('click', closeDropdown)
   dropdownEl = null
 }
 
 /* ---------- 筛选项 ---------- */
-const open = ref({ quality: false, price: false, binding: false })
-const toggle = (k: keyof typeof open.value) => (open.value[k] = !open.value[k])
-
 const qualityOptions = [
   { label: '所有', value: null },
-  { label: '九五成新及以上', value: '95' },
   { label: '九成新及以上', value: '90' },
-  { label: '八五成新及以上', value: '85' },
   { label: '八成新及以上', value: '80' },
+  { label: '七成新及以上', value: '70' },
+  { label: '六成新及以上', value: '60' },
   { label: '五成新及以上', value: '50' },
   { label: '三成新及以上', value: '30' },
 ]
 const bindingOptions = [
   { label: '所有', value: null },
-  { label: '线装', value: '线装' },
+  { label: '线装', value: bindingMap['线装'] },
+  { label: '平装', value: bindingMap['平装'] },
+  { label: '精装', value: bindingMap['精装'] },
+  { label: '其他', value: bindingMap['其他'] },
 ]
 
 const filter = ref({
   quality: null as string | null,
   priceMin: 0,
   priceMax: 999,
+  binding: null as string | null,
 })
 
 /* ---------- 滑块同步 ---------- */
@@ -94,21 +102,68 @@ const syncInput = () => {
 watch(() => [filter.value.priceMin, filter.value.priceMax], syncSlider, { immediate: true })
 watch([sliderMin, sliderMax], syncInput)
 
+/* ---------- 分页 ---------- */
+const currentPage = ref(1)
+const pageSize = 20
+
+/* ---------- 过滤结果（只读） ---------- */
+const filteredBooks = computed(() => {
+  let list = [...allBooks.value]
+
+  if (filter.value.quality) {
+    const min = Number(filter.value.quality)
+    list = list.filter(b => Number(b.usedDegree) >= min)
+  }
+
+  list = list.filter(
+      b => b.price >= filter.value.priceMin && b.price <= filter.value.priceMax
+  )
+
+  if (filter.value.binding) {
+    list = list.filter(b => b.bookBinding === filter.value.binding)
+  }
+
+  const kw = searchKeyword.value.trim().toLowerCase()
+  if (kw) {
+    list = list.filter(
+        b =>
+            b.title.toLowerCase().includes(kw) ||
+            b.writer.toLowerCase().includes(kw)
+    )
+  }
+
+  return list
+})
+
+/* ---------- 当前页数据 ---------- */
+const pagedBooks = computed(() => {
+  const start = (currentPage.value - 1) * pageSize
+  return filteredBooks.value.slice(start, start + pageSize)
+})
+
 /* ---------- 动态标签 ---------- */
 const activeTags = computed(() => {
   const tags: { key: string; label: string }[] = []
+
   if (filter.value.quality) {
     const q = qualityOptions.find(o => o.value === filter.value.quality)?.label
     tags.push({ key: 'quality', label: `品相：${q}` })
   }
+
   if (filter.value.priceMin !== 0 || filter.value.priceMax !== 999) {
     tags.push({ key: 'price', label: `价格：¥${filter.value.priceMin}-¥${filter.value.priceMax}` })
   }
+
   if (filter.value.binding) {
-    tags.push({ key: 'binding', label: `装帧：${filter.value.binding}` })
+    const label =
+        Object.entries(bindingMap).find(([, v]) => v === filter.value.binding)?.[0] ||
+        filter.value.binding
+    tags.push({ key: 'binding', label: `装帧：${label}` })
   }
+
   return tags
 })
+
 const removeTag = (k: string) => {
   if (k === 'price') {
     filter.value.priceMin = 0
@@ -119,107 +174,36 @@ const removeTag = (k: string) => {
     filter.value.binding = null
   }
 }
+
 const resetAll = () => {
-  filter.value = { quality: null, priceMin: 0, priceMax: 999 }
+  filter.value = { quality: null, priceMin: 0, priceMax: 999, binding: null }
   currentCategory.value = null
 }
 
 /* ---------- 数据拉取 ---------- */
-// const fetchBooks = async () => {
-//   try {
-//     const params = currentCategory.value ? { category: currentCategory.value } : {}
-//     const { data } = await axios.get('/api/used_books/category', { params })
-//     allBooks.value = data.data
-//   } catch (e) {
-//     console.error(e)
-//   }
-// }
-
-/* ---------- 拉取数据（死数据版） ---------- */
 const fetchBooks = async () => {
-  // 模拟网络延迟
-  await new Promise(r => setTimeout(r, 300))
-
-  // 与接口字段 100% 对齐
-  allBooks.value = [
-    {
-      ubId: 1,
-      title: 'Java编程思想',
-      price: 39.90,
-      listPrice: 89.00,
-      writer: 'Bruce Eckel',
-      pageNum: 880,
-      ISBN: '9787111213826',
-      wordCount: 1200000,
-      publisher: '机械工业出版社',
-      bookBinding: '平装',
-      publishTime: '2007-06',
-      cover: pic1,
-      category: 'WENXUE',
-      usedDegree: '9',
-      description: '经典 Java 入门与进阶教程',
-    },
-    {
-      ubId: 2,
-      title: '深入理解计算机系统',
-      price: 89.00,
-      listPrice: 139.00,
-      writer: 'Randal E. Bryant',
-      pageNum: 1080,
-      ISBN: '9787111544937',
-      wordCount: 1500000,
-      publisher: '机械工业出版社',
-      bookBinding: '精装',
-      publishTime: '2016-11',
-      cover: pic2,
-      category: 'SHEKE',
-      usedDegree: '95',
-      description: 'CSAPP 权威教材',
-    },
-    {
-      ubId: 3,
-      title: '算法导论',
-      price: 128.00,
-      listPrice: 168.00,
-      writer: 'Thomas H. Cormen',
-      pageNum: 1312,
-      ISBN: '9787111407010',
-      wordCount: 1800000,
-      publisher: '机械工业出版社',
-      bookBinding: '线装',
-      publishTime: '2013-01',
-      cover: pic3,
-      category: 'JINGJI',
-      usedDegree: '85',
-      description: '算法圣经',
-    },
-  ]
+  try {
+    const params = currentCategory.value ? { category: currentCategory.value } : {}
+    const token = localStorage.getItem('GB_TOKEN') || ''
+    const { data } = await axios.get('http://127.0.0.1:8080/api/used_books/category', {
+      params,
+      headers: { token },
+    })
+    allBooks.value = data.data
+  } catch (e) {
+    console.error(e)
+  }
 }
 
-const applyFilter = () => {
-  let list = [...allBooks.value]
-  if (filter.value.quality) {
-    const min = Number(filter.value.quality)
-    list = list.filter(b => Number(b.usedDegree) >= min)
-  }
-  list = list.filter(b => b.price >= filter.value.priceMin && b.price <= filter.value.priceMax)
-  if (filter.value.binding) {
-    list = list.filter(b => b.bookBinding === filter.value.binding)
-  }
-  filteredBooks.value = list
-}
+/* ---------- 收藏 ---------- */
+const favoritedSet = ref<Set<number>>(new Set())
+const favoriteIdMap = ref<Record<number, number>>({})
 
-/* ---------- 收藏状态 ---------- */
-const favoritedSet = ref<Set<number>>(new Set())      // 已收藏的 ubId
-const favoriteIdMap = ref<Record<number, number>>({}) // ubId -> favoriteId
-
-/* 获取当前用户收藏列表（用于回显） */
 const loadFavorites = async () => {
   try {
     const { data } = await axios.get('/api/favorites', {
-      headers: { token: localStorage.getItem('token') || '' }
+      headers: { token: localStorage.getItem('token') || '' },
     })
-    // 假设返回结构与之前一致：{ data: [{ favoriteId, ubId }] }
     data.data.forEach((f: any) => {
       favoritedSet.value.add(f.ubId)
       favoriteIdMap.value[f.ubId] = f.favoriteId
@@ -229,59 +213,67 @@ const loadFavorites = async () => {
   }
 }
 
-/* 切换收藏状态 */
 const toggleFavorite = async (book: BookItem) => {
-  const token = localStorage.getItem('token') || ''
+  const token = localStorage.getItem('GB_TOKEN') || ''
+  const params= book.ubId
+  console.log(params)
   if (favoritedSet.value.has(book.ubId)) {
-    // 取消收藏
     const fid = favoriteIdMap.value[book.ubId]
+    console.log('fid', fid)
     try {
-      await axios.delete(`/api/favorites/${fid}`, { headers: { token } })
+      await axios.delete(`http://localhost:8080/api/favorites/${fid}`, {
+        headers: { token }
+      })
       favoritedSet.value.delete(book.ubId)
       delete favoriteIdMap.value[book.ubId]
     } catch (e) {
       console.error('取消收藏失败', e)
     }
   } else {
-    // 添加收藏
     try {
-      const { data } = await axios.post('/api/favorites', { ubId: book.ubId }, { headers: { token } })
+      const { data } = await axios.post('http://localhost:8080/api/favorites', {
+        params,
+        headers: { token }
+      })
       favoritedSet.value.add(book.ubId)
-      favoriteIdMap.value[book.ubId] = data.data  // 后端返回 favoriteId
+      favoriteIdMap.value[book.ubId] = data.data
     } catch (e) {
       console.error('收藏失败', e)
     }
   }
 }
 
+/* ---------- 搜索 ---------- */
+const searchKeyword = ref('')
 
-watch([filter, currentCategory], applyFilter, { deep: true })
+/* ---------- watch ---------- */
+watch([filter, currentCategory, searchKeyword], () => {
+  currentPage.value = 1
+})
+watch(currentCategory, async (newVal, oldVal) => {
+  if (oldVal !== undefined) {
+    await fetchBooks()
+  }
+})
+
 onMounted(async () => {
   await fetchBooks()
   await loadFavorites()
-  applyFilter()
 })
 </script>
 
 <template>
   <div class="detail-page">
     <HeaderBar />
+
     <!-- 面包屑 -->
     <nav class="breadcrumb">
-      <span
-          class="crumb"
-          :class="{ hover: showCategoryDropdown }"
-          @mouseenter="openDropdown"
-          @click="openDropdown"
-      >
+      <span class="crumb" :class="{ hover: showCategoryDropdown }" @click.stop="openDropdown">
         所有分类
       </span>
+
       <transition name="fade">
-        <ul
-            v-if="showCategoryDropdown"
-            class="dropdown"
-            @mouseleave="closeDropdown"
-        >
+        <ul v-if="showCategoryDropdown" class="dropdown category-dropdown">
           <li
               v-for="(code, name) in categoryMap"
               :key="code"
@@ -290,47 +282,38 @@ onMounted(async () => {
           >
             {{ name }}
           </li>
-          <li
-              :class="{ active: currentCategory === null }"
-              @click.stop="currentCategory = null; closeDropdown()"
-          >
+          <li :class="{ active: currentCategory === null }" @click.stop="currentCategory = null; closeDropdown()">
             全部分类
           </li>
         </ul>
       </transition>
 
-      <!-- 第二级 -->
       <template v-if="currentCategory">
         <span class="sep">|</span>
         <span class="crumb">
-      {{ Object.keys(categoryMap).find(k => categoryMap[k as keyof typeof categoryMap] === currentCategory) }}
-    </span>
+          {{ Object.keys(categoryMap).find(k => categoryMap[k as keyof typeof categoryMap] === currentCategory) }}
+        </span>
       </template>
     </nav>
-    <!-- 新增：分隔线 -->
-    <div class="divider"></div>
+
+    <div class="divider" />
 
     <div class="layout-grid">
-      <!-- 顶部标签栏 -->
+      <!-- 顶部栏 -->
       <div class="top-bar">
         <div class="left">
           <span class="label">筛选</span>
           <span class="count">{{ filteredBooks.length }} 个结果</span>
-          <button class="reset" @click="resetAll">重置所有标签： </button>
-          <!-- 已选标签 -->
-          <span
-              v-for="tag in activeTags"
-              :key="tag.key"
-              class="tag"
-          >
-          {{ tag.label }}
-          <Close class="close" @click="removeTag(tag.key)" />
-        </span>
+          <button class="reset" @click="resetAll">重置所有标签</button>
+          <span v-for="tag in activeTags" :key="tag.key" class="tag">
+            {{ tag.label }}
+            <Close class="close" @click="removeTag(tag.key)" />
+          </span>
         </div>
 
         <div class="right">
-
           <el-input
+              v-model="searchKeyword"
               placeholder="从筛选结果中搜索"
               size="small"
               class="search"
@@ -343,9 +326,8 @@ onMounted(async () => {
         </div>
       </div>
 
-      <!-- 左侧筛选卡片 -->
+      <!-- 左侧筛选 -->
       <aside class="filter-card">
-        <!-- 品相 -->
         <section class="group">
           <h3>品相</h3>
           <ul class="list">
@@ -361,7 +343,6 @@ onMounted(async () => {
           </ul>
         </section>
 
-        <!-- 价格 -->
         <section class="group">
           <h3>价格</h3>
           <div class="price-input">
@@ -370,25 +351,12 @@ onMounted(async () => {
             <input v-model.number="filter.priceMax" type="number" />
           </div>
           <div class="slider">
-            <input
-                type="range"
-                min="0"
-                max="999"
-                v-model.number="sliderMin"
-                class="range-min"
-            />
-            <input
-                type="range"
-                min="0"
-                max="999"
-                v-model.number="sliderMax"
-                class="range-max"
-            />
+            <input type="range" min="0" max="999" v-model.number="sliderMin" class="range-min" />
+            <input type="range" min="0" max="999" v-model.number="sliderMax" class="range-max" />
           </div>
           <button class="reset-price" @click="filter.priceMin = 0; filter.priceMax = 999">RESET</button>
         </section>
 
-        <!-- 装帧 -->
         <section class="group">
           <h3>装帧</h3>
           <ul class="list">
@@ -406,45 +374,53 @@ onMounted(async () => {
       </aside>
 
       <!-- 右侧网格 -->
-      <!-- 右侧网格 -->
-      <main class="grid">
-        <div
-            v-for="book in filteredBooks"
-            :key="book.ubId"
-            class="card"
-        >
-          <div class="img-wrap">
-            <img :src="book.cover" :alt="book.title" />
-            <!-- 收藏按钮 -->
-            <span
-                class="favorite-btn"
-                :class="{ active: favoritedSet.has(book.ubId) }"
-                @click.stop="toggleFavorite(book)"
-            >
-        <svg viewBox="0 0 24 24" width="18" height="18">
-          <path
-              :fill="favoritedSet.has(book.ubId) ? '#e53935' : 'none'"
-              stroke="#e53935"
-              stroke-width="2"
-              d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+      <div class="right-area">
+        <main class="grid">
+          <div v-for="book in pagedBooks" :key="book.ubId" class="card">
+            <div class="img-wrap">
+              <img :src="book.cover" :alt="book.title" />
+              <span
+                  class="favorite-btn"
+                  :class="{ active: favoritedSet.has(book.ubId) }"
+                  @click.stop="toggleFavorite(book)"
+              >
+                <svg viewBox="0 0 24 24" width="18" height="18">
+                  <path
+                      :fill="favoritedSet.has(book.ubId) ? '#e53935' : 'none'"
+                      stroke="#e53935"
+                      stroke-width="2"
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                  />
+                </svg>
+              </span>
+            </div>
+            <div class="meta">
+              <p class="author">{{ book.writer }}</p>
+              <h3 class="title">{{ book.title }}</h3>
+              <div class="price-row">
+                <span class="price">¥{{ book.price.toFixed(2) }}</span>
+                <span class="origin">¥{{ book.listPrice.toFixed(2) }}</span>
+              </div>
+              <div class="tags">
+                <span>
+                  {{ Object.entries(bindingMap).find(([, v]) => v === book.bookBinding)?.[0] || book.bookBinding }}
+                </span>
+                <span>{{ book.usedDegree }} 成新</span>
+              </div>
+            </div>
+          </div>
+        </main>
+        <!-- 分页 -->
+        <div class="pagination-bar">
+          <el-pagination
+              v-model:current-page="currentPage"
+              :page-size="pageSize"
+              :total="filteredBooks.length"
+              layout="prev, pager, next"
+              background
           />
-        </svg>
-      </span>
-          </div>
-          <div class="meta">
-            <p class="author">{{ book.writer }}</p>
-            <h3 class="title">{{ book.title }}</h3>
-            <div class="price-row">
-              <span class="price">¥{{ book.price.toFixed(2) }}</span>
-              <span class="origin">¥{{ book.listPrice.toFixed(2) }}</span>
-            </div>
-            <div class="tags">
-              <span>{{ book.bookBinding }}</span>
-              <span>{{ book.usedDegree }} 成新</span>
-            </div>
-          </div>
         </div>
-      </main>
+      </div>
     </div>
   </div>
 </template>
@@ -633,6 +609,14 @@ onMounted(async () => {
 }
 
 /* 右侧网格 */
+/* 右侧区域容器 */
+.right-area {
+  grid-column: 2 / 3;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
 .grid {
   grid-column: 2 / 3;
   display: grid;
@@ -766,5 +750,11 @@ onMounted(async () => {
 }
 .favorite-btn.active {
   opacity: 1;
+}
+.pagination-bar {
+  grid-column: 2 / 3;
+  display: flex;
+  justify-content: center;
+  margin-top: 32px;
 }
 </style>

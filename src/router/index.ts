@@ -7,8 +7,45 @@ import ProductDetail from '../pages/ProductDetail.vue'
 import UserProfile from '../pages/UserProfile.vue'
 import UsedBookOrder from '../pages/UsedBookOrder.vue'
 import SellBook from '../pages/SellBook.vue'
-
+import ProductList from '../pages/ProductList.vue'
 const routes: RouteRecordRaw[] = [
+    {
+        path: '/',
+        component: Home
+    },
+    {
+        path: '/orders',
+        component: Order
+    },
+    {
+        path: '/orderDetails',
+        component: OrderDetails
+    },
+    {
+        path: '/product-detail/:id',
+        component: ProductDetail
+    },
+    {
+        path:'/product-list',
+        component: ProductList
+    },  
+    {
+        path: '/usedBook/orders',
+        component: UsedBookOrder
+    },
+    {
+        path: '/orderDetails',
+        component: OrderDetails
+    },
+    {
+        path: '/product-detail/:id',
+        component: ProductDetail
+    },
+    {
+        path: '/product-list',
+        component: ProductList
+    },
+    {
   {
     path: '/',
     component: Home,
