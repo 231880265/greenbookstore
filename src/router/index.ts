@@ -4,20 +4,17 @@ import Home from '../pages/home.vue'
 import Order from "../pages/Order.vue";
 import OrderDetails from "../pages/OrderDetails.vue";
 import ProductDetail from "../pages/ProductDetail.vue";
-    import UserProfile from "../pages/UserProfile.vue";
-    import UsedBookOrder from "../pages/UsedBookOrder.vue";
+import UserProfile from "../pages/UserProfile.vue";
+import UsedBookOrder from "../pages/UsedBookOrder.vue";
+import ProductList from "../pages/ProductList.vue";
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
-        component: Home
+        component: ProductList
     },
     {
         path: '/orders',
         component: Order
-    },
-    {
-        path: '/usedBook/orders',
-        component: UsedBookOrder
     },
     {
         path: '/orderDetails',
@@ -28,9 +25,10 @@ const routes: RouteRecordRaw[] = [
         component: ProductDetail
     },
     {
-        path: '/profile',
-        component: UserProfile
+        path:'/product-list',
+        component: ProductList
     }
+
 ]
 const router = createRouter({
     history: createWebHistory(),
