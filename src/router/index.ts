@@ -3,7 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import Home from '../pages/home.vue'
 import Order from "../pages/Order.vue";
 import OrderDetails from "../pages/OrderDetails.vue";
-import ProductDetail from "../pages/productDetail.vue";
+import ProductDetail from "../pages/ProductDetail.vue";
 const routes: RouteRecordRaw[] = [
     {
         path: '/',
