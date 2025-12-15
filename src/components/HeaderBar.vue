@@ -20,13 +20,11 @@
 
       <!-- 右侧 -->
       <div class="right-nav">
-         <!-- 去卖书 -->
-         <div class="icon-wrapper sell-book">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2">
+        <!-- 去卖书 -->
+        <div class="icon-wrapper sell-book" title="我要卖书" @click="goSellBook">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 5v14M5 12h14" />
           </svg>
-          <span class="hover-text">去卖书</span>
         </div>
 
         <!-- 积分示例 -->
@@ -335,6 +333,11 @@ const closeSearch = () => {
   searchOpen.value = false;
   // 恢复body滚动
   document.body.style.overflow = '';
+};
+
+// 跳转到卖书页
+const goSellBook = () => {
+  router.push('/sell');
 };
 
 /** 这里先用 console.log 占位，你后面接路由/接口就行 */

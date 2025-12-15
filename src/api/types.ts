@@ -28,8 +28,6 @@ export type Product = {
 
 export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
 
-export type UsedBookOrderStatus = 'CHECKING' | 'SHIPPED' | 'COMPLETED';
-
 export interface OrderItemVO {
     id: number
     ubId: number
@@ -57,7 +55,6 @@ export interface OrderVO {
     orderItems: OrderItemVO[]
 }
 
-<<<<<<< HEAD
 // ----------------- 认证相关类型 -----------------
 
 // 登录请求
@@ -142,19 +139,38 @@ export interface SoldBookItem {
     cover: string;
     price: number;
   }
-=======
-export interface UsedBookOrderVO {
+  // AddressVO
+export interface AddressItem {
     id: number
-    sellerId: number
-    adId: number
-    status: UsedBookOrderStatus
-    price: number
-    listPrice: number
-    cover: string
-    title: string
-    writer: string
-    usedDegree: number
-    ISBN: string
+    userId: number
+    name: string
+    phone: string
+    province: string
+    city?: string
+    district?: string
+    detail?: string
+  }
+
+// 更新用户信息请求
+export interface UpdateUserInfoRequest {
+  username: string // 必需，用来标识是哪个用户
+  password?: string
+  name?: string
+  avatar?: string
+  role?: string
+  telephone?: string
+  email?: string
+  location?: string
 }
 
->>>>>>> 30b1b99fc45efc63d1ff9714889cb7385d2ef19c
+// 创建二手书请求（我要卖书）
+export interface CreateUsedBookRequest {
+  adId: number
+  title: string
+  ISBN: string
+  price: number
+  listPrice: number
+  writer: string
+  usedDegree: number
+  cover: string
+}

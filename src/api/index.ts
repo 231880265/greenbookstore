@@ -10,6 +10,8 @@ import type {
   OrderVO,
   FavoriteItem,
   AddressItem,
+  UpdateUserInfoRequest,
+  CreateUsedBookRequest,
 } from './types'
 
 /* ----------------- 商品相关 api ----------------- */
@@ -125,12 +127,25 @@ export const getAddressList = () => {
   }
   
   export const deleteAddress = (id: number) => {
-    return request.delete(`/address/delete/${id}`)
+    return request.delete(`/address/${id}`)
   }
   
   export const updateAddress = (
     id: number,
     data: Omit<AddressItem, 'id' | 'userId'>
   ) => {
-    return request.post(`/address/update/${id}`, data)
+    return request.put(`/address/${id}`, data)
   }
+
+// 更新用户信息
+// PUT /api/accounts
+// body: JSON { username (必需), password?, name?, avatar?, role?, telephone?, email?, location? }
+export const updateUserInfo = (data: UpdateUserInfoRequest) => {
+  return request.put<ApiResponse<string>>('/accounts', data)
+}
+
+// 创建二手书（我要卖书）
+// POST /api/used_books/create
+export const createUsedBook = (data: CreateUsedBookRequest) => {
+  return request.post<ApiResponse<number>>('/used_books/create', data)
+}
