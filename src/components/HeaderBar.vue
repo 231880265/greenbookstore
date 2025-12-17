@@ -20,13 +20,11 @@
 
       <!-- 右侧 -->
       <div class="right-nav">
-         <!-- 去卖书 -->
-         <div class="icon-wrapper sell-book">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2">
+        <!-- 去卖书 -->
+        <div class="icon-wrapper sell-book" title="我要卖书" @click="goSellBook">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 5v14M5 12h14" />
           </svg>
-          <span class="hover-text">去卖书</span>
         </div>
 
         <!-- 积分示例 -->
@@ -52,7 +50,7 @@
         </div>
 
         <!-- 个人中心 -->
-        <div class="icon-wrapper user-icon" title="个人中心">
+        <div class="icon-wrapper user-icon" title="个人中心" @click="onUserIconClick">
           <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
@@ -138,11 +136,141 @@
         </div>
       </transition>
     </teleport>
+
+    <!-- 登录 / 注册弹窗 -->
+    <teleport to="body">
+      <div v-if="authOpen" class="auth-mask" @click.self="closeAuth">
+        <div class="auth-dialog">
+          <div class="auth-tabs">
+            <button
+              class="auth-tab"
+              :class="{ active: authTab === 'login' }"
+              @click="authTab = 'login'; authError = null"
+            >
+              登录
+            </button>
+            <button
+              class="auth-tab"
+              :class="{ active: authTab === 'register' }"
+              @click="authTab = 'register'; authError = null"
+            >
+              注册
+            </button>
+          </div>
+
+          <div class="auth-body" v-if="authTab === 'login'">
+            <!-- 左：二维码占位 -->
+            <div class="auth-left qr-area">
+              <div class="qr-box">扫码进入小程序</div>
+              <p class="qr-text">手机端与网站账号互通，支持同步订单与收藏。</p>
+            </div>
+
+            <!-- 右：手机号 + 密码 -->
+            <div class="auth-right">
+              <h3>手机号登录</h3>
+              <label class="field">
+                <span>手机号</span>
+                <input v-model="loginForm.telephone" placeholder="请输入手机号" />
+              </label>
+              <label class="field">
+                <span>密码</span>
+                <input
+                  v-model="loginForm.password"
+                  type="password"
+                  placeholder="至少8位，包含字母和数字"
+                />
+              </label>
+              <p v-if="authError" class="auth-error">{{ authError }}</p>
+              <button class="auth-primary-btn" @click="handleLogin">登录</button>
+              <p class="auth-switch">
+                还没有账号？
+                <button class="link-btn" @click="authTab = 'register'; authError = null">
+                  立即注册
+                </button>
+              </p>
+            </div>
+          </div>
+
+          <div class="auth-body" v-else>
+            <!-- 左：头像 -->
+            <div class="auth-left avatar-area">
+              <div class="avatar-preview">
+                <img :src="registerForm.avatar || defaultAvatarUrl" alt="avatar" />
+              </div>
+              <label class="upload-btn">
+                选择头像
+                <input type="file" accept="image/*" @change="handleAvatarChange" hidden />
+              </label>
+              <p class="upload-hint">
+                不上传则使用默认小绿叶头像。
+              </p>
+            </div>
+
+            <!-- 右：用户名 + 真实姓名 + 手机号 + 密码两次 -->
+            <div class="auth-right">
+              <h3>创建账户</h3>
+              <label class="field">
+                <span>用户名（唯一）</span>
+                <input v-model="registerForm.username" placeholder="用于展示和登录识别，可选填" />
+              </label>
+              <label class="field">
+                <span>真实姓名</span>
+                <input v-model="registerForm.name" placeholder="请填写真实姓名，便于售后服务" />
+              </label>
+              <label class="field">
+                <span>手机号</span>
+                <input v-model="registerForm.telephone" placeholder="请输入手机号" />
+              </label>
+              <label class="field">
+                <span>密码</span>
+                <input
+                  v-model="registerForm.password"
+                  type="password"
+                  placeholder="至少8位，包含字母和数字"
+                />
+              </label>
+              <label class="field">
+                <span>确认密码</span>
+                <input
+                  v-model="registerForm.confirmPassword"
+                  type="password"
+                  placeholder="请再次输入密码"
+                />
+              </label>
+              <p v-if="authError" class="auth-error">{{ authError }}</p>
+              <button class="auth-primary-btn" @click="handleRegister" :disabled="uploadingAvatar">
+                {{ uploadingAvatar ? '上传头像中...' : '注册并登录' }}
+              </button>
+              <p class="auth-switch">
+                已有账号？
+                <button class="link-btn" @click="authTab = 'login'; authError = null">
+                  直接登录
+                </button>
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </teleport>
+
+    <!-- 登录成功轻提示 -->
+    <teleport to="body">
+      <transition name="toast-fade">
+        <div v-if="loginSuccess" class="login-success-toast">
+          登录成功，欢迎回来
+        </div>
+      </transition>
+    </teleport>
   </header>
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch } from "vue";
+import { nextTick, onMounted, ref, watch, reactive, computed } from "vue";
+import { useRouter } from "vue-router";
+import { login, register, uploadImage } from "@/api";
+import type { LoginRequest, RegisterRequest } from "@/api/types";
+
+const router = useRouter();
 
 const leafCount = ref(12);
 
@@ -151,6 +279,7 @@ const keyword = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
 
 const HOT_KEY = "greenbook_search_history";
+const TOKEN_KEY = "GB_TOKEN";
 const historyList = ref<string[]>([]);
 
 /** ✅ 二手书场景：热门搜索词 */
@@ -206,6 +335,11 @@ const closeSearch = () => {
   document.body.style.overflow = '';
 };
 
+// 跳转到卖书页
+const goSellBook = () => {
+  router.push('/sell');
+};
+
 /** 这里先用 console.log 占位，你后面接路由/接口就行 */
 const doSearch = (q: string) => {
   const query = q.trim();
@@ -249,6 +383,158 @@ watch(searchOpen, (newVal) => {
     document.body.style.overflow = '';
   }
 });
+
+/* ----------------- 登录 / 注册弹窗 ----------------- */
+
+const authOpen = ref(false);
+const authTab = ref<"login" | "register">("login");
+
+const loginForm = reactive<LoginRequest>({
+  telephone: "",
+  password: "",
+});
+
+const registerForm = reactive<RegisterRequest & { confirmPassword: string }>({
+  username: "",
+  name: "",
+  avatar: "",
+  telephone: "",
+  password: "",
+  confirmPassword: "",
+});
+
+const authError = ref<string | null>(null);
+const uploadingAvatar = ref(false);
+const loginSuccess = ref(false);
+let loginSuccessTimer: number | null = null;
+
+const defaultAvatarUrl = "https://wonderful1.oss-cn-hangzhou.aliyuncs.com/leaf.jpg";
+
+
+const isLoggedIn = computed(() => !!localStorage.getItem(TOKEN_KEY));
+
+const openAuth = (tab: "login" | "register" = "login") => {
+  authTab.value = tab;
+  authOpen.value = true;
+  authError.value = null;
+};
+
+const closeAuth = () => {
+  authOpen.value = false;
+  authError.value = null;
+};
+
+const onUserIconClick = () => {
+  if (isLoggedIn.value) {
+    router.push("/profile");
+  } else {
+    openAuth("login");
+  }
+};
+
+const validateTelephone = (tel: string) => /^1\d{10}$/.test(tel);
+
+const validatePassword = (pwd: string) => pwd.length >= 8;
+
+
+const handleLogin = async () => {
+  authError.value = null;
+  if (!validateTelephone(loginForm.telephone)) {
+    authError.value = "请输入有效的手机号（11位，以1开头）";
+    return;
+  }
+  if (!validatePassword(loginForm.password)) {
+    authError.value = "密码至少8位，需包含字母和数字";
+    return;
+  }
+  try {
+    const res = await login({ ...loginForm });
+    localStorage.setItem(TOKEN_KEY, res.data.toString());
+    closeAuth();
+    // 显示登录成功提示
+    loginSuccess.value = true;
+    if (loginSuccessTimer) {
+      clearTimeout(loginSuccessTimer);
+    }
+    loginSuccessTimer = window.setTimeout(() => {
+      loginSuccess.value = false;
+    }, 1500);
+    router.push("/");
+  } catch (e: any) {
+    const msg = e?.message || "";
+    if (msg.includes("用户名") || msg.includes("密码")) {
+      authError.value = "该手机号未注册或密码错误";
+    } else {
+      authError.value = msg || "登录失败，请稍后重试";
+    }
+  }
+};
+
+const handleRegister = async () => {
+  console.log("注册发送信息已点击");
+  authError.value = null;
+  const tel = registerForm.telephone;
+  if (!validateTelephone(tel)) {
+    authError.value = "请输入有效的手机号（11位，以1开头）";
+    return;
+  }
+  if (!validatePassword(registerForm.password)) {
+    authError.value = "密码至少8位，需包含字母和数字";
+    return;
+  }
+  if (!registerForm.name || !registerForm.name.trim()) {
+    authError.value = "请填写真实姓名";
+    return;
+  }
+  if (registerForm.password !== registerForm.confirmPassword) {
+    authError.value = "两次输入的密码不一致";
+    return;
+  }
+  const payload: RegisterRequest = {
+    telephone: tel,
+    password: registerForm.password,
+    username: registerForm.username,
+    name: registerForm.name || "叶子",
+    avatar: registerForm.avatar || defaultAvatarUrl,
+  };
+  console.log("注册发送信息", payload);
+  try {
+    const registerRes = await register(payload);
+    
+    console.log("注册返回信息", registerRes);
+    // 注册成功后自动登录
+    // const loginRes = await login({ telephone: tel, password: registerForm.password });
+    // localStorage.setItem(TOKEN_KEY, loginRes.data.token);
+    // closeAuth();
+    // router.push("/");
+  } catch (e: any) {
+    const msg = e?.message || "";
+    authError.value = msg || "注册失败，请稍后重试";
+  }
+};
+
+const handleAvatarChange = async (event: Event) => {
+  const target = event.target as HTMLInputElement;
+  const file = target.files?.[0];
+  if (!file) return;
+
+  // 未登录时不允许调用需要 token 的上传接口
+  if (!localStorage.getItem(TOKEN_KEY)) {
+    authError.value = "请先完成注册并登录后，再在个人主页中上传头像";
+    target.value = "";
+    return;
+  }
+
+  uploadingAvatar.value = true;
+  try {
+    const res = await uploadImage(file);
+    registerForm.avatar = res.data;
+  } catch {
+    authError.value = "头像上传失败，请稍后重试";
+  } finally {
+    uploadingAvatar.value = false;
+  }
+};
 </script>
 
 <style scoped>
@@ -552,5 +838,196 @@ watch(searchOpen, (newVal) => {
 .drawer-leave-to {
   transform: translateY(-100%);
   opacity: 0;
+}
+
+/* 登录 / 注册弹窗 */
+.auth-mask {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 4000;
+}
+
+.auth-dialog {
+  width: 720px;
+  background: #ffffff;
+  border-radius: 18px;
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
+  padding: 18px 22px 22px;
+}
+
+.auth-tabs {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.auth-tab {
+  border: none;
+  background: transparent;
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 15px;
+  cursor: pointer;
+  color: #777;
+}
+
+.auth-tab.active {
+  background: #2d583f;
+  color: #fff;
+}
+
+.auth-body {
+  display: flex;
+  gap: 24px;
+  padding-top: 4px;
+}
+
+.auth-left {
+  width: 260px;
+  border-right: 1px solid #f1e3cf;
+  padding-right: 18px;
+}
+
+.auth-right {
+  flex: 1;
+}
+
+.auth-right h3 {
+  margin: 0 0 12px;
+  font-size: 18px;
+  color: #2d583f;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #555;
+}
+
+.field input {
+  border-radius: 999px;
+  border: 1px solid #d5c5ad;
+  padding: 8px 12px;
+  outline: none;
+  font-size: 14px;
+}
+
+.field input:focus {
+  border-color: #2d583f;
+}
+
+.auth-primary-btn {
+  width: 100%;
+  border: none;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: #2d583f;
+  color: #fff;
+  padding: 9px 0;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.auth-primary-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.auth-error {
+  margin: 4px 0 2px;
+  font-size: 13px;
+  color: #d40000;
+}
+
+.auth-switch {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #666;
+}
+
+.qr-area .qr-box {
+  width: 160px;
+  height: 160px;
+  border-radius: 16px;
+  border: 1px dashed rgba(200, 177, 150, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: #7a6b5c;
+  background: #fffdf7;
+}
+
+.qr-text {
+  font-size: 12px;
+  color: #777;
+  line-height: 1.5;
+}
+
+.avatar-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.avatar-preview img {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #2d583f;
+  background: #fff;
+  margin-bottom: 10px;
+}
+
+.upload-btn {
+  border-radius: 999px;
+  border: 1px solid #c8b196;
+  padding: 4px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #fff7eb;
+  color: #7a6b5c;
+}
+
+.upload-hint {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #777;
+  text-align: center;
+}
+
+/* 登录成功提示 */
+.login-success-toast {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px 20px;
+  background: rgba(45, 88, 63, 0.96);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 14px;
+  z-index: 5000;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.toast-fade-enter-active,
+.toast-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.toast-fade-enter-from,
+.toast-fade-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -8px);
 }
 </style>

@@ -1,6 +1,6 @@
 // 通用响应接口
 export interface ApiResponse<T = any> {
-    code: number;
+    code: string;
     data: T;
     msg: string;
 }
@@ -59,4 +59,124 @@ export interface OrderVO {
     paymentMethod: string
     tradeNo: string
     orderItems: OrderItemVO[]
+}
+
+// ----------------- 认证相关类型 -----------------
+
+// 登录请求
+export interface LoginRequest {
+    telephone: string
+    password: string
+}
+
+// 登录成功返回的数据
+export interface LoginData {
+    token: string
+}
+
+// 注册请求
+export interface RegisterRequest {
+    username?: string
+    password: string
+    name?: string
+    avatar?: string
+    telephone: string
+}
+
+// 图片上传返回的数据（oss 后的 url）
+export type UploadImageData = string
+
+// ----------------- 用户信息 / 个人中心 -----------------
+
+export interface UserDetail {
+    id: number;
+    leaf: number;
+    username: string;
+    avatar: string | null;
+    telephone: string;
+  }
+
+// 简单书籍记录，用于「回收订单 / 购书订单 / 我的收藏」预览列表
+export interface SimpleBookRecord {
+    id: number | string
+    cover: string
+    title: string
+    price: number
+}
+
+export interface SoldBookItem {
+    rcld: number;
+    title: string;
+    listPrice: number;
+    price: number;
+    cover: string;
+    writer: string;
+    ISBN: string;
+    status: string;
+    usedDegree: string;
+  }
+  export interface OrderItem {
+    ubId: number;
+    title: string;
+    writer: string;
+    publisher: string;
+    cover: string;
+    quantity: number;
+    price: number;
+    totalPrice: number;
+  }
+  
+  export interface OrderVO {
+    orderId: number;
+    totalAmount: number;
+    paymentMethod: string;
+    status: OrderStatus;
+    createTime: string;
+    paymentTime: string;
+    tradeNo: string;
+    addId: number;
+    leaf: number;
+    orderItems: OrderItemVO[];
+  }
+  export interface FavoriteItem {
+    favoriteId: number;
+    ubId: number;
+    title: string;
+    cover: string;
+    price: number;
+  }
+  // AddressVO
+export interface AddressItem {
+    id: number
+    userId: number
+    name: string
+    phone: string
+    province: string
+    city?: string
+    district?: string
+    detail?: string
+  }
+
+// 更新用户信息请求
+export interface UpdateUserInfoRequest {
+  username: string // 必需，用来标识是哪个用户
+  password?: string
+  name?: string
+  avatar?: string
+  role?: string
+  telephone?: string
+  email?: string
+  location?: string
+}
+
+// 创建二手书请求（我要卖书）
+export interface CreateUsedBookRequest {
+  adId: number
+  title: string
+  ISBN: string
+  price: number
+  listPrice: number
+  writer: string
+  usedDegree: number
+  cover: string
 }

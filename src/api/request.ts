@@ -1,6 +1,8 @@
 import axios from 'axios';
 import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
+const TOKEN_KEY = 'GB_TOKEN'
+
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL || '/api', // API 基础路径
@@ -13,10 +15,10 @@ const service: AxiosInstance = axios.create({
 // 请求拦截器
 service.interceptors.request.use(
     (config) => {
-        // 在发送请求之前添加 token
-        const token = localStorage.getItem('token');
+        // 在发送请求之前添加 token（后端要求使用 token 头）
+        const token = localStorage.getItem(TOKEN_KEY);
         if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
+            (config.headers as any).token = token;
         }
         return config;
     },
@@ -30,9 +32,9 @@ service.interceptors.request.use(
 service.interceptors.response.use(
     (response: AxiosResponse) => {
         const res = response.data;
-
+        const code = Number(res.code);
         // 后端返回格式为 { code: number, data: any, msg: string }
-        if (res.code !== 200 && res.code !== 0) {
+        if (code !== 200 && code !== 0) {
             console.error('接口错误：', res.msg || '请求失败');
             return Promise.reject(new Error(res.msg || '请求失败'));
         }
@@ -48,7 +50,7 @@ service.interceptors.response.use(
                     // 未授权，跳转到登录页
                     console.error('未授权，请重新登录');
                     // 可以在这里清除 token 并跳转到登录页
-                    localStorage.removeItem('token');
+                    localStorage.removeItem(TOKEN_KEY);
                     // TODO: 添加跳转到登录页的逻辑
                     break;
                 case 403:
