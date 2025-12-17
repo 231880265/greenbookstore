@@ -8,12 +8,32 @@
                 <el-breadcrumb-item>购物车</el-breadcrumb-item>
             </el-breadcrumb>
 
+            <!-- 加载中骨架屏 -->
+            <div v-if="loading" class="loading-container">
+                <div v-for="index in 3" :key="index" class="cart-item-skeleton">
+                    <van-skeleton :row="0" class="checkbox-skeleton">
+                        <template #template>
+                            <van-skeleton-avatar size="20px" />
+                        </template>
+                    </van-skeleton>
+                    <van-skeleton :row="0" class="cover-skeleton">
+                        <template #template>
+                            <van-skeleton-image class="skeleton-cover-img" />
+                        </template>
+                    </van-skeleton>
+                    <van-skeleton title :row="2" class="meta-skeleton" />
+                    <van-skeleton :row="1" class="price-skeleton" />
+                    <van-skeleton :row="1" class="num-skeleton" />
+                    <van-skeleton :row="1" class="actions-skeleton" />
+                </div>
+            </div>
 
-            <div v-if="cart && cart.items.length">
+            <!-- 购物车内容 -->
+            <div v-else-if="cart && cart.items.length">
                 <div class="cart-controls">
                     <van-checkbox :model-value="isAllSelected" @update:model-value="onToggleAll"
                         checked-color="#2d583f">全选</van-checkbox>
-                    <button class="favor-button">移入收藏</button>
+                    <button class="favor-button" @click="moveSelectedToFavorites">移入收藏</button>
                 </div>
                 <div class="cart-item" v-for="item in cart.items" :key="item.cartItemId">
                     <!-- 选择框（默认不选） -->
@@ -51,11 +71,12 @@
                         <span class="money">￥{{ totalPrice.toFixed(2) }}</span>
                     </div>
                     <button class="checkout" @click="handleCheckout">结算<span v-if="selectedNum > 0">({{ selectedNum
-                    }})</span></button>
+                            }})</span></button>
                 </div>
             </div>
 
-            <div v-else class="vacant-cart">
+            <!-- 空购物车 -->
+            <div v-else-if="!loading" class="vacant-cart">
                 <img src="./image/vacant-cart.svg"></img>
                 <div class="text">Oops！这里空空如也</div>
             </div>
@@ -68,18 +89,22 @@
 <script setup lang="ts">
 import HeaderBar from '@/components/HeaderBar.vue';
 import { ref, onMounted, computed } from 'vue';
-import { getCart, updateCartItem } from '@/api';
+import { getCart, updateCartItem, addFavorite, removeCartItem } from '@/api';
 import type { Cart } from '@/api/types';
 import { showToast } from 'vant';
 
 // 购物车数据
 const cart = ref<Cart | null>(null);
 
+// 加载状态
+const loading = ref(true);
+
 // 选中状态：默认都不选
 const selectedIds = ref<Set<number>>(new Set());
 
 // 加载购物车（如接口可用则使用接口）
 const loadCart = async () => {
+    loading.value = true;
     try {
         if (typeof getCart === 'function') {
             const res = await getCart();
@@ -87,7 +112,9 @@ const loadCart = async () => {
         }
     } catch (e) {
         console.error('请求购物车信息错误:', e);
-    } 
+    } finally {
+        loading.value = false;
+    }
 };
 
 onMounted(loadCart);
@@ -114,9 +141,32 @@ async function handleChange(value: number, item: any) {
 
 // 移入收藏
 const moveToFavorites = async (id: number) => {
-    // TODO: 调用后端“移入收藏”接口
-    console.debug('移入收藏', id);
+    addFavorite(id).then(() => {
+        showToast({ message: '已移入收藏', duration: 1500 });
+        // 删除购物车项
+        removeItem(id);
+    }).catch((e) => {
+        console.error('移入收藏失败', e);
+    });
 };
+
+// 移入收藏（批量）
+const moveSelectedToFavorites = async () => {
+    const ids = Array.from(selectedIds.value);
+    if (ids.length === 0) {
+        showToast({ message: '请选择要移入收藏的商品', duration: 1500 });
+        return;
+    }
+    try {
+        for (const id of ids) {
+            await addFavorite(id);
+            removeItem(id);
+        }
+        showToast({ message: '已移入收藏', duration: 1500 });
+    } catch (e) {
+        console.error('批量移入收藏失败', e);
+    }
+}
 
 // 删除条目
 const removeItem = async (id: number) => {
@@ -124,7 +174,12 @@ const removeItem = async (id: number) => {
     cart.value.items = cart.value.items.filter((i) => i.cartItemId !== id);
     selectedIds.value.delete(id);
     cart.value.total = cart.value.items.length;
-    // TODO: 如果有后端，调用 deleteCartItem(id)
+    // 调用后端删除接口
+    removeCartItem(id.toString()).then(() => {
+        console.debug('删除购物车项成功', id);
+    }).catch((e) => {
+        console.error('删除购物车项失败', e);
+    });
 };
 
 // 全选状态
@@ -179,13 +234,7 @@ const handleCheckout = () => {
 
 <style src="./global.scss"></style>
 <style scoped lang="scss">
-.page-container {
-    display: flex;
-    flex-direction: column;
-}
-
 .content {
-    flex: 1;
     padding: 28px 60px;
     padding-bottom: 140px; // 给底部留空间，避免结算条覆盖内容
 }
@@ -197,6 +246,7 @@ const handleCheckout = () => {
 .breadcrumb {
     margin: 8px 0 16px;
     font-size: 14px;
+
     :deep(.el-breadcrumb__inner) {
         &:hover {
             color: #2d583f;
@@ -380,6 +430,56 @@ const handleCheckout = () => {
         font-size: 20px;
         color: #888888;
         font-style: italic;
+    }
+}
+
+// 加载骨架屏样式
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.cart-item-skeleton {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    padding: 16px 24px;
+    border-radius: 16px;
+    gap: 16px;
+
+    .checkbox-skeleton {
+        flex-shrink: 0;
+    }
+
+    .cover-skeleton {
+        flex-shrink: 0;
+        width: 80px;
+        height: 120px;
+
+        .skeleton-cover-img {
+            width: 80px;
+            height: 120px;
+            border-radius: 8px;
+        }
+    }
+
+    .meta-skeleton {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .price-skeleton {
+        width: 100px;
+    }
+
+    .num-skeleton {
+        width: 120px;
+    }
+
+    .actions-skeleton {
+        width: 100px;
     }
 }
 </style>

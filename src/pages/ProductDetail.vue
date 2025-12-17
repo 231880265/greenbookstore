@@ -3,6 +3,34 @@
         <HeaderBar />
         <div class="content">
 
+            <!-- 骨架屏 -->
+            <div class="product-container skeleton-container" v-if="!productDetail">
+                <el-breadcrumb separator="/" class="breadcrumb">
+                    <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+                    <el-breadcrumb-item>书城</el-breadcrumb-item>
+                </el-breadcrumb>
+
+                <div class="product-wrapper">
+                    <van-skeleton :row="0" class="img-skeleton">
+                        <template #template>
+                            <van-skeleton-image class="skeleton-image" />
+                        </template>
+                    </van-skeleton>
+
+                    <div class="info-container">
+                        <van-skeleton title :row="3" />
+                        <van-skeleton title :row="8" class="detail-skeleton" />
+                        <van-skeleton :row="2" class="purchase-skeleton" />
+                        <van-skeleton :row="1" class="button-skeleton" />
+                    </div>
+
+                    <div class="description-container">
+                        <van-skeleton title :row="10" />
+                    </div>
+                </div>
+            </div>
+
+            <!-- 实际内容 -->
             <div class="product-container" v-if="productDetail">
                 <el-breadcrumb separator="/" class="breadcrumb">
                     <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
@@ -37,7 +65,7 @@
                             <span class="info">{{ productDetail.pageNum }}</span>
                             <span class="tag" v-if="productDetail.wordCount != 'nan'">字数</span>
                             <span class="info" v-if="productDetail.wordCount != 'nan'">{{ productDetail.wordCount
-                                }}</span>
+                            }}</span>
                             <span class="tag">装帧</span>
                             <span class="info">{{ getBindingName(productDetail.bookBinding ?? '') }}</span>
                             <span class="tag">ISBN</span>
@@ -71,7 +99,20 @@
 
             <div class="recommend-title">相关推荐</div>
 
-            <div class="recommended-list">
+            <!-- 推荐列表骨架屏 -->
+            <div class="recommended-list" v-if="!recommendedProducts">
+                <div v-for="index in 6" :key="index" class="recommended-item skeleton-item">
+                    <van-skeleton :row="0" class="skeleton-img">
+                        <template #template>
+                            <van-skeleton-image class="skeleton-image-item" />
+                        </template>
+                    </van-skeleton>
+                    <van-skeleton :row="2" class="skeleton-text" />
+                </div>
+            </div>
+
+            <!-- 实际推荐列表 -->
+            <div class="recommended-list" v-if="recommendedProducts && recommendedProducts.length > 0">
                 <a v-for="(item, index) in recommendedProducts" :key="index" class="recommended-item"
                     :href="`/product-detail/${item.ubId}`">
                     <div class="img-wrapper">
@@ -92,7 +133,7 @@
 import HeaderBar from '@/components/HeaderBar.vue';
 import Footer from '@/components/Footer.vue';
 import { ref, computed } from 'vue';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { getProductDetail, getRecommendedProducts, addToCart, getTopProductsByCategory, addFavorite, removeFavorite, getFavoriteList } from '@/api/index';
 import type { Product } from '@/api/types';
 import { getCategoryName, getBindingName } from '@/utils';
@@ -103,6 +144,8 @@ const productId = computed(() => {
     return parseInt(useRoute().params.id as string);
 }
 )
+
+const router = useRouter();
 
 // 商品详情数据
 const productDetail = ref<Product>();
@@ -142,8 +185,14 @@ function handleChange(value: number) {
 }
 
 function buyNow() {
-    console.log(`购买 ${num.value} 本书`);
-    // 在这里添加购买逻辑
+    // 跳转到结算页面，传递商品ID和购买数量
+    router.push({
+        path: '/checkout',
+        query: {
+            ubId: productId.value.toString(),
+            quantity: num.value.toString()
+        }
+    });
 }
 
 async function addProductToCart() {
@@ -157,13 +206,18 @@ async function addProductToCart() {
 
 /*-- 收藏相关 --*/
 const isFavorited = ref(false);
+let favId = 0;
 
 // Load favorite status on component mount
-getFavoriteList().then(response=>{
+getFavoriteList().then(response => {
     const favList = response.data;
-    isFavorited.value = favList.some(item=>item.ubId===productId.value);
-}).catch(error=>{
-    console.error('获取收藏列表失败：',error);
+    const favoriteItem = favList.find(item => item.ubId === productId.value);
+    isFavorited.value = !!favoriteItem;
+    if (favoriteItem) {
+        favId = favoriteItem.favoriteId;
+    }
+}).catch(error => {
+    console.error('获取收藏列表失败：', error);
     isFavorited.value = false;
 });
 
@@ -252,6 +306,42 @@ async function toggleFavorite() {
         }
     }
 
+}
+
+// 骨架屏样式
+.skeleton-container {
+    .img-skeleton {
+        height: 476px;
+        width: 314px;
+        flex-shrink: 0;
+
+        .skeleton-image {
+            height: 476px;
+            width: 314px;
+            border-radius: 24px;
+        }
+    }
+
+    .info-container {
+        width: 500px;
+        margin-left: 12px;
+    }
+
+    .detail-skeleton {
+        margin-top: 24px;
+    }
+
+    .purchase-skeleton {
+        margin-top: 20px;
+    }
+
+    .button-skeleton {
+        margin-top: 20px;
+    }
+
+    .description-container {
+        width: 370px;
+    }
 }
 
 .description-container {
@@ -413,6 +503,31 @@ async function toggleFavorite() {
             margin-top: 6px;
             font-size: 14px;
             color: #2d583f;
+        }
+    }
+
+    // 推荐列表骨架屏样式
+    .skeleton-item {
+        display: flex;
+        flex-direction: column;
+
+        .skeleton-img {
+            height: 248px;
+            width: 168px;
+
+            .skeleton-image-item {
+                height: 248px;
+                width: 168px;
+                border-radius: 4px;
+            }
+        }
+
+        .skeleton-text {
+            margin-top: 6px;
+        }
+
+        :deep(.van-skeleton) {
+            padding: 0;
         }
     }
 }
