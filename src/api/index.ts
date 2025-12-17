@@ -56,9 +56,7 @@ export const searchSuggest = (keyword: string) => {
 }
 // 获取分类Top6
 export const getTopProductsByCategory = (category: string) => {
-  return request.get<ApiResponse<Product[]>>('/used_books/category/top', {
-    params: { category }
-  })
+  return request.get<ApiResponse<Product[]>>('/used_books/category/top', {category})
 }
 
 /*-------------------购物相关api--------------------*/

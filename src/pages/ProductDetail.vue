@@ -2,55 +2,68 @@
     <div class="page-container">
         <HeaderBar />
         <div class="content">
+
             <div class="product-container" v-if="productDetail">
-                <div class="img-wrapper">
-                    <img :src="productDetail.cover" alt="二手书封面" class="product-cover" />
-                </div>
+                <el-breadcrumb separator="/" class="breadcrumb">
+                    <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+                    <el-breadcrumb-item>书城</el-breadcrumb-item>
+                    <el-breadcrumb-item>{{ getCategoryName(productDetail.category ?? '') }}</el-breadcrumb-item>
+                    <el-breadcrumb-item>{{ productDetail.title }}</el-breadcrumb-item>
+                </el-breadcrumb>
 
-
-                <div class="info-container">
-
-                    <div class="writer">{{ productDetail.writer }}</div>
-                    <div class="title">{{ productDetail.title }}</div>
-
-                    <div class="detail-container">
-                        <span class="tag">分类</span>
-                        <span class="info">{{ getCategoryName(productDetail.category ?? '') }}</span>
-                        <span class="tag">出版社</span>
-                        <span class="info">{{ productDetail.publisher }}</span>
-                        <span class="tag">出版时间</span>
-                        <span class="info">{{ productDetail.publishTime }}</span>
-                        <span class="tag">定价</span>
-                        <span class="info">¥{{ (productDetail.listPrice ?? 0).toFixed(2) }}</span>
-                        <span class="tag">页数</span>
-                        <span class="info">{{ productDetail.pageNum }}</span>
-                        <span class="tag">字数</span>
-                        <span class="info">{{ productDetail.wordCount }}</span>
-                        <span class="tag">装帧</span>
-                        <span class="info">{{ productDetail.bookBinding }}</span>
-                        <span class="tag">ISBN</span>
-                        <span class="info">{{ productDetail.isbn }}</span>
-                        <span class="tag">销量</span>
-                        <span class="info">{{ productDetail.sales }} 本</span>
+                <div class="product-wrapper">
+                    <div class="img-wrapper">
+                        <img :src="productDetail.cover" alt="二手书封面" class="product-cover" />
+                        <img class="icon" src="./image/favor.svg" v-if="isFavorited" @click="toggleFavorite"></img>
+                        <img class="icon" src="./image/unfavor.svg" v-else @click="toggleFavorite"></img>
                     </div>
 
-                    <div class="purchase-info">
-                        <div class="price">￥{{ productDetail.price.toFixed(2) }}</div>
 
-                        <el-input-number class="num-input" v-model="num" :min="1" :max="productDetail.stock"
-                            @change="handleChange" :step-strictly="true" :value-on-clear="1" />
+                    <div class="info-container">
+
+                        <div class="writer">{{ productDetail.writer }}</div>
+                        <div class="title">{{ productDetail.title }}</div>
+
+                        <div class="detail-container">
+                            <span class="tag">分类</span>
+                            <span class="info">{{ getCategoryName(productDetail.category ?? '') }}</span>
+                            <span class="tag">出版社</span>
+                            <span class="info">{{ productDetail.publisher }}</span>
+                            <span class="tag">出版时间</span>
+                            <span class="info">{{ productDetail.publishTime }}</span>
+                            <span class="tag">定价</span>
+                            <span class="info">¥{{ (productDetail.listPrice ?? 0).toFixed(2) }}</span>
+                            <span class="tag">页数</span>
+                            <span class="info">{{ productDetail.pageNum }}</span>
+                            <span class="tag" v-if="productDetail.wordCount != 'nan'">字数</span>
+                            <span class="info" v-if="productDetail.wordCount != 'nan'">{{ productDetail.wordCount
+                                }}</span>
+                            <span class="tag">装帧</span>
+                            <span class="info">{{ getBindingName(productDetail.bookBinding ?? '') }}</span>
+                            <span class="tag">ISBN</span>
+                            <span class="info">{{ productDetail.isbn }}</span>
+                            <span class="tag">销量</span>
+                            <span class="info">{{ productDetail.sales }} 本</span>
+                        </div>
+
+                        <div class="purchase-info">
+                            <div class="price">￥{{ productDetail.price.toFixed(2) }}</div>
+
+                            <el-input-number class="num-input" v-model="num" :min="1" :max="productDetail.stock"
+                                @change="handleChange" :step-strictly="true" :value-on-clear="1" />
+                        </div>
+
+                        <div class="shop-container">
+                            <button class="buy-now-button" @click="buyNow">立即购买</button>
+                            <button class="add-to-cart-button" @click="addProductToCart">加入购物车</button>
+                        </div>
+
                     </div>
-
-                    <div class="shop-container">
-                        <button class="buy-now-button" @click="buyNow">立即购买</button>
-                        <button class="add-to-cart-button" @click="addProductToCart">加入购物车</button>
+                    <div class="description-container">
+                        <div class="title">内容简介</div>
+                        <van-text-ellipsis class="product-description" rows="14" :content="productDetail.description"
+                            expand-text="展开" collapse-text="收起" />
                     </div>
-
-                </div>
-                <div class="description-container">
-                    <div class="title">内容简介</div>
-                    <van-text-ellipsis class="product-description" rows="14" :content="productDetail.description"
-                        expand-text="展开" collapse-text="收起" />
                 </div>
             </div>
 
@@ -79,14 +92,10 @@
 import HeaderBar from '@/components/HeaderBar.vue';
 import Footer from '@/components/Footer.vue';
 import { ref, computed } from 'vue';
-import favorSvg from '@/assets/favor.svg';
-import unfavorSvg from '@/assets/unfavor.svg';
 import { useRoute } from 'vue-router';
-import { getProductDetail, getRecommendedProducts, addToCart, getTopProductsByCategory } from '@/api/index';
+import { getProductDetail, getRecommendedProducts, addToCart, getTopProductsByCategory, addFavorite, removeFavorite, getFavoriteList } from '@/api/index';
 import type { Product } from '@/api/types';
-import { getCategoryName } from '@/utils';
-import FavorIcon from '@/pages/image/favor.svg';
-import UnfavorIcon from '@/pages/image/unfavor.svg';
+import { getCategoryName, getBindingName } from '@/utils';
 import { showFailToast, showSuccessToast } from 'vant';
 
 const productId = computed(() => {
@@ -109,7 +118,7 @@ const recommendedProducts = ref<Product[]>();
 
 getRecommendedProducts(Number(productId.value)).then(response => {
     recommendedProducts.value = response.data;
-    if (recommendedProducts.value.length < 6){
+    if (recommendedProducts.value.length < 6) {
         getTopProductsByCategory(productDetail.value?.category || '').then(res => {
             const topProducts = res.data.filter(p => p.ubId !== productId.value);
             const needed = 6 - recommendedProducts.value!.length;
@@ -148,9 +157,36 @@ async function addProductToCart() {
 
 /*-- 收藏相关 --*/
 const isFavorited = ref(false);
-const favorIcon = computed(() => isFavorited.value ? FavorIcon : UnfavorIcon);
-function toggleFavorite() {
-    isFavorited.value = !isFavorited.value;
+
+// Load favorite status on component mount
+getFavoriteList().then(response=>{
+    const favList = response.data;
+    isFavorited.value = favList.some(item=>item.ubId===productId.value);
+}).catch(error=>{
+    console.error('获取收藏列表失败：',error);
+    isFavorited.value = false;
+});
+
+async function toggleFavorite() {
+    if (!isFavorited.value) {
+        addFavorite(productId.value).then(() => {
+            showSuccessToast('已添加收藏');
+            isFavorited.value = !isFavorited.value;
+
+        }).catch((error) => {
+            showFailToast('添加收藏失败，请稍后重试');
+            console.error('添加收藏失败：', error);
+        });
+    } else {
+        removeFavorite(productId.value).then(() => {
+            showSuccessToast('已取消收藏');
+            isFavorited.value = !isFavorited.value;
+
+        }).catch((error) => {
+            showFailToast('取消收藏失败，请稍后重试');
+            console.error('取消收藏失败：', error);
+        })
+    }
 }
 
 </script>
@@ -159,25 +195,60 @@ function toggleFavorite() {
 <style scoped lang="scss">
 :root {
     --el-color-primary: #2d583f;
+
+    .breadcrumb {
+        font-size: 14px;
+        width: 100%;
+
+        :deep(.el-breadcrumb__inner) {
+            color: #fff;
+
+            &:hover {
+                color: #f0f8f0;
+            }
+        }
+
+        :deep(.el-breadcrumb__separator) {
+            color: #fff;
+        }
+    }
 }
 
 .product-container {
-    display: flex;
-    flex-direction: row;
     background-color: #2d583f;
     padding: 24px 24px 54px;
     border-radius: 20px;
 
-    .img-wrapper {
-        height: 476px;
-        width: 314px;
-        flex-shrink: 0;
+    .product-wrapper {
+        display: flex;
+        flex-direction: row;
+        margin-top: 24px;
 
-        .product-cover {
-            height: 100%;
-            width: 100%;
-            object-fit: cover;
-            border-radius: 24px;
+        .img-wrapper {
+            height: 476px;
+            width: 314px;
+            flex-shrink: 0;
+            position: relative;
+
+            .product-cover {
+                height: 100%;
+                width: 100%;
+                object-fit: cover;
+                border-radius: 24px;
+            }
+
+            .icon {
+                position: absolute;
+                right: 16px;
+                top: 16px;
+                height: 32px;
+                cursor: pointer;
+                transition: all 0.3s;
+
+                &:hover {
+                    opacity: 0.9;
+                }
+            }
         }
     }
 
