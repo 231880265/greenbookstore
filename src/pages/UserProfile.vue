@@ -28,7 +28,7 @@
                 <h2 class="nickname">{{ user.username || '叶子' }}</h2>
                 <p class="telephone">{{ user.telephone }}</p>
                 <p class="leaf">
-                  小绿叶：<span class="leaf-num">{{ user.leaf }}</span>
+                  小绿叶数量：<span class="leaf-num">{{ user.leaf }}</span>
                 </p>
               </div>
 
@@ -298,7 +298,7 @@
     /* 页面整体 */
     .profile-page {
       min-height: 100vh;
-      background: #f8f5ef;
+      background: #fff;
     }
     
     /* 面包屑 */
@@ -390,7 +390,8 @@
     
     .nickname {
       margin: 8px 0 4px;
-      font-size: 22px;
+      font-size: 24px;
+      color: #000;
     }
     
     .telephone {
@@ -401,6 +402,7 @@
     .leaf {
       margin-top: 6px;
       font-size: 15px;
+      color: #000;
     }
     
     .leaf-num {
@@ -478,8 +480,11 @@
     .block-title {
       font-size: 30px;
       font-weight: 700;
-      color: #1a1a1a;
+      color: #2d583f;
       letter-spacing: 0.5px;
+      margin: 0;
+      padding-bottom: 0;
+      line-height: 1.2;
     }
 
     .block-more-btn {
@@ -487,15 +492,17 @@
       background: transparent;
       font-size: 16px;
       cursor: pointer;
-      color: #666666;
+      color: #2d583f;
       transition: color 0.3s;
       font-weight: 500;
       display: flex;
-      align-items: center;
+      align-items: flex-end;
+      padding: 0;
+      line-height: 1;
     }
 
     .block-more-btn:hover {
-      color: #1a1a1a;
+      color: #2d583f;
     }
 
     .block-more-btn .arrow {

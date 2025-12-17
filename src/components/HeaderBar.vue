@@ -40,7 +40,7 @@
         </div>
 
         <!-- 购物车 -->
-        <div class="icon-wrapper" title="购物车">
+        <div class="icon-wrapper" title="购物车" @click="goToCart">
           <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="9" cy="21" r="1"></circle>
@@ -397,6 +397,13 @@ const closeSearch = () => {
 // 跳转到卖书页
 const goSellBook = () => {
   router.push('/sell');
+};
+
+/**
+ * 跳转到购物车页面
+ */
+const goToCart = () => {
+  router.push('/cart');
 };
 
 /**
