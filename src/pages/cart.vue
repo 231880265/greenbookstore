@@ -21,11 +21,11 @@
                     </div>
 
                     <!-- 信息区域 -->
-                    <div class="meta">
+                    <a class="meta" :href="`/product-detail/${item.ubId}`" target="_blank">
                         <div class="title">{{ item.title }}</div>
                         <div class="author">{{ item.writer }}</div>
                         <div class="publisher">{{ item.publisher }}</div>
-                    </div>
+                    </a>
 
                     <!-- 价格 -->
                     <div class="price">￥{{ item.price.toFixed(2) }}</div>
@@ -40,9 +40,18 @@
                         <button @click="removeItem(item.cartItemId)">删除</button>
                     </div>
                 </div>
+
+                <div class="sum">
+                    <div class="total-money">合计：
+                        <span class="money">￥{{ totalPrice.toFixed(2) }}</span>
+                    </div>
+                    <button class="checkout" @click="handleCheckout">结算<span v-if="selectedNum > 0">({{ selectedNum
+                            }})</span></button>
+                </div>
             </div>
 
             <div v-else>购物车为空</div>
+
         </div>
     </div>
 
@@ -51,8 +60,9 @@
 <script setup lang="ts">
 import HeaderBar from '@/components/HeaderBar.vue';
 import { ref, onMounted, computed } from 'vue';
-import { getCart } from '@/api';
+import { getCart, updateCartItem } from '@/api';
 import type { Cart } from '@/api/types';
+import { showToast } from 'vant';
 
 // 购物车数据
 const cart = ref<Cart | null>(null);
@@ -98,6 +108,42 @@ const loadCart = async () => {
                             'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/3b53/3b5361cabafa9bf1a01fd0683bee4040_0_1_300_300.jpg',
                         writer: '[美]霍华德·马克斯著,李莉译,石继志译',
                         publisher: '中信出版社'
+                    },
+                    {
+                        cartItemId: 6,
+                        quantity: 1,
+                        ubId: 3,
+                        title: '天下·法学原论 合同法总论',
+                        price: 122.74,
+                        stock: 167,
+                        cover:
+                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/1ce0/1ce0bd9d928f85be7fc7e406c3de6404_0_1_300_300.jpg',
+                        writer: '韩世远著',
+                        publisher: '法律出版社'
+                    },
+                    {
+                        cartItemId: 7,
+                        quantity: 1,
+                        ubId: 3,
+                        title: '天下·法学原论 合同法总论',
+                        price: 122.74,
+                        stock: 167,
+                        cover:
+                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/1ce0/1ce0bd9d928f85be7fc7e406c3de6404_0_1_300_300.jpg',
+                        writer: '韩世远著',
+                        publisher: '法律出版社'
+                    },
+                    {
+                        cartItemId: 8,
+                        quantity: 1,
+                        ubId: 3,
+                        title: '天下·法学原论 合同法总论',
+                        price: 122.74,
+                        stock: 167,
+                        cover:
+                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/1ce0/1ce0bd9d928f85be7fc7e406c3de6404_0_1_300_300.jpg',
+                        writer: '韩世远著',
+                        publisher: '法律出版社'
                     }
                 ]
             } as Cart;
@@ -117,9 +163,14 @@ const onSelectToggle = (id: number, checked: boolean) => {
 };
 
 // 数量变化（可在此调用更新接口）
-function handleChange(value: number, item: any) {
+async function handleChange(value: number, item: any) {
     item.quantity = value;
-
+    // 调用后端更新接口
+    updateCartItem(item.cartItemId, value).then(() => {
+        console.debug('更新购物车项成功', item.cartItemId, value);
+    }).catch((e) => {
+        console.error('更新购物车项失败', e);
+    });
 }
 
 // 移入收藏
@@ -143,6 +194,10 @@ const isAllSelected = computed(() => {
     return cart.value.items.every(i => selectedIds.value.has(i.cartItemId));
 });
 
+const selectedNum = computed(() => {
+    return selectedIds.value.size;
+});
+
 // 切换全选/全不选
 const onToggleAll = (checked: boolean) => {
     if (!cart.value) return;
@@ -151,6 +206,34 @@ const onToggleAll = (checked: boolean) => {
         cart.value.items.forEach(i => selectedIds.value.add(i.cartItemId));
     } else {
         selectedIds.value.clear();
+    }
+};
+
+// 计算总价
+const totalPrice = computed(() => {
+    if (!cart.value) return 0;
+    let sum = 0;
+    cart.value.items.forEach(i => {
+        if (selectedIds.value.has(i.cartItemId)) {
+            sum += i.price * i.quantity;
+        }
+    });
+    return sum;
+});
+
+import { useRouter } from 'vue-router';
+const router = useRouter();
+const handleCheckout = () => {
+    if (selectedIds.value.size === 0) {
+        showToast({ message: '请选择要结算的商品', duration: 1500 });
+    } else {
+        const selectedItems = cart.value?.items.filter(i => selectedIds.value.has(i.cartItemId)) || [];
+        router.push({
+            path: '/checkout',
+            query: {
+                cartItemIds: selectedItems.map(i => i.cartItemId).join(',')
+            }
+        });
     }
 };
 </script>
@@ -163,13 +246,15 @@ const onToggleAll = (checked: boolean) => {
 }
 
 .content {
-    flex:1;
+    flex: 1;
     padding: 28px 60px;
+    padding-bottom: 140px; // 给底部留空间，避免结算条覆盖内容
 }
 
 .cart-title {
     color: #2d583f;
 }
+
 
 .cart-controls {
     display: flex;
@@ -225,11 +310,11 @@ const onToggleAll = (checked: boolean) => {
         cursor: pointer;
         transition: all 0.3s;
         width: 400px;
+        color: #1a1a1a;
 
 
         .title {
             font-size: 16px;
-            color: #1a1a1a;
             text-overflow: ellipsis;
             overflow: hidden;
             white-space: nowrap;
@@ -274,7 +359,7 @@ const onToggleAll = (checked: boolean) => {
         flex-direction: column;
         gap: 10px;
 
-        button{
+        button {
             background-color: transparent;
             border: none;
             color: #b1aeae;
@@ -285,6 +370,46 @@ const onToggleAll = (checked: boolean) => {
             &:hover {
                 color: #2d583f;
             }
+        }
+    }
+}
+
+.sum {
+    position: fixed; // 固定在视口
+    bottom: 20px;
+    right: 60px;
+    display: flex;
+    align-items: center;
+    border-radius: 16px;
+    padding: 12px 24px;
+    border: 1px solid #b1aeae;
+    background-color: white;
+    z-index: 10; // 确保浮在其他内容之上
+
+    .checkout {
+        border: none;
+        background-color: #2d583f;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: opacity 0.3s;
+        font-size: 16px;
+        font-weight: bold;
+        width: 140px;
+        margin-left: 40px;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
+
+    .total-money {
+        font-size: 18px;
+        font-weight: bold;
+
+        .money {
+            color: #2d583f;
         }
     }
 }

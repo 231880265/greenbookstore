@@ -9,6 +9,7 @@ import UsedBookOrder from '../pages/UsedBookOrder.vue'
 import SellBook from '../pages/SellBook.vue'
 import ProductList from '../pages/ProductList.vue'
 import Cart from "../pages/cart.vue";
+import Checkout from '@/pages/Checkout.vue'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -42,30 +43,16 @@ const routes: RouteRecordRaw[] = [
     path: '/product-list',
     component: ProductList,
   },
+  {
+    path: '/cart',
+    component: Cart,
+  },
+  {
+    path: '/checkout',
+    component: Checkout,
+  }
 ]
 
-    {
-        path: '/',
-        component: Home
-    },
-    {
-        path: '/orders',
-        component: Order
-    },
-    {
-        path: '/orderDetails',
-        component: OrderDetails
-    },
-    {
-        path: '/product-detail/:id',
-        component: ProductDetail
-    },
-    {
-        path: '/cart',
-        component: Cart
-    }
-
-]
 const router = createRouter({
   history: createWebHistory(),
   routes,
