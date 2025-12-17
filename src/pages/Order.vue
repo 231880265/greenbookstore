@@ -122,71 +122,71 @@ const statusText = {
 }
 
 // 本地假数据，替代后端接口以便本地调试
-const mockOrders: OrderVO[] = [
-  {
-    orderId: 100001,
-    adId: 1,
-    userId: 1,
-    leaf: 0,
-    status: 'PENDING',
-    totalAmount: 88,
-    cover: '/assets/sample-cover.jpg',
-    createTime: '2025-12-01 10:00:00',
-    paymentTime: '',
-    paymentMethod: '',
-    tradeNo: '',
-    orderItems: [
-      {
-        id: 1,
-        ubId: 101,
-        title: '示例图书 A',
-        writer: '作者 A',
-        publisher: '出版社 A',
-        quantity: 1,
-        price: 88,
-        totalPrice: 88,
-        cover: 'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/a791/a7914f6ff8bc1e97e320171caaafb623_0_1_300_300.jpg'
-      },
-      {
-        id: 2,
-        ubId: 102,
-        title: '示例图书 B',
-        writer: '作者 B',
-        publisher: '出版社 B',
-        quantity: 2,
-        price: 60,
-        totalPrice: 120,
-        cover: book2Img
-      }
-    ]
-  },
-  {
-    orderId: 100002,
-    userId: 1,
-    adId: 0,
-    leaf: 0,
-    status: 'COMPLETED',
-    totalAmount: 120,
-    cover: '/assets/sample-cover-2.jpg',
-    createTime: '2025-11-20 14:30:00',
-    paymentTime: '2025-11-20 14:35:00',
-    paymentMethod: '支付宝',
-    tradeNo: 'TRADE123',
-    orderItems: [
-      {
-        id: 2,
-        ubId: 102,
-        title: '示例图书 B',
-        writer: '作者 B',
-        publisher: '出版社 B',
-        quantity: 2,
-        price: 60,
-        totalPrice: 120,
-        cover: book3Img
-      }
-    ]
-  }
-]
+// const mockOrders: OrderVO[] = [
+//   {
+//     orderId: 100001,
+//     adId: 1,
+//     userId: 1,
+//     leaf: 0,
+//     status: 'PENDING',
+//     totalAmount: 88,
+//     cover: '/assets/sample-cover.jpg',
+//     createTime: '2025-12-01 10:00:00',
+//     paymentTime: '',
+//     paymentMethod: '',
+//     tradeNo: '',
+//     orderItems: [
+//       {
+//         id: 1,
+//         ubId: 101,
+//         title: '示例图书 A',
+//         writer: '作者 A',
+//         publisher: '出版社 A',
+//         quantity: 1,
+//         price: 88,
+//         totalPrice: 88,
+//         cover: 'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/a791/a7914f6ff8bc1e97e320171caaafb623_0_1_300_300.jpg'
+//       },
+//       {
+//         id: 2,
+//         ubId: 102,
+//         title: '示例图书 B',
+//         writer: '作者 B',
+//         publisher: '出版社 B',
+//         quantity: 2,
+//         price: 60,
+//         totalPrice: 120,
+//         cover: book2Img
+//       }
+//     ]
+//   },
+//   {
+//     orderId: 100002,
+//     userId: 1,
+//     adId: 0,
+//     leaf: 0,
+//     status: 'COMPLETED',
+//     totalAmount: 120,
+//     cover: '/assets/sample-cover-2.jpg',
+//     createTime: '2025-11-20 14:30:00',
+//     paymentTime: '2025-11-20 14:35:00',
+//     paymentMethod: '支付宝',
+//     tradeNo: 'TRADE123',
+//     orderItems: [
+//       {
+//         id: 2,
+//         ubId: 102,
+//         title: '示例图书 B',
+//         writer: '作者 B',
+//         publisher: '出版社 B',
+//         quantity: 2,
+//         price: 60,
+//         totalPrice: 120,
+//         cover: book3Img
+//       }
+//     ]
+//   }
+// ]
 
 const loadOrders = async () => {
   // 原先调用接口的代码（注释）：
