@@ -26,6 +26,12 @@ export type Product = {
     sales?: number;
 }
 
+// 购物车列表
+export type Cart = {
+    total: number;
+    items: (Product & { cartItemId: number, quantity: number })[];
+}
+
 export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
 
 export interface OrderItemVO {
@@ -53,6 +59,22 @@ export interface OrderVO {
     paymentMethod: string
     tradeNo: string
     orderItems: OrderItemVO[]
+}
+
+export type UsedBookOrderStatus = 'CHECKING' | 'SHIPPED' | 'COMPLETED';
+
+export interface UsedBookOrderVO {
+    id: number
+    sellerId: number
+    adId: number
+    status: UsedBookOrderStatus
+    price: number
+    listPrice: number
+    cover: string
+    title: string
+    writer: string
+    usedDegree: number
+    isbn: string
 }
 
 // ----------------- 认证相关类型 -----------------
@@ -110,37 +132,16 @@ export interface SoldBookItem {
     ISBN: string;
     usedDegree: string;
   }
-  export interface OrderItem {
-    ubId: number;
-    title: string;
-    writer: string;
-    publisher: string;
-    cover: string;
-    quantity: number;
-    price: number;
-    totalPrice: number;
-  }
-  
-  export interface OrderVO {
-    orderId: number;
-    totalAmount: number;
-    paymentMethod: string;
-    status: OrderStatus;
-    createTime: string;
-    paymentTime: string;
-    tradeNo: string;
-    addId: number;
-    leaf: number;
-    orderItems: OrderItemVO[];
-  }
+
   export interface FavoriteItem {
     favoriteId: number;
     ubId: number;
     title: string;
     cover: string;
     price: number;
-  }
-  // AddressVO
+}
+
+// AddressVO
 export interface AddressItem {
     id: number
     userId: number

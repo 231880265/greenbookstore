@@ -8,14 +8,20 @@ import type {
   UserDetail,
   SoldBookItem,
   OrderVO,
+  OrderStatus,
+  UsedBookOrderVO,
+  UsedBookOrderStatus,
   FavoriteItem,
   AddressItem,
   UpdateUserInfoRequest,
   CreateUsedBookRequest,
+  Cart
 } from './types'
 
 /* ----------------- 商品相关 api ----------------- */
 
+
+/*--商品相关api--*/
 // 获取商品详情
 export const getProductDetail = (id: number) => {
   return request.get<ApiResponse<Product>>(`/used_books/${id}`)
@@ -26,8 +32,29 @@ export const getRecommendedProducts = (id: number) => {
   return request.get<ApiResponse<Product[]>>(`/used_books/recommend/${id}`)
 }
 
+// 获取商品列表
+export const getProductList = (category?: string) => {
+  return request.get<ApiResponse<Product[]>>('/used_books/category', {
+    params: category ? {category} : undefined
+  })
+}
 
+// 获取某分类下的前5本热门二手书
+export const getTop5ByCategory = (category: string) => {
+  return request.get<ApiResponse<Product[]>>('/used_books/category/top', {
+    params: {category},
+  })
+}
 
+// 搜索二手书
+export const searchBooks = (keyword: string) => {
+  return request.get<ApiResponse<Product[]>>(`/usedbook/search/${keyword}`)
+}
+
+// 搜索建议
+export const searchSuggest = (keyword: string) => {
+  return request.get<ApiResponse<string[]>>(`/usedbook/search/suggest/${keyword}`)
+}
 /* ----------------- 认证 / 用户相关 api ----------------- */
 
 // 登录
@@ -85,23 +112,31 @@ export const getSoldBookList = (status?: SoldBookStatus) => {
  * Headers: token（由 request 自动注入）
  * ========================= */
 
-export type OrderStatus =
-  | "CREATED"
-  | "PAID"
-  | "SHIPPED"
-  | "COMPLETED"
-  | "CANCELLED";
-
-
-
 export const getMyOrders = (status?: OrderStatus) => {
-  return request.get<ApiResponse<OrderVO[]>>(
-    "/orders/my",
-    {
-      params: status ? { status } : undefined
-    }
-  );
-};
+    return request.get<ApiResponse<OrderVO[]>>('/orders/my', {status})
+}
+
+export const getUsedBookOrders = (status?: UsedBookOrderStatus) => {
+    console.log('API调用：获取回收订单，状态=', status);
+    return request.get<ApiResponse<UsedBookOrderVO[]>>('/used_books/orders', {status})
+}
+
+
+
+/*--购物相关api--*/
+//将商品加入购物车
+export const addToCart = (productId: string, quantity: number) => {
+    return request.post<ApiResponse>('/cart', {
+        "productId": productId,
+        "quantity": quantity
+    });
+}
+
+// 获取购物车列表
+export const getCart = () => {
+    return request.get<ApiResponse<Cart>>('/cart');
+}
+
 
 
 /* =========================
@@ -110,13 +145,25 @@ export const getMyOrders = (status?: OrderStatus) => {
  * Headers: token（由 request 自动注入）
  * ========================= */
 
-
-
+/*--收藏相关api--*/
+//获取收藏列表
 export const getFavoriteList = () => {
   return request.get<ApiResponse<FavoriteItem[]>>(
     "/favorites"
   );
 };
+
+// 添加收藏
+export const addFavorite = (ubId: number) =>{
+    return request.post<ApiResponse<boolean>>('/favorites', null, {
+      params: { ubId }   // ← 参数放在 URL 查询串
+    });
+}
+
+// 取消收藏
+export const removeFavorite = (favoriteId: number) => {
+  return request.delete<ApiResponse<boolean>>(`/favorites/${favoriteId}`)
+}
 
 export const getAddressList = () => {
     return request.get<ApiResponse<AddressItem[]>>('/address')

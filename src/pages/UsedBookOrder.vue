@@ -52,7 +52,7 @@
 
         <!-- 书籍参数 -->
         <div class="col-meta meta">
-          <div><span>ISBN：</span>{{ order.ISBN }}</div>
+          <div><span>ISBN：</span>{{ order.isbn }}</div>
           <div><span>成色：</span>{{ order.usedDegree }} 成新</div>
           <div><span>标价：</span>¥{{ order.listPrice }}</div>
         </div>
@@ -117,13 +117,14 @@ const statusText: Record<UsedBookOrderStatus, string> = {
 
 /** 加载回收订单 */
 const loadUsedOrders = async () => {
-//   try {
-//     const res = await getUsedBookOrders(activeStatus.value)
-//     usedOrders.value = res.data
-//   } catch (err) {
-//     console.error('获取回收订单失败', err)
-//     usedOrders.value = []
-//   }
+  try {
+    const res = await getUsedBookOrders(activeStatus.value)
+    console.log('加载不同状态', activeStatus.value, res)
+    usedOrders.value = res.data
+  } catch (err) {
+    console.error('获取回收订单失败', err)
+    usedOrders.value = []
+  }
   // 使用本地假数据替代接口，便于离线调试
   const mockUsedOrders: UsedBookOrderVO[] = [
     {
@@ -137,7 +138,7 @@ const loadUsedOrders = async () => {
       title: '二手书示例：JavaScript 深入',
       writer: '张三',
       usedDegree: 8,
-      ISBN: '978-7-111-00001-0'
+      isbn: '978-7-111-00001-0'
     },
     {
       id: 9002,
@@ -150,7 +151,7 @@ const loadUsedOrders = async () => {
       title: '二手书示例：Vue 实战',
       writer: '李四',
       usedDegree: 7,
-      ISBN: '978-7-111-00002-7'
+      isbn: '978-7-111-00002-7'
     },
     {
       id: 9003,
@@ -163,12 +164,12 @@ const loadUsedOrders = async () => {
       title: '二手书示例：算法导论',
       writer: '王五',
       usedDegree: 9,
-      ISBN: '978-7-111-00003-4'
+      isbn: '978-7-111-00003-4'
     }
   ]
 
-  const filtered = mockUsedOrders.filter(o => !activeStatus.value || o.status === activeStatus.value)
-  usedOrders.value = filtered
+  // const filtered = mockUsedOrders.filter(o => !activeStatus.value || o.status === activeStatus.value)
+  // usedOrders.value = filtered
 }
 
 /** 切换状态 */
@@ -177,9 +178,7 @@ const changeStatus = (status?: UsedBookOrderStatus) => {
   loadUsedOrders()
 }
 
-onMounted(() => {
-  loadUsedOrders()
-})
+onMounted(loadUsedOrders)
 </script>
 
 

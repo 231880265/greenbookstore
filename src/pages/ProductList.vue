@@ -1,12 +1,20 @@
 <!-- ProductList.vue  –  Final Edition -->
-<!--待实现：按品相筛选、收藏、分类面包屑、界面美化-->
+
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import { Close, Search } from '@element-plus/icons-vue'
 import HeaderBar from '../components/HeaderBar.vue'
+import {
+  getProductList,
+  getFavoriteList,
+  addFavorite,
+  removeFavorite,
+  searchBooks
+} from '@/api'
+import type { Product, FavoriteItem } from '@/api/types'
 
-/* ---------- 类型 ---------- */
+
 interface BookItem {
   ubId: number
   title: string
@@ -22,7 +30,6 @@ interface BookItem {
   category: string
 }
 
-/* ---------- 数据 ---------- */
 const allBooks = ref<BookItem[]>([])
 
 /* ---------- 分类下拉 ---------- */
@@ -180,16 +187,16 @@ const resetAll = () => {
   currentCategory.value = null
 }
 
-/* ---------- 数据拉取 ---------- */
+/* ----------获取书籍列表 ---------- */
 const fetchBooks = async () => {
   try {
-    const params = currentCategory.value ? { category: currentCategory.value } : {}
-    const token = localStorage.getItem('GB_TOKEN') || ''
-    const { data } = await axios.get('http://127.0.0.1:8080/api/used_books/category', {
-      params,
-      headers: { token },
-    })
-    allBooks.value = data.data
+    const response = await getProductList(currentCategory.value || undefined)
+    allBooks.value = response.data.map(item => ({
+      ...item,
+      // 处理类型转换
+      usedDegree: item.usedDegree?.toString() || '',
+      bookBinding: item.bookBinding || ''
+    })) as BookItem[]
   } catch (e) {
     console.error(e)
   }
@@ -201,10 +208,8 @@ const favoriteIdMap = ref<Record<number, number>>({})
 
 const loadFavorites = async () => {
   try {
-    const { data } = await axios.get('/api/favorites', {
-      headers: { token: localStorage.getItem('token') || '' },
-    })
-    data.data.forEach((f: any) => {
+    const response = await getFavoriteList()
+    response.data.forEach((f: FavoriteItem) => {
       favoritedSet.value.add(f.ubId)
       favoriteIdMap.value[f.ubId] = f.favoriteId
     })
@@ -214,16 +219,11 @@ const loadFavorites = async () => {
 }
 
 const toggleFavorite = async (book: BookItem) => {
-  const token = localStorage.getItem('GB_TOKEN') || ''
-  const params= book.ubId
-  console.log(params)
   if (favoritedSet.value.has(book.ubId)) {
     const fid = favoriteIdMap.value[book.ubId]
-    console.log('fid', fid)
+    console.log('取消收藏', fid)
     try {
-      await axios.delete(`http://localhost:8080/api/favorites/${fid}`, {
-        headers: { token }
-      })
+      await removeFavorite(fid)
       favoritedSet.value.delete(book.ubId)
       delete favoriteIdMap.value[book.ubId]
     } catch (e) {
@@ -231,12 +231,11 @@ const toggleFavorite = async (book: BookItem) => {
     }
   } else {
     try {
-      const { data } = await axios.post('http://localhost:8080/api/favorites', {
-        params,
-        headers: { token }
-      })
+      console.log('收藏', book.ubId)
+      const response = await addFavorite(book.ubId)
+      console.log('收藏成功', response.data)
       favoritedSet.value.add(book.ubId)
-      favoriteIdMap.value[book.ubId] = data.data
+      favoriteIdMap.value[book.ubId] = response.data
     } catch (e) {
       console.error('收藏失败', e)
     }
@@ -245,8 +244,42 @@ const toggleFavorite = async (book: BookItem) => {
 
 /* ---------- 搜索 ---------- */
 const searchKeyword = ref('')
+const performSearch = async () => {
+  if (!searchKeyword.value.trim()) {
+    await fetchBooks()
+    return
+  }
 
-/* ---------- watch ---------- */
+  try {
+    const response = await searchBooks(searchKeyword.value.trim())
+    allBooks.value = response.data.map(item => ({
+      ...item,
+      usedDegree: item.usedDegree?.toString() || '',
+      bookBinding: item.bookBinding || ''
+    })) as BookItem[]
+  } catch (e) {
+    console.error('搜索失败', e)
+  }
+}
+
+// 监听搜索关键词变化
+watch(searchKeyword, debounce(performSearch, 300))
+function debounce<T extends (...args: any[]) => any>(
+    func: T,
+    wait: number
+): (...args: Parameters<T>) => void {
+  let timeout: ReturnType<typeof setTimeout>
+  return function executedFunction(...args: Parameters<T>) {
+    const later = () => {
+      clearTimeout(timeout)
+      func(...args)
+    }
+    clearTimeout(timeout)
+    timeout = setTimeout(later, wait)
+  }
+}
+
+// 监听筛选条件变化，重置页码
 watch([filter, currentCategory, searchKeyword], () => {
   currentPage.value = 1
 })
@@ -268,6 +301,10 @@ onMounted(async () => {
 
     <!-- 面包屑 -->
     <nav class="breadcrumb">
+      <span class="crumb link" @click="$router.push('/')">首页</span>
+      <span class="sep">/</span>
+      <span class="crumb link" @click="$router.push('/products')">商城</span>
+      <span class="sep">/</span>
       <span class="crumb" :class="{ hover: showCategoryDropdown }" @click.stop="openDropdown">
         所有分类
       </span>
@@ -289,7 +326,7 @@ onMounted(async () => {
       </transition>
 
       <template v-if="currentCategory">
-        <span class="sep">|</span>
+        <span class="sep"> > </span>
         <span class="crumb">
           {{ Object.keys(categoryMap).find(k => categoryMap[k as keyof typeof categoryMap] === currentCategory) }}
         </span>
@@ -428,7 +465,7 @@ onMounted(async () => {
 <style scoped>
 /* ========== 全局 ========== */
 .detail-page {
-  background: #fff;
+  background: #ffffff;
   color: #000;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
@@ -439,7 +476,7 @@ onMounted(async () => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0;          /* 已用 gap 控制 */
+  margin-top: 20px;
 }
 
 .left {
@@ -495,8 +532,7 @@ onMounted(async () => {
 /* 分隔线 */
 .divider {
   height: 1px;
-  background: #eee;
-  margin: 0 60px 24px;
+  background: #214d17;
 }
 
 /* 三栏布局 */
@@ -505,16 +541,18 @@ onMounted(async () => {
   grid-template-columns: 260px 1fr;
   grid-template-rows: auto 1fr;
   gap: 24px 48px;
-  margin: 0 60px 40px;
+  background-color: #f8f5ef;
 }
 /* 左侧筛选卡片 */
 .filter-card {
   grid-row: 1 / -1;          /* 跨两行 */
-  background: rgba(244, 238, 216, 0.44);
+  background: #ffffff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
   padding: 24px;
   align-self: start;         /* 高度随内容 */
+  margin-top: 20px;
+  margin-left: 40px;
 }
 
 .group {
@@ -620,20 +658,24 @@ onMounted(async () => {
 .grid {
   grid-column: 2 / 3;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 32px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); /* 从220px减小到180px */
+  gap: 24px; /* 从32px减小到24px */
 }
+/* 修改卡片样式 */
 .card {
   background: #fff;
-  border-radius: 8px;
+  border-radius: 12px;
   overflow: hidden;
-  transition: transform 0.3s;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
+
 .card:hover {
-  transform: translateY(-4px);
+  transform: translateY(-6px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
 }
 .img-wrap {
-  aspect-ratio: 3/4;
+  aspect-ratio: 4/5;
   overflow: hidden;
 }
 .img-wrap img {
@@ -642,43 +684,59 @@ onMounted(async () => {
   object-fit: cover;
 }
 .meta {
-  padding: 12px 0;
+  padding:16px;
 }
 .author {
   font-size: 11px;
   color: #666;
   margin-bottom: 4px;
+  font-weight: 500;
 }
+
 .title {
   font-size: 14px;
   margin-bottom: 8px;
-  line-height: 1.3;
+  line-height: 1.4;
+  font-weight: 600;
+  color: #333;
+  min-height: 42px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
+
 .price-row {
   display: flex;
   align-items: baseline;
   gap: 8px;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
 }
+
 .price {
   font-size: 15px;
-  font-weight: 600;
+  font-weight: 700;
+  color: #e53935;
 }
+
 .origin {
-  font-size: 11px;
-  color: #9999;
+  font-size: 12px;
+  color: #999;
   text-decoration: line-through;
 }
+
 .tags {
   display: flex;
   gap: 8px;
-  font-size: 10px;
+  font-size: 11px;
   color: #666;
 }
+
 .tags span {
-  padding: 2px 6px;
-  border: 1px solid #ddd;
-  border-radius: 3px;
+  padding: 3px 6px;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  background-color: #f8f8f8;
 }
 
 /* 面包屑 */
@@ -695,7 +753,13 @@ onMounted(async () => {
 .crumb {
   cursor: pointer;
   transition: color 0.2s;
+  font-size: 15px;
 }
+
+.crumb.link {
+  color: #2d583f;
+}
+
 .crumb.hover {
   color: #b8860b;
 }
@@ -756,5 +820,6 @@ onMounted(async () => {
   display: flex;
   justify-content: center;
   margin-top: 32px;
+  margin-bottom: 20px;
 }
 </style>

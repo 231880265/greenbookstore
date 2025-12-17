@@ -8,10 +8,11 @@ import UserProfile from '../pages/UserProfile.vue'
 import UsedBookOrder from '../pages/UsedBookOrder.vue'
 import SellBook from '../pages/SellBook.vue'
 import ProductList from '../pages/ProductList.vue'
+import Cart from "../pages/cart.vue";
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    component: Home,
+    component: ProductList,
   },
   {
     path: '/orders',
@@ -42,7 +43,6 @@ const routes: RouteRecordRaw[] = [
     component: ProductList,
   },
 ]
-
 const router = createRouter({
   history: createWebHistory(),
   routes,

@@ -1,11 +1,9 @@
 <!-- MyCollections.vue -->
 <script setup lang="ts">
-import { ref, computed, onMounted, nextTick } from 'vue'
-import { Search, Close } from '@element-plus/icons-vue'
+import { ref, computed, onMounted } from 'vue'
+import axios from 'axios'
+import { Search, Close, ArrowDown } from '@element-plus/icons-vue'
 import HeaderBar from '../components/HeaderBar.vue'
-import pic1 from '../assets/PL1.jpg'
-import pic2 from '../assets/PL2.jpg'
-import pic3 from '../assets/PL3.jpg'
 
 /* ---------- 类型 ---------- */
 interface FavoriteItem {
@@ -14,10 +12,6 @@ interface FavoriteItem {
   title: string
   cover: string
   price: number
-  status?: string
-  collectedAt?: string
-  shopName?: string
-  sales?: number
 }
 
 /* ---------- 数据 ---------- */
@@ -27,7 +21,7 @@ const loading = ref(false)
 /* ---------- 搜索 ---------- */
 const keyword = ref('')
 
-/* ---------- 下拉栏状态 ---------- */
+/* ---------- 下拉状态 ---------- */
 const open = ref({
   category: false,
   status: false,
@@ -41,77 +35,30 @@ const closeAll = () => {
   open.value = { category: false, status: false, time: false, sort: false }
 }
 
-/* ---------- 选项 ---------- */
+/* ---------- 筛选项 ---------- */
 const categoryOptions = ['全部', '文学', '小说', '艺术', '历史', '社科', '生活', '经济', '政治', '哲学心理学']
 const statusOptions   = ['全部', '正常', '失效']
 const timeOptions     = ['全部', '最近一周', '最近一月', '最近三月', '最近半年', '最近一年']
-const sortOptions     = ['时间↓', '时间↑', '价格↓', '价格↑']   // 缩短文字
+const sortOptions     = ['时间↓', '时间↑', '价格↓', '价格↑']
 
 const currentCategory = ref('全部')
 const currentStatus   = ref('全部')
 const currentTime     = ref('全部')
 const currentSort     = ref('时间↓')
 
-// const fetchFavorites = async () => {
-//   loading.value = true
-//   try {
-//     const { data } = await axios.get('/api/favorites', {
-//       headers: { token: localStorage.getItem('token') || '' },
-//     })
-//     // 接口只返回少量字段，这里补全演示字段
-//     favorites.value = data.data.map((f: any) => ({
-//       ...f,
-//       status: Math.random() > 0.1 ? '正常' : '失效',
-//       collectedAt: new Date(Date.now() - Math.random() * 1e10).toISOString(),
-//       shopName: '兴文书店',
-//       sales: Math.floor(Math.random() * 10000),
-//     }))
-//   } catch (e) {
-//     console.error(e)
-//   } finally {
-//     loading.value = false
-//   }
-
-/* ---------- 死数据 ---------- */
+/* ---------- 拉取收藏 ---------- */
 const fetchFavorites = async () => {
   loading.value = true
-  await new Promise(r => setTimeout(r, 300))
-  favorites.value = [
-    {
-      favoriteId: 1,
-      ubId: 101,
-      title: 'Java编程思想',
-      cover: pic1,
-      price: 39.9,
-      status: '正常',
-      collectedAt: new Date(Date.now() - 3 * 24 * 3600 * 1000).toISOString(),
-      shopName: '兴文书店',
-      sales: 1234,
-    },
-    {
-      favoriteId: 2,
-      ubId: 102,
-      title: '深入理解计算机系统',
-      cover: pic2,
-      price: 89,
-      status: '正常',
-      collectedAt: new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString(),
-      shopName: '图灵书店',
-      sales: 5678,
-    },
-    {
-      favoriteId: 3,
-      ubId: 103,
-      title: '算法导论',
-      cover: pic3,
-      price: 128,
-      status: '失效',
-      collectedAt: new Date(Date.now() - 200 * 24 * 3600 * 1000).toISOString(),
-      shopName: '机械工业出版社',
-      sales: 91011,
-    },
-  ]
-  loading.value = false
+  try {
+    const { data } = await axios.get('http://127.0.0.1:8080/api/favorites', {
+      headers: { token: localStorage.getItem('GB_TOKEN') || '' },
+    })
+    favorites.value = data.data   // 仅使用接口返回字段
+  } catch (e) {
+    console.error(e)
+  } finally {
+    loading.value = false
+  }
 }
 
 /* ---------- 过滤 + 排序 ---------- */
@@ -128,7 +75,9 @@ const filteredList = computed(() => {
   }
 
   if (currentStatus.value !== '全部') {
-    list = list.filter(i => i.status === currentStatus.value)
+    // 接口无 status 字段，按“失效”关键词简单过滤
+    const invalid = currentStatus.value === '失效'
+    list = list.filter(i => i.title.includes('失效') === invalid)
   }
 
   if (currentTime.value !== '全部') {
@@ -140,12 +89,13 @@ const filteredList = computed(() => {
       '最近一年': 365 * 24 * 3600 * 1000,
     }
     const min = Date.now() - map[currentTime.value]
-    list = list.filter(i => new Date(i.collectedAt!).getTime() > min)
+    // 接口无 collectedAt，用 favoriteId 降序模拟时间
+    list = list.filter(i => i.favoriteId > 0) // 占位，实际可扩展
   }
 
   switch (currentSort.value) {
-    case '时间↓': list.sort((a, b) => +new Date(b.collectedAt!) - +new Date(a.collectedAt!)); break
-    case '时间↑': list.sort((a, b) => +new Date(a.collectedAt!) - +new Date(b.collectedAt!)); break
+    case '时间↓': list.sort((a, b) => b.favoriteId - a.favoriteId); break
+    case '时间↑': list.sort((a, b) => a.favoriteId - b.favoriteId); break
     case '价格↓': list.sort((a, b) => b.price - a.price); break
     case '价格↑': list.sort((a, b) => a.price - b.price); break
   }
@@ -155,7 +105,14 @@ const filteredList = computed(() => {
 
 /* ---------- 取消收藏 ---------- */
 const removeFavorite = async (item: FavoriteItem) => {
-  favorites.value = favorites.value.filter(f => f.favoriteId !== item.favoriteId)
+  try {
+    await axios.delete('http://127.0.0.1:8080/api/favorites/${item.favoriteId}', {
+      headers: { token: localStorage.getItem('GB_TOKEN') || '' },
+    })
+    favorites.value = favorites.value.filter(f => f.favoriteId !== item.favoriteId)
+  } catch (e) {
+    console.error('取消收藏失败', e)
+  }
 }
 
 onMounted(fetchFavorites)
@@ -165,199 +122,187 @@ onMounted(fetchFavorites)
   <div class="page">
     <HeaderBar />
 
-    <!-- 搜索栏 -->
-    <div class="top-search">
-      <el-input v-model="keyword" placeholder="搜索我的收藏" class="search-input" clearable>
-        <template #prefix><el-icon><Search /></el-icon></template>
-      </el-input>
-      <el-button type="primary">搜索</el-button>
-    </div>
+    <!-- 主容器 -->
+    <main class="container">
+      <!-- 搜索栏 -->
+      <section class="search-bar">
+        <el-input
+            v-model="keyword"
+            placeholder="搜索我的收藏"
+            class="search-input"
+            clearable
+        >
+          <template #prefix><el-icon><Search /></el-icon></template>
+        </el-input>
+        <el-button type="primary" class="search-btn">搜索</el-button>
+      </section>
 
-    <!-- 标题 + 批量管理 -->
-    <div class="header-bar">
-      <h2>我的收藏</h2>
-      <el-button text>批量管理</el-button>
-    </div>
+      <!-- 标题 + 批量管理 -->
+      <header class="page-header">
+        <h1 class="title">我的收藏</h1>
+        <el-button text class="batch-btn">批量管理</el-button>
+      </header>
 
-    <!-- 二级筛选 -->
-    <div class="sub-filter">
-      <div
-          class="filter-item"
-          :class="{ open: open.category }"
-          @mouseenter="$event.currentTarget.classList.add('hover')"
-          @mouseleave="$event.currentTarget.classList.remove('hover')"
-          @click="toggle('category')"
-      >
-        宝贝分类
-        <el-icon class="arrow" :class="{ up: open.category }"><ArrowDown /></el-icon>
-        <transition name="fade">
-          <ul v-if="open.category" class="dropdown" @mouseleave="closeAll">
-            <li
-                v-for="c in categoryOptions"
-                :key="c"
-                :class="{ active: currentCategory === c }"
-                @click.stop="currentCategory = c; closeAll()"
+      <!-- 二级筛选 -->
+      <nav class="sub-filter">
+        <div
+            v-for="(label, key) in { category: '宝贝分类', status: '宝贝状态', time: '收藏时间', sort: '宝贝排序' }"
+            :key="key"
+            class="filter-item"
+            :class="{ open: open[key as keyof typeof open] }"
+            @mouseenter="$event.currentTarget.classList.add('hover')"
+            @mouseleave="$event.currentTarget.classList.remove('hover')"
+            @click="toggle(key as keyof typeof open)"
+        >
+          {{ label }}
+          <el-icon class="arrow" :class="{ up: open[key as keyof typeof open] }"><ArrowDown /></el-icon>
+
+          <transition name="fade">
+            <ul
+                v-if="open[key as keyof typeof open]"
+                class="dropdown"
+                @mouseleave="closeAll"
             >
-              {{ c }}
-            </li>
-          </ul>
-        </transition>
-      </div>
-
-      <div
-          class="filter-item"
-          :class="{ open: open.status }"
-          @mouseenter="$event.currentTarget.classList.add('hover')"
-          @mouseleave="$event.currentTarget.classList.remove('hover')"
-          @click="toggle('status')"
-      >
-        宝贝状态
-        <el-icon class="arrow" :class="{ up: open.status }"><ArrowDown /></el-icon>
-        <transition name="fade">
-          <ul v-if="open.status" class="dropdown" @mouseleave="closeAll">
-            <li
-                v-for="s in statusOptions"
-                :key="s"
-                :class="{ active: currentStatus === s }"
-                @click.stop="currentStatus = s; closeAll()"
-            >
-              {{ s }}
-            </li>
-          </ul>
-        </transition>
-      </div>
-
-      <div
-          class="filter-item"
-          :class="{ open: open.time }"
-          @mouseenter="$event.currentTarget.classList.add('hover')"
-          @mouseleave="$event.currentTarget.classList.remove('hover')"
-          @click="toggle('time')"
-      >
-        收藏时间
-        <el-icon class="arrow" :class="{ up: open.time }"><ArrowDown /></el-icon>
-        <transition name="fade">
-          <ul v-if="open.time" class="dropdown" @mouseleave="closeAll">
-            <li
-                v-for="t in timeOptions"
-                :key="t"
-                :class="{ active: currentTime === t }"
-                @click.stop="currentTime = t; closeAll()"
-            >
-              {{ t }}
-            </li>
-          </ul>
-        </transition>
-      </div>
-
-      <div
-          class="filter-item"
-          :class="{ open: open.sort }"
-          @mouseenter="$event.currentTarget.classList.add('hover')"
-          @mouseleave="$event.currentTarget.classList.remove('hover')"
-          @click="toggle('sort')"
-      >
-        宝贝排序
-        <el-icon class="arrow" :class="{ up: open.sort }"><ArrowDown /></el-icon>
-        <transition name="fade">
-          <ul v-if="open.sort" class="dropdown" @mouseleave="closeAll">
-            <li
-                v-for="s in sortOptions"
-                :key="s"
-                :class="{ active: currentSort === s }"
-                @click.stop="currentSort = s; closeAll()"
-            >
-              {{ s }}
-            </li>
-          </ul>
-        </transition>
-      </div>
-    </div>
-
-    <!-- 列表 -->
-    <div v-loading="loading" class="list">
-      <div
-          v-for="item in filteredList"
-          :key="item.favoriteId"
-          class="card"
-          :class="{ disabled: item.status === '失效' }"
-      >
-        <div class="img-wrap">
-          <img :src="item.cover" alt="cover" />
-          <div v-if="item.status === '失效'" class="mask">宝贝失效</div>
+              <li
+                  v-for="opt in key === 'category' ? categoryOptions : key === 'status' ? statusOptions : key === 'time' ? timeOptions : sortOptions"
+                  :key="opt"
+                  :class="{ active: (key === 'category' && currentCategory === opt) || (key === 'status' && currentStatus === opt) || (key === 'time' && currentTime === opt) || (key === 'sort' && currentSort === opt) }"
+                  @click.stop="
+                  key === 'category' ? (currentCategory = opt) :
+                  key === 'status' ? (currentStatus = opt) :
+                  key === 'time' ? (currentTime = opt) :
+                  (currentSort = opt);
+                  closeAll()
+                "
+              >
+                {{ opt }}
+              </li>
+            </ul>
+          </transition>
         </div>
-        <div class="info">
-          <p class="title" :title="item.title">{{ item.title }}</p>
-          <p class="sales">{{ item.sales }}人收藏</p>
-          <p class="price">
-            <span class="symbol">¥</span>
-            <span class="num">{{ item.price.toFixed(2) }}</span>
-          </p>
+      </nav>
+
+      <!-- 列表 -->
+      <div v-loading="loading" class="list">
+        <div
+            v-for="item in filteredList"
+            :key="item.favoriteId"
+            class="card"
+        >
+          <div class="img-wrap">
+            <img :src="item.cover" :alt="item.title" />
+          </div>
+          <div class="info">
+            <p class="book-title" :title="item.title">{{ item.title }}</p>
+            <p class="price">
+              <span class="symbol">¥</span>
+              <span class="num">{{ item.price.toFixed(2) }}</span>
+            </p>
+          </div>
+          <el-icon class="close" @click="removeFavorite(item)"><Close /></el-icon>
         </div>
-        <el-icon class="close" @click="removeFavorite(item)"><Close /></el-icon>
+
+        <div v-if="!loading && filteredList.length === 0" class="empty">
+          暂无收藏
+        </div>
       </div>
-    </div>
+    </main>
   </div>
 </template>
 
 <style scoped>
-/* 与商品列表风格统一 */
+/* ========== 全局 ========== */
 .page {
-  width: 1200px;
-  margin: 0 auto;
-  padding: 40px 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  color: #222;
   background: #fafafa;
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  color: #222;
 }
-.top-search {
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 40px 60px 80px;
+}
+
+/* ---------- 搜索栏 ---------- */
+.search-bar {
   display: flex;
-  gap: 8px;
-  margin-bottom: 24px;
+  gap: 12px;
+  margin-bottom: 48px;
 }
 .search-input {
-  width: 300px;
+  width: 320px;
+  height: 36px;
 }
-.header-bar {
+.search-btn {
+  height: 36px;
+  padding: 0 24px;
+  font-size: 13px;
+  letter-spacing: 1px;
+  border-radius: 2px;
+}
+
+/* ---------- 页面标题 ---------- */
+.page-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 24px;
+  align-items: baseline;
+  margin-bottom: 32px;
 }
+.title {
+  font-size: 28px;
+  font-weight: 300;
+  letter-spacing: 2px;
+  color: #111;
+}
+.batch-btn {
+  font-size: 13px;
+  color: #666;
+  letter-spacing: 1px;
+  transition: color 0.25s;
+}
+.batch-btn:hover {
+  color: #000;
+}
+
+/* ---------- 二级筛选 ---------- */
 .sub-filter {
   display: flex;
-  gap: 32px;
-  margin-bottom: 32px;
+  gap: 48px;
+  margin-bottom: 48px;
+  font-size: 13px;
+  color: #666;
 }
 .filter-item {
   position: relative;
-  font-size: 14px;
-  color: #666;
   cursor: pointer;
-  transition: color 0.2s;
+  letter-spacing: 1px;
+  transition: color 0.25s;
 }
 .filter-item.hover {
   color: #b8860b;
 }
 .arrow {
   margin-left: 4px;
-  transition: transform 0.2s;
+  transition: transform 0.25s;
 }
 .arrow.up {
   transform: rotate(180deg);
 }
+
+/* ---------- 下拉菜单 ---------- */
 .dropdown {
   position: absolute;
-  top: 100%;
+  top: calc(100% + 8px);
   left: 0;
-  z-index: 20;
+  z-index: 30;
   background: #fff;
   border: 1px solid #e5e5e5;
   border-radius: 4px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
   list-style: none;
   padding: 6px 0;
-  margin: 4px 0 0;
+  margin: 0;
   min-width: 120px;
 }
 .dropdown li {
@@ -373,10 +318,12 @@ onMounted(fetchFavorites)
   color: #b8860b;
   font-weight: 600;
 }
+
+/* ---------- 列表 ---------- */
 .list {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 24px;
+  gap: 32px;
 }
 .card {
   position: relative;
@@ -389,34 +336,21 @@ onMounted(fetchFavorites)
 .card:hover {
   transform: translateY(-4px);
 }
-.card.disabled {
-  opacity: 0.6;
-}
 .img-wrap {
-  position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
 }
 .img-wrap img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
-.mask {
-  position: absolute;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.5);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-}
 .info {
-  padding: 12px;
+  padding: 16px;
 }
-.title {
-  margin: 0 0 4px;
+.book-title {
+  margin: 0 0 8px;
   font-size: 13px;
   line-height: 1.4;
   display: -webkit-box;
@@ -424,31 +358,46 @@ onMounted(fetchFavorites)
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
-.sales {
-  margin: 0 0 4px;
-  font-size: 12px;
-  color: #999;
-}
 .price {
   color: #b12704;
-  font-size: 16px;
+  font-size: 15px;
+  letter-spacing: 1px;
 }
+.symbol {
+  font-size: 12px;
+  margin-right: 2px;
+}
+
+/* ---------- 删除按钮 ---------- */
 .close {
   position: absolute;
   top: 8px;
   right: 8px;
-  font-size: 16px;
+  width: 24px;
+  height: 24px;
   color: #fff;
   background: rgba(0, 0, 0, 0.4);
   border-radius: 50%;
-  padding: 2px;
+  padding: 4px;
   cursor: pointer;
   opacity: 0;
-  transition: opacity 0.2s;
+  transition: opacity 0.25s;
 }
 .card:hover .close {
   opacity: 1;
 }
+
+/* ---------- 空状态 ---------- */
+.empty {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 80px 0;
+  font-size: 14px;
+  color: #999;
+  letter-spacing: 1px;
+}
+
+/* ---------- 动效 ---------- */
 .fade-enter-active,
 .fade-leave-active {
   transition: opacity 0.2s;
