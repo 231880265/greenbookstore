@@ -253,9 +253,25 @@
    */
   onMounted(async () => {
     Object.assign(user, (await getCurrentUser()).data)
-    soldBookList.value = (await getTop5UsedBookOrders()).data || []
-    orderList.value = (await getTop5Orders()).data || []
-    favoriteList.value = (await getTop5Favorites()).data || []
+    
+    // 获取回收订单前5
+    console.log('获取回收订单前5调用接口中······')
+    const soldBookRes = await getTop5UsedBookOrders()
+    console.log('回收订单前5接口返回数据:', soldBookRes)
+    console.log('回收订单前5数据列表:', soldBookRes.data)
+    soldBookList.value = soldBookRes.data || []
+    
+    // 获取购书订单前5
+    const orderRes = await getTop5Orders()
+    console.log('购书订单前5接口返回数据:', orderRes)
+    console.log('购书订单前5数据列表:', orderRes.data)
+    orderList.value = orderRes.data || []
+    
+    // 获取收藏前5
+    const favoriteRes = await getTop5Favorites()
+    console.log('收藏前5接口返回数据:', favoriteRes)
+    console.log('收藏前5数据列表:', favoriteRes.data)
+    favoriteList.value = favoriteRes.data || []
   })
   
   /**
@@ -507,7 +523,7 @@
     }
 
     .book-card {
-      min-width: 175px;
+      min-width: 190px;
       max-width: 240px;
       flex-shrink: 0;
       background: #ffffff;
