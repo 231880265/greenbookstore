@@ -3,7 +3,10 @@
         <HeaderBar />
         <div class="content">
             <div class="product-container" v-if="productDetail">
-                <img :src="productDetail.cover" alt="二手书封面" class="product-cover" />
+                <div class="img-wrapper">
+                    <img :src="productDetail.cover" alt="二手书封面" class="product-cover" />
+                </div>
+
 
                 <div class="info-container">
 
@@ -58,7 +61,9 @@
             <div class="recommended-list">
                 <a v-for="(item, index) in recommendedProducts" :key="index" class="recommended-item"
                     :href="`/product-detail/${item.ubId}`">
-                    <img :src="item.cover" :alt="item.title" class="recommended-item-img" />
+                    <div class="img-wrapper">
+                        <img :src="item.cover" :alt="item.title" class="recommended-item-img" />
+                    </div>
                     <div class="recommended-item-price">￥{{ item.price.toFixed(2) }}</div>
                     <div class="wrapper">
                         <div class="recommended-item-title">{{ item.title }}</div>
@@ -77,78 +82,45 @@ import { ref, computed } from 'vue';
 import favorSvg from '@/assets/favor.svg';
 import unfavorSvg from '@/assets/unfavor.svg';
 import { useRoute } from 'vue-router';
-import { getProductDetail, getRecommendedProducts, addToCart } from '@/api/index';
+import { getProductDetail, getRecommendedProducts, addToCart, getTopProductsByCategory } from '@/api/index';
 import type { Product } from '@/api/types';
 import { getCategoryName } from '@/utils';
 import FavorIcon from '@/pages/image/favor.svg';
 import UnfavorIcon from '@/pages/image/unfavor.svg';
+import { showFailToast, showSuccessToast } from 'vant';
 
 const productId = computed(() => {
     // 通过路由参数获取商品ID
-    return useRoute().params.id;
+    return parseInt(useRoute().params.id as string);
 }
 )
 
 // 商品详情数据
-const productDetail = ref<Product>({
-    ubId: 1,
-    title: "民法总则",
-    stock: 963,
-    sales: 917,
-    category: "FALV",
-    price: 8.99,
-    listPrice: 49.0,
-    writer: "王泽鉴著",
-    pageNum: "491页",
-    wordCount: "500千字",
-    publisher: "北京大学出版社",
-    bookBinding: "PAPERBACK",
-    publishTime: "2009-12",
-    usedDegree: 2,
-    description: "《民法总则(最新版)》是研习民法者的入门参考书，以私权利贯穿始终，开篇就转载了德国法学家耶林的名著《法律的斗争》，为全书定下了基调：即民法是保障私权利的基本法。接着从权利主体(自然人及法人)、权利客体(物)、权利变动(尤其是法律行为，既属重要，全书亦主要围绕之详加论述)及权利的行使等角度进行论述，力图把民法的权利本位、私法的价值理念与原理原则全方位地展现给读者。《民法总则(最新版)》的另一特色是用实例引导读者发掘问题、思考问题，并带着问题去探求私法上的解决途径。",
-    cover: "https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/36da/36dacf361f8011dd06a930547e5b1434_0_1_300_300.jpg",
-    isbn: "9787301160206"
+const productDetail = ref<Product>();
+
+getProductDetail(Number(productId.value)).then(response => {
+    productDetail.value = response.data;
+}).catch(error => {
+    console.error('获取商品详情失败：', error);
 });
 
-// getProductDetail(Number(productId.value)).then(response => {
-//     productDetail.value = response.data;
-// }).catch(error => {
-//     console.error('获取商品详情失败：', error);
-// });
+//相关推荐
+const recommendedProducts = ref<Product[]>();
 
-//相关推荐数量
-const recommendedProducts = ref<Product[]>([
-    {
-        ubId: 43,
-        title: "民法总则",
-        price: 2.49,
-        cover: "https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/36da/36dacf361f8011dd06a930547e5b1434_0_1_300_300.jpg"
-    },
-    {
-        ubId: 53,
-        title: "民法学说与判例研究",
-        price: 3.23,
-        cover: "https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/36da/36dacf361f8011dd06a930547e5b1434_0_1_300_300.jpg"
-    },
-    {
-        ubId: 35,
-        title: "法律思维与民法实例:请求权基础理论体系",
-        price: 22.06,
-        cover: "https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/36da/36dacf361f8011dd06a930547e5b1434_0_1_300_300.jpg"
-    },
-    {
-        ubId: 33,
-        title: "债法原理",
-        price: 14.5,
-        cover: "https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/36da/36dacf361f8011dd06a930547e5b1434_0_1_300_300.jpg"
+getRecommendedProducts(Number(productId.value)).then(response => {
+    recommendedProducts.value = response.data;
+    if (recommendedProducts.value.length < 6){
+        getTopProductsByCategory(productDetail.value?.category || '').then(res => {
+            const topProducts = res.data.filter(p => p.ubId !== productId.value);
+            const needed = 6 - recommendedProducts.value!.length;
+            recommendedProducts.value = recommendedProducts.value!.concat(topProducts.slice(0, needed));
+        }).catch(error => {
+            console.error('获取分类Top产品失败：', error);
+        });
     }
-]);
-
-// getRecommendedProducts(Number(productId.value)).then(response => {
-//     recommendedProducts.value = response.data;
-// }).catch(error => {
-//     console.error('获取相关推荐失败：', error);
-// });
+}).catch(error => {
+    console.error('获取相关推荐失败：', error);
+});
 
 
 
@@ -166,7 +138,12 @@ function buyNow() {
 }
 
 async function addProductToCart() {
-    
+    addToCart(productId.value, num.value).then(() => {
+        showSuccessToast('已加入购物车');
+    }).catch((error) => {
+        showFailToast('加入购物车失败，请稍后重试');
+        console.error('加入购物车失败：', error);
+    });
 }
 
 /*-- 收藏相关 --*/
@@ -180,6 +157,10 @@ function toggleFavorite() {
 
 <style src="./global.scss"></style>
 <style scoped lang="scss">
+:root {
+    --el-color-primary: #2d583f;
+}
+
 .product-container {
     display: flex;
     flex-direction: row;
@@ -187,10 +168,17 @@ function toggleFavorite() {
     padding: 24px 24px 54px;
     border-radius: 20px;
 
-    .product-cover {
+    .img-wrapper {
         height: 476px;
-        border-radius: 24px;
-        min-width: 314px;
+        width: 314px;
+        flex-shrink: 0;
+
+        .product-cover {
+            height: 100%;
+            width: 100%;
+            object-fit: cover;
+            border-radius: 24px;
+        }
     }
 
 }
@@ -210,6 +198,14 @@ function toggleFavorite() {
         font-size: 16px;
         line-height: 1.6;
         margin-top: 8px;
+        height: 360px;
+        overflow: scroll;
+
+        &::-webkit-scrollbar {
+            display: none;
+        }
+
+        scrollbar-width: none;
     }
 }
 
@@ -244,6 +240,8 @@ function toggleFavorite() {
 
     .price {
         font-size: 32px;
+        width: 120px;
+        text-align: start;
     }
 }
 
@@ -251,7 +249,7 @@ function toggleFavorite() {
     display: flex;
     align-items: center;
     margin-top: 20px;
-    justify-content: space-between;
+    gap: 30px;
 }
 
 .shop-container {
@@ -309,9 +307,17 @@ function toggleFavorite() {
             transform: translateY(-5px);
         }
 
-        .recommended-item-img {
+        .img-wrapper {
             height: 248px;
+            width: 168px;
+            flex-shrink: 0;
+        }
+
+        .recommended-item-img {
             border-radius: 4px;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .wrapper {
@@ -368,6 +374,12 @@ function toggleFavorite() {
         .el-input-number__increase {
             color: #2d583f;
         }
+    }
+}
+
+.product-description {
+    .van-text-ellipsis__action {
+        color: #2d583f;
     }
 }
 </style>

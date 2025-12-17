@@ -18,10 +18,9 @@ import type {
   Cart
 } from './types'
 
-/* ----------------- 商品相关 api ----------------- */
 
 
-/*--商品相关api--*/
+/*-------------------商品相关api--------------------*/
 // 获取商品详情
 export const getProductDetail = (id: number) => {
   return request.get<ApiResponse<Product>>(`/used_books/${id}`)
@@ -55,6 +54,40 @@ export const searchBooks = (keyword: string) => {
 export const searchSuggest = (keyword: string) => {
   return request.get<ApiResponse<string[]>>(`/usedbook/search/suggest/${keyword}`)
 }
+// 获取分类Top6
+export const getTopProductsByCategory = (category: string) => {
+  return request.get<ApiResponse<Product[]>>('/used_books/category/top', {
+    params: { category }
+  })
+}
+
+/*-------------------购物相关api--------------------*/
+//将商品加入购物车
+export const addToCart = (ubId: number, quantity: number) => {
+  return request.post<ApiResponse>('/cart', {
+    "ubId": ubId,
+    "quantity": quantity
+  });
+}
+
+// 获取购物车列表
+export const getCart = () => {
+  return request.get<ApiResponse<Cart>>('/cart/');
+}
+
+// 修改购物车商品数量
+export const updateCartItem = (cartItemId: string, quantity: number) => {
+  return request.patch<ApiResponse>(`/cart/${cartItemId}`, {
+    "quantity": quantity
+  });
+}
+
+// 删除购物车项
+export const removeCartItem = (cartItemId: string) => {
+  return request.delete<ApiResponse>(`/cart/${cartItemId}`);
+}
+
+
 /* ----------------- 认证 / 用户相关 api ----------------- */
 
 // 登录
@@ -88,10 +121,10 @@ export const uploadImage = (file: File) => {
 
 
 export const getCurrentUser = () => {
-    return request.get<ApiResponse<UserDetail>>("/accounts");
-  };
+  return request.get<ApiResponse<UserDetail>>("/accounts");
+};
 
-  export type SoldBookStatus = "CHECKING" | "SHIPPED" | "COMPLETED";
+export type SoldBookStatus = "CHECKING" | "SHIPPED" | "COMPLETED";
 
 
 
@@ -112,6 +145,8 @@ export const getSoldBookList = (status?: SoldBookStatus) => {
  * Headers: token（由 request 自动注入）
  * ========================= */
 
+
+
 export const getMyOrders = (status?: OrderStatus) => {
     return request.get<ApiResponse<OrderVO[]>>('/orders/my', {status})
 }
@@ -123,19 +158,7 @@ export const getUsedBookOrders = (status?: UsedBookOrderStatus) => {
 
 
 
-/*--购物相关api--*/
-//将商品加入购物车
-export const addToCart = (productId: string, quantity: number) => {
-    return request.post<ApiResponse>('/cart', {
-        "productId": productId,
-        "quantity": quantity
-    });
-}
 
-// 获取购物车列表
-export const getCart = () => {
-    return request.get<ApiResponse<Cart>>('/cart');
-}
 
 
 
@@ -166,23 +189,23 @@ export const removeFavorite = (favoriteId: number) => {
 }
 
 export const getAddressList = () => {
-    return request.get<ApiResponse<AddressItem[]>>('/address')
-  }
-  
-  export const createAddress = (data: Omit<AddressItem, 'id' | 'userId'>) => {
-    return request.post<ApiResponse<number>>('/address', data)
-  }
-  
-  export const deleteAddress = (id: number) => {
-    return request.delete(`/address/${id}`)
-  }
-  
-  export const updateAddress = (
-    id: number,
-    data: Omit<AddressItem, 'id' | 'userId'>
-  ) => {
-    return request.put(`/address/${id}`, data)
-  }
+  return request.get<ApiResponse<AddressItem[]>>('/address')
+}
+
+export const createAddress = (data: Omit<AddressItem, 'id' | 'userId'>) => {
+  return request.post<ApiResponse<number>>('/address', data)
+}
+
+export const deleteAddress = (id: number) => {
+  return request.delete(`/address/${id}`)
+}
+
+export const updateAddress = (
+  id: number,
+  data: Omit<AddressItem, 'id' | 'userId'>
+) => {
+  return request.put(`/address/${id}`, data)
+}
 
 // 更新用户信息
 // PUT /api/accounts
