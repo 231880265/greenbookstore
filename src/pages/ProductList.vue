@@ -221,6 +221,7 @@ const loadFavorites = async () => {
 const toggleFavorite = async (book: BookItem) => {
   if (favoritedSet.value.has(book.ubId)) {
     const fid = favoriteIdMap.value[book.ubId]
+    console.log('取消收藏', fid)
     try {
       await removeFavorite(fid)
       favoritedSet.value.delete(book.ubId)

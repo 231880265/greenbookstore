@@ -12,7 +12,7 @@ import Cart from "../pages/cart.vue";
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    component: Home,
+    component: ProductList,
   },
   {
     path: '/orders',
@@ -42,29 +42,6 @@ const routes: RouteRecordRaw[] = [
     path: '/product-list',
     component: ProductList,
   },
-]
-
-    {
-        path: '/',
-        component: Home
-    },
-    {
-        path: '/orders',
-        component: Order
-    },
-    {
-        path: '/orderDetails',
-        component: OrderDetails
-    },
-    {
-        path: '/product-detail/:id',
-        component: ProductDetail
-    },
-    {
-        path: '/cart',
-        component: Cart
-    }
-
 ]
 const router = createRouter({
   history: createWebHistory(),
