@@ -28,18 +28,25 @@ export const getRecommendedProducts = (id: number) => {
   return request.get<ApiResponse<Product[]>>(`/used_books/recommend/${id}`)
 }
 
+// 获取分类Top6
+export const getTopProductsByCategory = (category: string) => {
+  return request.get<ApiResponse<Product[]>>('/used_books/category/top', {
+    params: { category }
+  })
+}
+
 /*-------------------购物相关api--------------------*/
 //将商品加入购物车
-export const addToCart = (productId: string, quantity: number) => {
+export const addToCart = (ubId: number, quantity: number) => {
   return request.post<ApiResponse>('/cart', {
-    "productId": productId,
+    "ubId": ubId,
     "quantity": quantity
   });
 }
 
 // 获取购物车列表
 export const getCart = () => {
-  return request.get<ApiResponse<Cart>>('/cart');
+  return request.get<ApiResponse<Cart>>('/cart/');
 }
 
 // 修改购物车商品数量
@@ -47,6 +54,11 @@ export const updateCartItem = (cartItemId: string, quantity: number) => {
   return request.patch<ApiResponse>(`/cart/${cartItemId}`, {
     "quantity": quantity
   });
+}
+
+// 删除购物车项
+export const removeCartItem = (cartItemId: string) => {
+  return request.delete<ApiResponse>(`/cart/${cartItemId}`);
 }
 
 
@@ -128,19 +140,6 @@ export const getMyOrders = (status?: OrderStatus) => {
 };
 
 
-/* =========================
- * 3. 获取收藏列表
- * GET /api/favorites
- * Headers: token（由 request 自动注入）
- * ========================= */
-
-
-
-export const getFavoriteList = () => {
-  return request.get<ApiResponse<FavoriteItem[]>>(
-    "/favorites"
-  );
-};
 
 export const getAddressList = () => {
   return request.get<ApiResponse<AddressItem[]>>('/address')
@@ -172,4 +171,26 @@ export const updateUserInfo = (data: UpdateUserInfoRequest) => {
 // POST /api/used_books/create
 export const createUsedBook = (data: CreateUsedBookRequest) => {
   return request.post<ApiResponse<number>>('/used_books/create', data)
+}
+
+/* ------------------- 收藏相关 api ----------------- */
+/* =========================
+ * 获取收藏列表
+ * GET /api/favorites
+ * Headers: token（由 request 自动注入）
+ * ========================= */
+
+
+
+export const getFavoriteList = () => {
+  return request.get<ApiResponse<FavoriteItem[]>>(
+    "/favorites"
+  );
+};
+
+// 添加收藏
+export const addFavorite = (ubId: number) => {
+  return request.post<ApiResponse>('/favorites', {}, {
+    params: { ubId }
+  });
 }

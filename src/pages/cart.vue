@@ -3,6 +3,11 @@
         <HeaderBar />
         <div class="content">
             <h2 class="cart-title">购物车</h2>
+            <el-breadcrumb separator="/" class="breadcrumb">
+                <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+                <el-breadcrumb-item>购物车</el-breadcrumb-item>
+            </el-breadcrumb>
+
 
             <div v-if="cart && cart.items.length">
                 <div class="cart-controls">
@@ -46,11 +51,14 @@
                         <span class="money">￥{{ totalPrice.toFixed(2) }}</span>
                     </div>
                     <button class="checkout" @click="handleCheckout">结算<span v-if="selectedNum > 0">({{ selectedNum
-                            }})</span></button>
+                    }})</span></button>
                 </div>
             </div>
 
-            <div v-else>购物车为空</div>
+            <div v-else class="vacant-cart">
+                <img src="./image/vacant-cart.svg"></img>
+                <div class="text">Oops！这里空空如也</div>
+            </div>
 
         </div>
     </div>
@@ -79,76 +87,7 @@ const loadCart = async () => {
         }
     } catch (e) {
         console.error('请求购物车信息错误:', e);
-    } finally {
-        // 如果没有数据或接口未连通，用示例数据占位
-        if (!cart.value) {
-            cart.value = {
-                total: 2,
-                items: [
-                    {
-                        cartItemId: 4,
-                        quantity: 1,
-                        ubId: 3,
-                        title: '天下·法学原论 合同法总论',
-                        price: 122.74,
-                        stock: 167,
-                        cover:
-                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/1ce0/1ce0bd9d928f85be7fc7e406c3de6404_0_1_300_300.jpg',
-                        writer: '韩世远著',
-                        publisher: '法律出版社'
-                    },
-                    {
-                        cartItemId: 5,
-                        quantity: 1,
-                        ubId: 77,
-                        title: '投资最重要的事',
-                        price: 24.9,
-                        stock: 11,
-                        cover:
-                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/3b53/3b5361cabafa9bf1a01fd0683bee4040_0_1_300_300.jpg',
-                        writer: '[美]霍华德·马克斯著,李莉译,石继志译',
-                        publisher: '中信出版社'
-                    },
-                    {
-                        cartItemId: 6,
-                        quantity: 1,
-                        ubId: 3,
-                        title: '天下·法学原论 合同法总论',
-                        price: 122.74,
-                        stock: 167,
-                        cover:
-                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/1ce0/1ce0bd9d928f85be7fc7e406c3de6404_0_1_300_300.jpg',
-                        writer: '韩世远著',
-                        publisher: '法律出版社'
-                    },
-                    {
-                        cartItemId: 7,
-                        quantity: 1,
-                        ubId: 3,
-                        title: '天下·法学原论 合同法总论',
-                        price: 122.74,
-                        stock: 167,
-                        cover:
-                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/1ce0/1ce0bd9d928f85be7fc7e406c3de6404_0_1_300_300.jpg',
-                        writer: '韩世远著',
-                        publisher: '法律出版社'
-                    },
-                    {
-                        cartItemId: 8,
-                        quantity: 1,
-                        ubId: 3,
-                        title: '天下·法学原论 合同法总论',
-                        price: 122.74,
-                        stock: 167,
-                        cover:
-                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/1ce0/1ce0bd9d928f85be7fc7e406c3de6404_0_1_300_300.jpg',
-                        writer: '韩世远著',
-                        publisher: '法律出版社'
-                    }
-                ]
-            } as Cart;
-        }
-    }
+    } 
 };
 
 onMounted(loadCart);
@@ -253,6 +192,16 @@ const handleCheckout = () => {
 
 .cart-title {
     color: #2d583f;
+}
+
+.breadcrumb {
+    margin: 8px 0 16px;
+    font-size: 14px;
+    :deep(.el-breadcrumb__inner) {
+        &:hover {
+            color: #2d583f;
+        }
+    }
 }
 
 
@@ -411,6 +360,26 @@ const handleCheckout = () => {
         .money {
             color: #2d583f;
         }
+    }
+}
+
+.vacant-cart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 100px;
+
+    img {
+        width: 200px;
+        height: 200px;
+        margin-bottom: 20px;
+    }
+
+    .text {
+        font-size: 20px;
+        color: #888888;
+        font-style: italic;
     }
 }
 </style>
