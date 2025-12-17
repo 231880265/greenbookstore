@@ -26,6 +26,12 @@ export type Product = {
     sales?: number;
 }
 
+// 购物车列表
+export type Cart = {
+    total: number;
+    items: (Product & { cartItemId: number, quantity: number })[];
+}
+
 export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
 
 export interface OrderItemVO {
