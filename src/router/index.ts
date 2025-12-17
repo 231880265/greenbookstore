@@ -10,6 +10,7 @@ import SellBook from '../pages/SellBook.vue'
 import ProductList from '../pages/ProductList.vue'
 import Cart from "../pages/cart.vue";
 import Checkout from '@/pages/Checkout.vue'
+import MyCollections from '../pages/MyCollections.vue'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -18,12 +19,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/orders',
     component: Order,
-    meta: { requiresAuth: true },
   },
   {
     path: '/usedBook/orders',
     component: UsedBookOrder,
-    meta: { requiresAuth: true },
   },
   {
     path: '/orderDetails',
@@ -36,21 +35,10 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/profile',
     component: UserProfile,
-    meta: { requiresAuth: true },
   },
   {
     path: '/sell',
     component: SellBook,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/cart',
-    component: Cart,
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/product-list',
-    component: ProductList,
   },
   {
     path: '/cart',
@@ -62,23 +50,11 @@ const routes: RouteRecordRaw[] = [
   }
 ]
 
+
+
 const router = createRouter({
   history: createWebHistory(),
   routes,
 })
-
-// 全局路由守卫：对于需要登录的路由，若无 token 则重定向到首页并告诉 HeaderBar 打开登录弹窗
-router.beforeEach((to, from, next) => {
-  const requiresAuth = to.matched.some(r => r.meta && (r.meta as any).requiresAuth);
-  if (!requiresAuth) return next();
-
-  const token = localStorage.getItem('GB_TOKEN');
-  if (token) {
-    return next();
-  }
-
-  // 未登录，重定向到首页并通过 query 请求打开登录弹窗，登录后可跳回原页面
-  next({ path: '/', query: { openAuth: 'login', redirect: to.fullPath } });
-});
 
 export default router

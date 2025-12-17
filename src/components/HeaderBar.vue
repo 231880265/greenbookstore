@@ -14,7 +14,7 @@
       </div>
 
       <!-- 中间 Logo -->
-      <div class="center-logo">
+      <div class="center-logo" @click="goToHome">
         <span class="main-logo">GREEN BOOK</span>
       </div>
 
@@ -50,7 +50,13 @@
         </div>
 
         <!-- 个人中心 -->
-        <div class="user-icon-wrapper" @click="onUserIconClick">
+        <div
+          ref="userIconWrapperRef"
+          class="user-icon-wrapper"
+          @click="onUserIconClick"
+          @mouseenter="handleUserMenuEnter"
+          @mouseleave="handleUserMenuLeave"
+        >
           <div class="user-avatar-container">
             <img
               v-if="isLoggedIn"
@@ -76,6 +82,39 @@
         </div>
       </div>
     </div>
+
+    <!-- 用户下拉菜单（使用 teleport 传送到 body，避免被遮挡） -->
+    <teleport to="body">
+      <transition name="dropdown-fade">
+        <div
+          v-if="isLoggedIn && showUserMenu"
+          class="user-dropdown-menu"
+          :style="dropdownMenuStyle"
+          @mouseenter="showUserMenu = true"
+          @mouseleave="showUserMenu = false"
+          @click.stop
+        >
+          <div
+            class="dropdown-item"
+            @click.stop="goToAllSoldOrders"
+          >
+            <span>回收订单</span>
+          </div>
+          <div
+            class="dropdown-item"
+            @click.stop="goToAllOrders"
+          >
+            <span>购书订单</span>
+          </div>
+          <div
+            class="dropdown-item"
+            @click.stop="goToAllFavorites"
+          >
+            <span>我的收藏</span>
+          </div>
+        </div>
+      </transition>
+    </teleport>
 
     <!-- 搜索抽屉和遮罩层 -->
     <teleport to="body">
@@ -283,18 +322,20 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref, watch, reactive, computed } from "vue";
-import { useRouter, useRoute } from "vue-router";
+import { useRouter } from "vue-router";
 import { login, register, uploadImage, getCurrentUser } from "@/api";
 import type { LoginRequest, RegisterRequest, UserDetail } from "@/api/types";
 
 const router = useRouter();
-const route = useRoute();
 
 const leafCount = ref(12);
 
 const searchOpen = ref(false);
 const keyword = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
+const showUserMenu = ref(false);
+const userIconWrapperRef = ref<HTMLElement | null>(null);
+const dropdownMenuStyle = ref<{ top: string; right: string }>({ top: '0px', right: '0px' });
 
 const HOT_KEY = "greenbook_search_history";
 const TOKEN_KEY = "GB_TOKEN";
@@ -358,6 +399,13 @@ const goSellBook = () => {
   router.push('/sell');
 };
 
+/**
+ * 跳转到首页
+ */
+const goToHome = () => {
+  router.push('/');
+};
+
 /** 这里先用 console.log 占位，你后面接路由/接口就行 */
 const doSearch = (q: string) => {
   const query = q.trim();
@@ -372,6 +420,18 @@ const doSearch = (q: string) => {
 
   // 可选：搜索后关闭抽屉
   closeSearch();
+};
+
+// 监听认证要求事件（当 API 返回 401 时触发）
+const handleAuthRequired = (event: CustomEvent) => {
+  // 如果当前未登录，打开登录弹窗
+  if (!isLoggedIn.value) {
+    openAuth('login');
+    // 如果有错误信息，显示在登录表单中
+    if (event.detail?.reason) {
+      authError.value = event.detail.reason;
+    }
+  }
 };
 
 // 监听组件卸载，确保恢复滚动
@@ -391,10 +451,13 @@ onMounted(() => {
   };
   
   window.addEventListener('keydown', handleKeydown);
+  // 监听认证要求事件
+  window.addEventListener('auth:required', handleAuthRequired as EventListener);
   
   // 清理函数
   return () => {
     window.removeEventListener('keydown', handleKeydown);
+    window.removeEventListener('auth:required', handleAuthRequired as EventListener);
     // 确保恢复滚动
     document.body.style.overflow = '';
   };
@@ -404,6 +467,30 @@ onMounted(() => {
 watch(searchOpen, (newVal) => {
   if (!newVal) {
     document.body.style.overflow = '';
+  }
+});
+
+// 监听窗口大小变化和滚动，更新下拉菜单位置
+watch(showUserMenu, (isOpen) => {
+  if (isOpen) {
+    updateDropdownPosition();
+    window.addEventListener('scroll', updateDropdownPosition, true);
+    window.addEventListener('resize', updateDropdownPosition);
+  } else {
+    window.removeEventListener('scroll', updateDropdownPosition, true);
+    window.removeEventListener('resize', updateDropdownPosition);
+  }
+});
+
+// 监听窗口大小变化和滚动，更新下拉菜单位置
+watch(showUserMenu, (isOpen) => {
+  if (isOpen) {
+    updateDropdownPosition();
+    window.addEventListener('scroll', updateDropdownPosition, true);
+    window.addEventListener('resize', updateDropdownPosition);
+  } else {
+    window.removeEventListener('scroll', updateDropdownPosition, true);
+    window.removeEventListener('resize', updateDropdownPosition);
   }
 });
 
@@ -467,17 +554,6 @@ watch(isLoggedIn, (loggedIn) => {
   }
 }, { immediate: true });
 
-// 监听路由 query.openAuth，如果存在则打开登录/注册弹窗（方便路由守卫触发）
-watch(
-  () => route.query.openAuth,
-  (val) => {
-    if (val === 'login' || val === 'register') {
-      openAuth(val as 'login' | 'register');
-    }
-  },
-  { immediate: true }
-);
-
 const openAuth = (tab: "login" | "register" = "login") => {
   authTab.value = tab;
   authOpen.value = true;
@@ -495,6 +571,60 @@ const onUserIconClick = () => {
   } else {
     openAuth("login");
   }
+};
+
+/**
+ * 计算下拉菜单位置
+ */
+const updateDropdownPosition = () => {
+  if (!userIconWrapperRef.value) return;
+  
+  const rect = userIconWrapperRef.value.getBoundingClientRect();
+  dropdownMenuStyle.value = {
+    top: `${rect.bottom + 8}px`,
+    right: `${window.innerWidth - rect.right}px`
+  };
+};
+
+/**
+ * 处理鼠标进入头像区域
+ */
+const handleUserMenuEnter = () => {
+  showUserMenu.value = true;
+  nextTick(() => {
+    updateDropdownPosition();
+  });
+};
+
+/**
+ * 处理鼠标离开头像区域
+ */
+const handleUserMenuLeave = () => {
+  showUserMenu.value = false;
+};
+
+/**
+ * 跳转到全部回收订单页面
+ */
+const goToAllSoldOrders = () => {
+  showUserMenu.value = false;
+  router.push('/usedBook/orders');
+};
+
+/**
+ * 跳转到全部购书订单页面
+ */
+const goToAllOrders = () => {
+  showUserMenu.value = false;
+  router.push('/orders');
+};
+
+/**
+ * 跳转到全部收藏页面
+ */
+const goToAllFavorites = () => {
+  showUserMenu.value = false;
+  router.push('/my-collections');
 };
 
 const validateTelephone = (tel: string) => /^1\d{10}$/.test(tel);
@@ -526,9 +656,7 @@ const handleLogin = async () => {
     }, 1500);
     // 登录成功后获取用户信息
     await fetchUserInfo();
-    // 若路由 query 带有 redirect，则跳回原页面
-    const redirect = (route.query.redirect as string) || "/";
-    router.push(redirect);
+    router.push("/");
   } catch (e: any) {
     const msg = e?.message || "";
     if (msg.includes("用户名") || msg.includes("密码")) {
@@ -664,6 +792,12 @@ const handleAvatarChange = async (event: Event) => {
   color: #2d583f;
   left: 50%;
   transform: translateX(-50%);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.center-logo:hover {
+  opacity: 0.8;
 }
 
 .main-logo {
@@ -720,6 +854,7 @@ const handleAvatarChange = async (event: Event) => {
   cursor: pointer;
   padding: 2px 0;
   transition: transform 0.2s;
+  position: relative;
 }
 
 .user-icon-wrapper:hover {
@@ -735,7 +870,6 @@ const handleAvatarChange = async (event: Event) => {
   align-items: center;
   justify-content: center;
   background: #f5f5f5;
-  overflow: hidden;
   transition: background 0.2s, border-color 0.2s;
 }
 
@@ -773,6 +907,65 @@ const handleAvatarChange = async (event: Event) => {
 
 .user-icon-wrapper:hover .login-hint {
   color: #777;
+}
+
+/* 用户下拉菜单 */
+.user-dropdown-menu {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  padding: 6px 0;
+  z-index: 10000;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f6fbf8;
+  color: #2d583f;
+}
+
+.item-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* 下拉菜单动画 */
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dropdown-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.dropdown-fade-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dropdown-fade-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 /* 去卖书 hover 文案 */

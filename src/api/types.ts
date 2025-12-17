@@ -192,3 +192,9 @@ export interface CreateUsedBookRequest {
   usedDegree: number
   cover: string
 }
+export interface TopItem {
+  id: number
+  title: string
+  price: number
+  cover: string
+}

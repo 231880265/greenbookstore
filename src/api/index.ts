@@ -15,12 +15,14 @@ import type {
   AddressItem,
   UpdateUserInfoRequest,
   CreateUsedBookRequest,
-  Cart
+  Cart,
+  TopItem
 } from './types'
 
+/* ----------------- 商品相关 api ----------------- */
 
 
-/*-------------------商品相关api--------------------*/
+/*--商品相关api--*/
 // 获取商品详情
 export const getProductDetail = (id: number) => {
   return request.get<ApiResponse<Product>>(`/used_books/${id}`)
@@ -216,4 +218,20 @@ export const updateUserInfo = (data: UpdateUserInfoRequest) => {
 // POST /api/used_books/create
 export const createUsedBook = (data: CreateUsedBookRequest) => {
   return request.post<ApiResponse<number>>('/used_books/create', data)
+}
+// 获取购书订单前 5
+// GET /api/orders/top5
+export const getTop5Orders = () => {
+  return request.get<ApiResponse<TopItem[]>>('/orders/top5')
+}
+// 获取回收订单前 5
+// GET /api/used_books/orders/top5
+export const getTop5UsedBookOrders = () => {
+  console.log('获取回收订单前5调用接口中接口文档ing······')
+  return request.get<ApiResponse<TopItem[]>>('/used_books/orders/top5')
+}
+// 获取收藏前 5
+// GET /api/favorites/top5
+export const getTop5Favorites = () => {
+  return request.get<ApiResponse<TopItem[]>>('/favorites/top5')
 }

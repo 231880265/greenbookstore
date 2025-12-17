@@ -23,7 +23,7 @@
               <div class="avatar-wrapper">
                 <img :src="user.avatar || defaultAvatar" class="avatar" />
               </div>
-  
+
               <div class="user-info">
                 <h2 class="nickname">{{ user.username || '叶子' }}</h2>
                 <p class="telephone">{{ user.telephone }}</p>
@@ -31,84 +31,110 @@
                   小绿叶：<span class="leaf-num">{{ user.leaf }}</span>
                 </p>
               </div>
-  
+
               <div class="user-actions">
                 <button class="link-btn" @click="openAddressDialog">
                   地址簿
                 </button>
-                <button class="link-btn" @click="openEditUserForm">资料修改</button>
+                <button class="link-btn" @click="openEditUserForm">
+                  资料修改
+                </button>
                 <button class="link-btn danger" @click="onLogout">
                   退出登录
                 </button>
               </div>
             </div>
+
+            <!-- 装饰图片 -->
+            <div class="profile-image-wrapper">
+              <img :src="profileImage" class="profile-image" alt="profile" />
+            </div>
           </section>
   
           <!-- 右侧（订单 & 收藏） -->
           <section class="profile-right">
-            <div class="stat-grid">
-              <div class="stat-card" :class="{ active: activeTab === 'sold' }" @click="activeTab = 'sold'">
-                <div class="icon">♻️</div>
-                <div class="count">{{ soldBookList.length }}</div>
-                <div class="label">回收订单</div>
+            <!-- 回收订单区块 -->
+            <div class="order-block">
+              <div class="block-header">
+                <h2 class="block-title">回收订单</h2>
+                <button class="block-more-btn" @click="goToAllSoldOrders">
+                  全部回收订单
+                  <span class="arrow">→</span>
+                </button>
               </div>
-  
-              <div class="stat-card" :class="{ active: activeTab === 'order' }" @click="activeTab = 'order'">
-                <div class="icon">📦</div>
-                <div class="count">{{ orderList.length }}</div>
-                <div class="label">购书订单</div>
-              </div>
-  
-              <div class="stat-card" :class="{ active: activeTab === 'favorite' }" @click="activeTab = 'favorite'">
-                <div class="icon">❤️</div>
-                <div class="count">{{ favoriteList.length }}</div>
-                <div class="label">我的收藏</div>
+              <div class="book-card-list">
+                <div
+                  v-for="item in soldBookList"
+                  :key="item.id"
+                  class="book-card"
+                  @click="goToSoldOrderDetail(item.id)"
+                >
+                  <div class="card-img-wrapper">
+                    <img :src="item.cover" class="book-card-img" />
+                  </div>
+                  <div class="card-info">
+                    <div class="card-title">{{ item.title || '订单商品' }}</div>
+                    <div class="card-price">¥{{ item.price }}</div>
+                  </div>
+                </div>
+                <div v-if="!soldBookList.length" class="empty-state">暂无回收订单</div>
               </div>
             </div>
-  
-            <div class="list-section">
-              <h3 class="list-title">
-                {{
-                  activeTab === 'sold'
-                    ? '回收订单'
-                    : activeTab === 'order'
-                    ? '购书订单'
-                    : '我的收藏'
-                }}
-              </h3>
-  
-              <ul v-if="activeTab === 'sold'" class="book-list">
-                <li v-for="item in soldBookList" :key="item.rcld" class="book-item">
-                  <img :src="item.cover" class="book-cover" />
-                  <div class="book-meta">
-                    <span class="title">{{ item.title }}</span>
-                    <span class="price">¥{{ item.price }}</span>
+
+            <!-- 购书订单区块 -->
+            <div class="order-block">
+              <div class="block-header">
+                <h2 class="block-title">购书订单</h2>
+                <button class="block-more-btn" @click="goToAllOrders">
+                  全部购书订单
+                  <span class="arrow">→</span>
+                </button>
+              </div>
+              <div class="book-card-list">
+                <div
+                  v-for="item in orderList"
+                  :key="item.id"
+                  class="book-card"
+                  @click="goToOrderDetail(item.id)"
+                >
+                  <div class="card-img-wrapper">
+                    <img :src="item.cover" class="book-card-img" />
                   </div>
-                </li>
-                <li v-if="!soldBookList.length" class="empty-row">暂无回收订单</li>
-              </ul>
-  
-              <ul v-if="activeTab === 'order'" class="book-list">
-                <li v-for="item in orderList" :key="item.orderId" class="book-item">
-                  <img :src="item.cover" class="book-cover" />
-                  <div class="book-meta">
-                    <span class="title">{{ item.orderItems[0]?.title }}</span>
-                    <span class="price">¥{{ item.totalAmount }}</span>
+                  <div class="card-info">
+                    <div class="card-title">{{ item.title || '订单商品' }}</div>
+                    <div class="card-price">¥{{ item.price }}</div>
                   </div>
-                </li>
-                <li v-if="!orderList.length" class="empty-row">暂无购书订单</li>
-              </ul>
-  
-              <ul v-if="activeTab === 'favorite'" class="book-list">
-                <li v-for="item in favoriteList" :key="item.favoriteId" class="book-item">
-                  <img :src="item.cover" class="book-cover" />
-                  <div class="book-meta">
-                    <span class="title">{{ item.title }}</span>
-                    <span class="price">¥{{ item.price }}</span>
+                </div>
+                <div v-if="!orderList.length" class="empty-state">暂无购书订单</div>
+              </div>
+            </div>
+
+            <!-- 收藏区块 -->
+            <div class="order-block">
+              <div class="block-header">
+                <h2 class="block-title">我的收藏</h2>
+                <button class="block-more-btn" @click="goToAllFavorites">
+                  全部收藏
+                  <span class="arrow">→</span>
+                </button>
+              </div>
+              <div class="book-card-list">
+                <div
+                  v-for="item in favoriteList"
+                  :key="item.id"
+                  class="book-card"
+                  @click="goToProductDetail(item.id)"
+                >
+                  <div class="card-img-wrapper">
+                    <img :src="item.cover" class="book-card-img" />
                   </div>
-                </li>
-                <li v-if="!favoriteList.length" class="empty-row">暂无收藏</li>
-              </ul>
+                  <div class="card-info">
+                    <div class="card-title">{{ item.title }}</div>
+                    <div class="card-price">¥{{ item.price }}</div>
+                  </div>
+                </div>
+                <div v-if="!favoriteList.length" class="empty-state">暂无收藏</div>
+              </div>
             </div>
           </section>
         </div>
@@ -133,16 +159,15 @@
   import ProfileEditDialog from '@/components/ProfileEditDialog.vue'
   import {
     getCurrentUser,
-    getSoldBookList,
-    getMyOrders,
-    getFavoriteList,
+    getTop5UsedBookOrders,
+    getTop5Orders,
+    getTop5Favorites,
   } from '@/api'
   import type {
     UserDetail,
-    SoldBookItem,
-    OrderVO,
-    FavoriteItem,
+    TopItem,
   } from '@/api/types'
+  import profileImage from '@/assets/profile.jpg'
 
   const addressDialogRef = ref<InstanceType<typeof AddressDialog> | null>(null)
   const profileEditDialogRef = ref<InstanceType<typeof ProfileEditDialog> | null>(null)
@@ -169,22 +194,84 @@
     username: '',
     avatar: defaultAvatar,
     telephone: '',
+    password: '',
     leaf: 0,
   })
   
-  const soldBookList = ref<SoldBookItem[]>([])
-  const orderList = ref<OrderVO[]>([])
-  const favoriteList = ref<FavoriteItem[]>([])
-  const activeTab = ref<'sold' | 'order' | 'favorite'>('sold')
+  const soldBookList = ref<TopItem[]>([])
+  const orderList = ref<TopItem[]>([])
+  const favoriteList = ref<TopItem[]>([])
+
+  /**
+   * 跳转到回收订单详情页
+   */
+  const goToSoldOrderDetail = (_id: number) => {
+    router.push('/usedBook/orders')
+  }
+
+  /**
+   * 跳转到购书订单详情页
+   */
+  const goToOrderDetail = (id: number) => {
+    router.push({
+      path: '/orderDetails',
+      query: { orderId: id }
+    })
+  }
+
+  /**
+   * 跳转到商品详情页
+   */
+  const goToProductDetail = (id: number) => {
+    router.push(`/product-detail/${id}`)
+  }
+
+  /**
+   * 跳转到全部回收订单页面
+   */
+  const goToAllSoldOrders = () => {
+    router.push('/usedBook/orders')
+  }
+
+  /**
+   * 跳转到全部购书订单页面
+   */
+  const goToAllOrders = () => {
+    router.push('/orders')
+  }
+
+  /**
+   * 跳转到全部收藏页面
+   */
+  const goToAllFavorites = () => {
+    // 如果收藏页面路由存在，使用该路由；否则可以跳转到其他页面
+    router.push('/my-collections')
+  }
   
   /**
    * 初始化数据
    */
   onMounted(async () => {
     Object.assign(user, (await getCurrentUser()).data)
-    soldBookList.value = (await getSoldBookList()).data || []
-    orderList.value = (await getMyOrders()).data || []
-    favoriteList.value = (await getFavoriteList()).data || []
+    
+    // 获取回收订单前5
+    console.log('获取回收订单前5调用接口中······')
+    const soldBookRes = await getTop5UsedBookOrders()
+    console.log('回收订单前5接口返回数据:', soldBookRes)
+    console.log('回收订单前5数据列表:', soldBookRes.data)
+    soldBookList.value = soldBookRes.data || []
+    
+    // 获取购书订单前5
+    const orderRes = await getTop5Orders()
+    console.log('购书订单前5接口返回数据:', orderRes)
+    console.log('购书订单前5数据列表:', orderRes.data)
+    orderList.value = orderRes.data || []
+    
+    // 获取收藏前5
+    const favoriteRes = await getTop5Favorites()
+    console.log('收藏前5接口返回数据:', favoriteRes)
+    console.log('收藏前5数据列表:', favoriteRes.data)
+    favoriteList.value = favoriteRes.data || []
   })
   
   /**
@@ -211,7 +298,7 @@
     /* 页面整体 */
     .profile-page {
       min-height: 100vh;
-      background: #ffffff;
+      background: #f8f5ef;
     }
     
     /* 面包屑 */
@@ -221,13 +308,12 @@
     }
     
     .breadcrumb-inner {
-      max-width: 1200px;
       margin: 0 auto;
       padding: 12px 20px;
       display: flex;
       align-items: center;
       gap: 6px;
-      font-size: 13px;
+      font-size: 15px;
     }
     
     .crumb {
@@ -254,7 +340,7 @@
       padding: 4px 10px;
       border-radius: 6px;
       cursor: pointer;
-      font-size: 12px;
+      font-size: 14px;
     }
     
     .back-btn:hover {
@@ -263,7 +349,6 @@
     
     /* 主体 */
     .profile-main {
-      max-width: 1200px;
       margin: 24px auto;
       padding: 0 20px;
     }
@@ -275,7 +360,7 @@
     
     /* 左侧 */
     .profile-left {
-      width: 280px;
+      width: 380px;
     }
     
     .user-card {
@@ -305,17 +390,17 @@
     
     .nickname {
       margin: 8px 0 4px;
-      font-size: 18px;
+      font-size: 22px;
     }
     
     .telephone {
-      font-size: 13px;
+      font-size: 15px;
       color: #888;
     }
     
     .leaf {
       margin-top: 6px;
-      font-size: 13px;
+      font-size: 15px;
     }
     
     .leaf-num {
@@ -326,19 +411,45 @@
     .user-actions {
       margin-top: 14px;
       display: flex;
-      justify-content: space-around;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
     }
     
     .link-btn {
       background: none;
       border: none;
       cursor: pointer;
-      font-size: 13px;
+      font-size: 15px;
       color: #2d583f;
+      padding: 8px 12px;
+      text-align: left;
+      border-radius: 6px;
+      transition: background-color 0.2s ease;
+    }
+
+    .link-btn:hover {
+      background-color: #f6fbf8;
     }
     
     .link-btn.danger {
       color: #d40000;
+    }
+
+    /* 装饰图片 */
+    .profile-image-wrapper {
+      margin-top: 18px;
+      border: 1px solid #eee;
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .profile-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      object-fit: cover;
     }
     
     /* 右侧 */
@@ -346,110 +457,133 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      gap: 18px;
+      gap: 40px;
     }
-    
-    /* Dashboard 卡片 */
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 16px;
+
+    /* 订单区块 */
+    .order-block {
+      margin-bottom: 0;
     }
-    
-    .stat-card {
-      border: 1px solid #eee;
-      border-radius: 14px;
-      padding: 18px;
-      cursor: pointer;
-      background: #fff;
-      transition: all 0.2s ease;
-      text-align: center;
-    }
-    
-    .stat-card:hover {
-      border-color: #2d583f;
-    }
-    
-    .stat-card.active {
-      border-color: #2d583f;
-      background: #f6fbf8;
-    }
-    
-    .stat-card .icon {
-      font-size: 28px;
-    }
-    
-    .stat-card .count {
-      margin-top: 8px;
-      font-size: 22px;
-      font-weight: 700;
-    }
-    
-    .stat-card .label {
-      margin-top: 4px;
-      font-size: 13px;
-      color: #666;
-    }
-    
-    /* 列表区 */
-    .list-section {
-      border: 1px solid #eee;
-      border-radius: 14px;
-      padding: 16px 18px;
-      background: #fff;
-    }
-    
-    .list-title {
-      margin: 0 0 12px;
-      font-size: 16px;
-    }
-    
-    /* 图书列表 */
-    .book-list {
-      list-style: none;
-      padding: 0;
-      margin: 0;
-    }
-    
-    .book-item {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding: 10px 0;
-      border-top: 1px solid #f0f0f0;
-    }
-    
-    .book-item:first-child {
-      border-top: none;
-    }
-    
-    .book-cover {
-      width: 48px;
-      height: 64px;
-      border-radius: 6px;
-      object-fit: cover;
-      background: #f5f5f5;
-    }
-    
-    .book-meta {
-      flex: 1;
+
+    /* 顶部标题和更多按钮 */
+    .block-header {
       display: flex;
       justify-content: space-between;
+      align-items: flex-end;
+      margin-bottom: 25px;
+      border-bottom: 1px solid #e0e0e0;
+      padding-bottom: 10px;
     }
-    
-    .title {
-      font-size: 14px;
+
+    .block-title {
+      font-size: 30px;
+      font-weight: 700;
+      color: #1a1a1a;
+      letter-spacing: 0.5px;
     }
-    
-    .price {
-      font-size: 14px;
-      color: #d40000;
+
+    .block-more-btn {
+      border: none;
+      background: transparent;
+      font-size: 16px;
+      cursor: pointer;
+      color: #666666;
+      transition: color 0.3s;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+    }
+
+    .block-more-btn:hover {
+      color: #1a1a1a;
+    }
+
+    .block-more-btn .arrow {
+      margin-left: 5px;
+      transition: transform 0.3s;
+    }
+
+    .block-more-btn:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    /* 书籍卡片列表 (横向滚动) */
+    .book-card-list {
+      display: flex;
+      overflow-x: auto;
+      padding: 10px 0;
+      padding-bottom: 20px;
+      gap: 12px;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+
+    .book-card-list::-webkit-scrollbar {
+      display: none;
+    }
+
+    .book-card {
+      min-width: 190px;
+      max-width: 240px;
+      flex-shrink: 0;
+      background: #ffffff;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: box-shadow 0.3s, transform 0.3s;
+      border: 1px solid #f0f0f0;
+    }
+
+    .book-card:hover {
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+      transform: translateY(-5px);
+    }
+
+    .card-img-wrapper {
+      width: 100%;
+      height: 200px;
+      overflow: hidden;
+      border-radius: 6px 6px 0 0;
+      background: #f8f8f8;
+    }
+
+    .book-card-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.3s;
+    }
+
+    .book-card:hover .book-card-img {
+      transform: scale(1.05);
+    }
+
+    .card-info {
+      padding: 12px;
+      text-align: left;
+    }
+
+    .card-title {
+      font-size: 17px;
+      color: #1a1a1a;
       font-weight: 600;
+      margin-bottom: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
-    
-    .empty-row {
-      padding: 12px 0;
-      font-size: 13px;
+
+    .card-price {
+      font-size: 18px;
+      color: #c0392b;
+      font-weight: 700;
+    }
+
+    .empty-state {
+      padding: 40px 0;
+      text-align: center;
+      font-size: 16px;
       color: #999;
+      width: 100%;
     }
 </style>
