@@ -166,7 +166,6 @@ const goProfile = () => {
     height: 380px; /* 调整高度，略低于之前，更协调 */
     margin: 30px auto 30px; /* 顶部 30px，底部 30px，衔接自然 */
     position: relative;
-  overflow: hidden;
     border-radius: 8px; 
     cursor: pointer;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08); /* 柔和阴影 */

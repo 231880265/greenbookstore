@@ -9,6 +9,7 @@ import UsedBookOrder from '../pages/UsedBookOrder.vue'
 import SellBook from '../pages/SellBook.vue'
 import ProductList from '../pages/ProductList.vue'
 import Cart from "../pages/cart.vue";
+import MyCollections from '../pages/MyCollections.vue'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -50,6 +51,11 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/product-list',
     component: ProductList,
+  },
+  {
+    path: '/my-collections',
+    component: MyCollections,
+    meta: { requiresAuth: true },
   },
 ]
 const router = createRouter({
