@@ -145,15 +145,6 @@ export const getSoldBookList = (status?: SoldBookStatus) => {
  * Headers: token（由 request 自动注入）
  * ========================= */
 
-export type OrderStatus =
-  | "CREATED"
-  | "PAID"
-  | "SHIPPED"
-  | "COMPLETED"
-  | "CANCELLED";
-
-
-
 
 
 export const getMyOrders = (status?: OrderStatus) => {
@@ -227,26 +218,4 @@ export const updateUserInfo = (data: UpdateUserInfoRequest) => {
 // POST /api/used_books/create
 export const createUsedBook = (data: CreateUsedBookRequest) => {
   return request.post<ApiResponse<number>>('/used_books/create', data)
-}
-
-/* ------------------- 收藏相关 api ----------------- */
-/* =========================
- * 获取收藏列表
- * GET /api/favorites
- * Headers: token（由 request 自动注入）
- * ========================= */
-
-
-
-export const getFavoriteList = () => {
-  return request.get<ApiResponse<FavoriteItem[]>>(
-    "/favorites"
-  );
-};
-
-// 添加收藏
-export const addFavorite = (ubId: number) => {
-  return request.post<ApiResponse>('/favorites', {}, {
-    params: { ubId }
-  });
 }
