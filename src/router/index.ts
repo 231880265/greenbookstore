@@ -44,6 +44,28 @@ const routes: RouteRecordRaw[] = [
   },
 ]
 
+    {
+        path: '/',
+        component: Home
+    },
+    {
+        path: '/orders',
+        component: Order
+    },
+    {
+        path: '/orderDetails',
+        component: OrderDetails
+    },
+    {
+        path: '/product-detail/:id',
+        component: ProductDetail
+    },
+    {
+        path: '/cart',
+        component: Cart
+    }
+
+]
 const router = createRouter({
   history: createWebHistory(),
   routes,

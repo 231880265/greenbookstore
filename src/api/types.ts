@@ -138,8 +138,9 @@ export interface SoldBookItem {
     title: string;
     cover: string;
     price: number;
-  }
-  // AddressVO
+}
+
+// AddressVO
 export interface AddressItem {
     id: number
     userId: number
