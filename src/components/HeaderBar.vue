@@ -566,7 +566,8 @@ const closeAuth = () => {
 };
 
 const onUserIconClick = () => {
-  if (isLoggedIn) {
+  console.log("点击个人中心图标", isLoggedIn.value);
+  if (isLoggedIn.value) {
     router.push("/profile");
   } else {
     openAuth("login");
