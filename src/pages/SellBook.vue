@@ -98,16 +98,21 @@
             <label class="field">
               <span>新旧程度</span>
               <select v-model.number="form.usedDegree">
-                <option :value="1">全新（100%）</option>
-                <option :value="0.9">九成新（90%）</option>
-                <option :value="0.8">八成新（80%）</option>
-                <option :value="0.7">七成新（70%）</option>
-                <option :value="0.5">五成新（50%）</option>
+                <option :value="10">全新（100%）</option>
+                <option :value="9">九成新（90%）</option>
+                <option :value="8">八成新（80%）</option>
+                <option :value="7">七成新（70%）</option>
+                <option :value="6">六成新（60%）</option>
+                <option :value="5">五成新（50%）</option>
+                <option :value="4">四成新（40%）</option>
+                <option :value="3">三成新（30%）</option>
+                <option :value="2">二成新（20%）</option>
+                <option :value="1">一成新（10%）</option>
               </select>
             </label>
           </div>
 
-          <h3 class="section-subtitle mt24">2. 选择取件地址</h3>
+          <h3 class="section-subtitle mt24">2. 寄件人地址（我的地址）</h3>
           <div class="address-row">
             <div class="address-text" v-if="selectedAddressText">
               当前地址：{{ selectedAddressText }}
@@ -116,7 +121,7 @@
               暂未选择地址
             </div>
             <button class="outline-btn" @click="openAddressModal">
-              选择 / 新增地址
+              地址簿
             </button>
           </div>
         </div>
@@ -130,7 +135,7 @@
             </div>
             <div class="row">
               <span>新旧程度系数</span>
-              <span>x {{ form.usedDegree }}</span>
+              <span>{{ usedDegreePercent }}%</span>
             </div>
             <div class="row">
               <span>平台折扣系数</span>
@@ -160,13 +165,12 @@
       <section class="sold-list-section">
         <h3 class="section-subtitle">我的卖书记录</h3>
         <ul v-if="soldList.length" class="sold-list">
-          <li v-for="item in soldList" :key="item.rcld" class="sold-item">
+          <li v-for="item in soldList" :key="item.adId" class="sold-item">
             <img :src="item.cover" class="sold-cover" />
             <div class="sold-meta">
               <div class="title">{{ item.title }}</div>
               <div class="price-row">
                 <span>成交价：¥{{ item.price }}</span>
-                <span class="status">{{ item.status }}</span>
               </div>
             </div>
           </li>
@@ -204,7 +208,7 @@
           </div>
 
           <div class="modal-footer">
-            <button class="outline-btn" @click="addressModalOpen = false">关闭</button>
+            <button class="outline-btn" @click="addressModalOpen = false">确定</button>
           </div>
         </div>
       </div>
@@ -253,7 +257,7 @@ const form = reactive({
   price: 0,
   listPrice: 0,
   writer: '',
-  usedDegree: 0.9,
+  usedDegree: 9,
   cover: '',
 })
 
@@ -293,9 +297,26 @@ const progressPercent = computed(() => {
   return Math.min(100, Math.round((filled / 6) * 100))
 })
 
+/**
+ * 新旧程度百分比显示
+ */
+const usedDegreePercent = computed(() => {
+  return form.usedDegree * 10
+})
+
+/**
+ * 新旧程度系数（用于计算，将整数1-10转换为0.1-1.0）
+ */
+const usedDegreeFactor = computed(() => {
+  return form.usedDegree * 0.1
+})
+
+/**
+ * 预计可得金额
+ */
 const estimatedPrice = computed(() => {
   if (!form.listPrice) return 0
-  return Number((form.listPrice * form.usedDegree * platformFactor).toFixed(2))
+  return Number((form.listPrice * usedDegreeFactor.value * platformFactor).toFixed(2))
 })
 
 const estimatedLeaf = computed(() => {
@@ -314,7 +335,7 @@ const onCoverChange = async (e: Event) => {
   if (!file) return
   try {
     const res = await uploadImage(file)
-    form.cover = res.data
+    form.cover =  String(res.data).trim() || ''
   } catch (err) {
     console.error('上传封面失败', err)
     alert('上传封面失败，请稍后重试')
@@ -360,7 +381,16 @@ const onSubmit = async () => {
   }
   try {
     submitting.value = true
-    await createUsedBook({
+    /**
+     * 打印前端卖书传参的所有参数
+     */
+     console.log(
+  '卖书填写的表单form',
+  JSON.stringify(form, null, 2)
+)
+
+
+    const createUsedBookRes = await createUsedBook({
       adId: form.adId,
       title: form.title,
       ISBN: form.ISBN,
@@ -370,6 +400,7 @@ const onSubmit = async () => {
       usedDegree: form.usedDegree,
       cover: form.cover,
     })
+    console.log("创建卖书记录返回信息createUsedBookRes", createUsedBookRes)
     alert('提交成功，我们会尽快与您联系')
     // 重置表单
     Object.assign(form, {
@@ -379,7 +410,7 @@ const onSubmit = async () => {
       price: 0,
       listPrice: 0,
       writer: '',
-      usedDegree: 0.9,
+      usedDegree: 9,
       cover: '',
     })
     fileInputRef.value && (fileInputRef.value.value = '')

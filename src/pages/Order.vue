@@ -82,7 +82,7 @@
 <script setup lang="ts">
 import HeaderBar from '@/components/HeaderBar.vue';
 import { ref, onMounted } from 'vue'
-// import { getMyOrders } from '@/api/index' // 暂时注释掉，使用本地假数据调试
+import { getMyOrders } from '@/api/index' // 暂时注释掉，使用本地假数据调试
 import type { OrderStatus } from '@/api/types'
 import type { OrderVO } from '@/api/types'
 import book2Img from "../assets/book2.jpg" ;
@@ -125,9 +125,8 @@ const statusText = {
 const mockOrders: OrderVO[] = [
   {
     orderId: 100001,
-    addId: 1,
+    adId: 1,
     userId: 1,
-    adId: 0,
     leaf: 0,
     status: 'PENDING',
     totalAmount: 88,
@@ -163,7 +162,6 @@ const mockOrders: OrderVO[] = [
   },
   {
     orderId: 100002,
-    addId: 2,
     userId: 1,
     adId: 0,
     leaf: 0,
@@ -192,10 +190,10 @@ const mockOrders: OrderVO[] = [
 
 const loadOrders = async () => {
   // 原先调用接口的代码（注释）：
-  // const res = await getMyOrders(activeStatus.value)
-  // orders.value = res.data
-  const filtered = mockOrders.filter(o => !activeStatus.value || o.status === activeStatus.value)
-  orders.value = filtered
+  const res = await getMyOrders(activeStatus.value)
+  orders.value = res.data
+  // const filtered = mockOrders.filter(o => !activeStatus.value || o.status === activeStatus.value)
+  // orders.value = filtered
 }
 
 const changeStatus = (status?: OrderStatus) => {

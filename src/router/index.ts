@@ -13,7 +13,7 @@ import Checkout from '@/pages/Checkout.vue'
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    component: Home,
+    component: ProductList,
   },
   {
     path: '/orders',
