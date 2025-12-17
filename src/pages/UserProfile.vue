@@ -44,11 +44,6 @@
                 </button>
               </div>
             </div>
-
-            <!-- 装饰图片 -->
-            <div class="profile-image-wrapper">
-              <img :src="profileImage" class="profile-image" alt="profile" />
-            </div>
           </section>
   
           <!-- 右侧（订单 & 收藏） -->
@@ -167,7 +162,6 @@
     UserDetail,
     TopItem,
   } from '@/api/types'
-  import profileImage from '@/assets/profile.jpg'
 
   const addressDialogRef = ref<InstanceType<typeof AddressDialog> | null>(null)
   const profileEditDialogRef = ref<InstanceType<typeof ProfileEditDialog> | null>(null)
@@ -298,7 +292,7 @@
     /* 页面整体 */
     .profile-page {
       min-height: 100vh;
-      background: #fff;
+      background: #fcfbf8;
     }
     
     /* 面包屑 */
@@ -351,20 +345,25 @@
     .profile-main {
       margin: 24px auto;
       padding: 0 20px;
+      max-width: 1400px;
     }
     
     .profile-layout {
       display: flex;
       gap: 24px;
+      align-items: flex-start;
     }
     
     /* 左侧 */
     .profile-left {
       width: 380px;
+      position: sticky;
+      top: 80px;
+      align-self: flex-start;
     }
     
     .user-card {
-      border: 1px solid #eee;
+      border: 1px solid #2d583f;
       border-radius: 14px;
       padding: 20px;
       background: #fff;
@@ -436,22 +435,6 @@
     
     .link-btn.danger {
       color: #d40000;
-    }
-
-    /* 装饰图片 */
-    .profile-image-wrapper {
-      margin-top: 18px;
-      border: 1px solid #eee;
-      border-radius: 14px;
-      overflow: hidden;
-      background: #fff;
-    }
-
-    .profile-image {
-      width: 100%;
-      height: auto;
-      display: block;
-      object-fit: cover;
     }
     
     /* 右侧 */

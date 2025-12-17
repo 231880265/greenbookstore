@@ -438,7 +438,7 @@ onMounted(async () => {
 <style scoped>
 .sell-page {
   min-height: 100vh;
-  background: #f8f5ef;
+  background: #fcfbf8;
 }
 
 .sell-main {
