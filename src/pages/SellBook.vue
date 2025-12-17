@@ -164,18 +164,22 @@
       <!-- 已卖书籍列表 -->
       <section class="sold-list-section">
         <h3 class="section-subtitle">我的卖书记录</h3>
-        <ul v-if="soldList.length" class="sold-list">
-          <li v-for="item in soldList" :key="item.adId" class="sold-item">
-            <img :src="item.cover" class="sold-cover" />
-            <div class="sold-meta">
-              <div class="title">{{ item.title }}</div>
-              <div class="price-row">
-                <span>成交价：¥{{ item.price }}</span>
-              </div>
+        <div class="book-card-list">
+          <div
+            v-for="item in soldList"
+            :key="item.adId"
+            class="book-card"
+          >
+            <div class="card-img-wrapper">
+              <img :src="item.cover" class="book-card-img" />
             </div>
-          </li>
-        </ul>
-        <div v-else class="empty-row">还没有卖出记录，快来卖出你的第一本书吧。</div>
+            <div class="card-info">
+              <div class="card-title">{{ item.title || '订单商品' }}</div>
+              <div class="card-price">¥{{ item.price }}</div>
+            </div>
+          </div>
+          <div v-if="!soldList.length" class="empty-state">还没有卖出记录，快来卖出你的第一本书吧。</div>
+        </div>
       </section>
     </main>
 
@@ -720,52 +724,84 @@ onMounted(async () => {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
 }
 
-.sold-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.sold-item {
+/* 书籍卡片列表 (横向滚动) */
+.book-card-list {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  overflow-x: auto;
   padding: 10px 0;
-  border-top: 1px solid #f0f0f0;
+  padding-bottom: 20px;
+  gap: 16px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-.sold-item:first-child {
-  border-top: none;
+.book-card-list::-webkit-scrollbar {
+  display: none;
 }
 
-.sold-cover {
-  width: 48px;
-  height: 64px;
+.book-card {
+  min-width: 190px;
+  max-width: 240px;
+  flex-shrink: 0;
+  background: #ffffff;
   border-radius: 6px;
+  cursor: pointer;
+  transition: box-shadow 0.3s, transform 0.3s;
+  border: 1px solid #f0f0f0;
+}
+
+.book-card:hover {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+}
+
+.card-img-wrapper {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 6px 6px 0 0;
+  background: #f8f8f8;
+}
+
+.book-card-img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  background: #f5f5f5;
+  display: block;
+  transition: transform 0.3s;
 }
 
-.sold-meta .title {
-  font-size: 14px;
-  margin-bottom: 4px;
+.book-card:hover .book-card-img {
+  transform: scale(1.05);
 }
 
-.sold-meta .price-row {
-  font-size: 13px;
-  color: #666;
-  display: flex;
-  gap: 12px;
+.card-info {
+  padding: 12px;
+  text-align: left;
 }
 
-.sold-meta .status {
-  color: #2d583f;
+.card-title {
+  font-size: 17px;
+  color: #1a1a1a;
+  font-weight: 600;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.empty-row {
-  font-size: 13px;
+.card-price {
+  font-size: 18px;
+  color: #c0392b;
+  font-weight: 700;
+}
+
+.empty-state {
+  padding: 40px 0;
+  text-align: center;
+  font-size: 16px;
   color: #999;
-  padding: 12px 0;
+  width: 100%;
 }
 
 /* 地址弹窗样式简化版，复用 profile 页面变量 */
