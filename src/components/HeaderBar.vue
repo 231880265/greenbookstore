@@ -283,11 +283,12 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref, watch, reactive, computed } from "vue";
-import { useRouter } from "vue-router";
+import { useRouter, useRoute } from "vue-router";
 import { login, register, uploadImage, getCurrentUser } from "@/api";
 import type { LoginRequest, RegisterRequest, UserDetail } from "@/api/types";
 
 const router = useRouter();
+const route = useRoute();
 
 const leafCount = ref(12);
 
@@ -466,6 +467,17 @@ watch(isLoggedIn, (loggedIn) => {
   }
 }, { immediate: true });
 
+// 监听路由 query.openAuth，如果存在则打开登录/注册弹窗（方便路由守卫触发）
+watch(
+  () => route.query.openAuth,
+  (val) => {
+    if (val === 'login' || val === 'register') {
+      openAuth(val as 'login' | 'register');
+    }
+  },
+  { immediate: true }
+);
+
 const openAuth = (tab: "login" | "register" = "login") => {
   authTab.value = tab;
   authOpen.value = true;
@@ -514,7 +526,9 @@ const handleLogin = async () => {
     }, 1500);
     // 登录成功后获取用户信息
     await fetchUserInfo();
-    router.push("/");
+    // 若路由 query 带有 redirect，则跳回原页面
+    const redirect = (route.query.redirect as string) || "/";
+    router.push(redirect);
   } catch (e: any) {
     const msg = e?.message || "";
     if (msg.includes("用户名") || msg.includes("密码")) {
