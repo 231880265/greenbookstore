@@ -61,6 +61,22 @@ export interface OrderVO {
     orderItems: OrderItemVO[]
 }
 
+export type UsedBookOrderStatus = 'CHECKING' | 'SHIPPED' | 'COMPLETED';
+
+export interface UsedBookOrderVO {
+    id: number
+    sellerId: number
+    adId: number
+    status: UsedBookOrderStatus
+    price: number
+    listPrice: number
+    cover: string
+    title: string
+    writer: string
+    usedDegree: number
+    isbn: string
+}
+
 // ----------------- 认证相关类型 -----------------
 
 // 登录请求
@@ -115,29 +131,7 @@ export interface SoldBookItem {
     status: string;
     usedDegree: string;
   }
-  export interface OrderItem {
-    ubId: number;
-    title: string;
-    writer: string;
-    publisher: string;
-    cover: string;
-    quantity: number;
-    price: number;
-    totalPrice: number;
-  }
-  
-  export interface OrderVO {
-    orderId: number;
-    totalAmount: number;
-    paymentMethod: string;
-    status: OrderStatus;
-    createTime: string;
-    paymentTime: string;
-    tradeNo: string;
-    addId: number;
-    leaf: number;
-    orderItems: OrderItemVO[];
-  }
+
   export interface FavoriteItem {
     favoriteId: number;
     ubId: number;

@@ -8,17 +8,17 @@ import type {
   UserDetail,
   SoldBookItem,
   OrderVO,
+  OrderStatus,
+  UsedBookOrderVO,
+  UsedBookOrderStatus,
   FavoriteItem,
   AddressItem,
   UpdateUserInfoRequest,
   CreateUsedBookRequest,
+  Cart
 } from './types'
 
 /* ----------------- 商品相关 api ----------------- */
-
-import { request } from './request';
-import type { ApiResponse, Product, Cart } from './types';
-import type { OrderVO, OrderStatus } from './types';
 
 
 /*--商品相关api--*/
@@ -91,12 +91,14 @@ export const getSoldBookList = (status?: SoldBookStatus) => {
  * Headers: token（由 request 自动注入）
  * ========================= */
 
-export type OrderStatus =
-  | "CREATED"
-  | "PAID"
-  | "SHIPPED"
-  | "COMPLETED"
-  | "CANCELLED";
+export const getMyOrders = (status?: OrderStatus) => {
+    return request.get<ApiResponse<OrderVO[]>>('/orders/my', {status})
+}
+
+export const getUsedBookOrders = (status?: UsedBookOrderStatus) => {
+    console.log('API调用：获取回收订单，状态=', status);
+    return request.get<ApiResponse<UsedBookOrderVO[]>>('/used_books/orders', {status})
+}
 
 
 
@@ -114,14 +116,6 @@ export const getCart = () => {
     return request.get<ApiResponse<Cart>>('/cart');
 }
 
-export const getMyOrders = (status?: OrderStatus) => {
-  return request.get<ApiResponse<OrderVO[]>>(
-    "/orders/my",
-    {
-      params: status ? { status } : undefined
-    }
-  );
-};
 
 
 /* =========================
