@@ -25,13 +25,10 @@ export type Product = {
     stock?: number;
     sales?: number;
 }
-
-// 购物车列表
 export type Cart = {
-    total: number;
-    items: (Product & { cartItemId: number, quantity: number })[];
+  total: number;
+  items: (Product & { cartItemId: number, quantity: number })[];
 }
-
 export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
 
 export interface OrderItemVO {
@@ -45,22 +42,6 @@ export interface OrderItemVO {
     totalPrice: number
     cover: string
 }
-
-export interface OrderVO {
-    orderId: number
-    userId: number
-    adId: number
-    leaf: number
-    status: OrderStatus
-    totalAmount: number
-    cover: string
-    createTime: string
-    paymentTime: string
-    paymentMethod: string
-    tradeNo: string
-    orderItems: OrderItemVO[]
-}
-
 export type UsedBookOrderStatus = 'CHECKING' | 'SHIPPED' | 'COMPLETED';
 
 export interface UsedBookOrderVO {
@@ -75,6 +56,20 @@ export interface UsedBookOrderVO {
     writer: string
     usedDegree: number
     isbn: string
+}
+export interface OrderVO {
+    orderId: number
+    userId: number
+    adId: number
+    leaf: number
+    status: OrderStatus
+    totalAmount: number
+    cover: string
+    createTime: string
+    paymentTime: string
+    paymentMethod: string
+    tradeNo: string
+    orderItems: OrderItemVO[]
 }
 
 // ----------------- 认证相关类型 -----------------
@@ -121,7 +116,7 @@ export interface SimpleBookRecord {
     title: string
     price: number
 }
-
+//我要卖书模块
 export interface SoldBookItem {
     adId: number;
     title: string;
@@ -132,16 +127,37 @@ export interface SoldBookItem {
     ISBN: string;
     usedDegree: string;
   }
-
+  export interface OrderItem {
+    ubId: number;
+    title: string;
+    writer: string;
+    publisher: string;
+    cover: string;
+    quantity: number;
+    price: number;
+    totalPrice: number;
+  }
+  
+  export interface OrderVO {
+    orderId: number;
+    totalAmount: number;
+    paymentMethod: string;
+    status: OrderStatus;
+    createTime: string;
+    paymentTime: string;
+    tradeNo: string;
+    addId: number;
+    leaf: number;
+    orderItems: OrderItemVO[];
+  }
   export interface FavoriteItem {
     favoriteId: number;
     ubId: number;
     title: string;
     cover: string;
     price: number;
-}
-
-// AddressVO
+  }
+  // AddressVO
 export interface AddressItem {
     id: number
     userId: number
