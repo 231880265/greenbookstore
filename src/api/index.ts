@@ -178,7 +178,7 @@ export const getFavoriteList = () => {
 
 // 添加收藏
 export const addFavorite = (ubId: number) =>{
-    return request.post<ApiResponse<boolean>>('/favorites', null, {
+    return request.post<ApiResponse<number>>('/favorites', null, {
       params: { ubId }   // ← 参数放在 URL 查询串
     });
 }
@@ -188,6 +188,9 @@ export const removeFavorite = (favoriteId: number) => {
   return request.delete<ApiResponse<boolean>>(`/favorites/${favoriteId}`)
 }
 
+
+/*--------------------地址相关api--------------------*/
+// 获取地址列表
 export const getAddressList = () => {
   return request.get<ApiResponse<AddressItem[]>>('/address')
 }

@@ -223,16 +223,17 @@ getFavoriteList().then(response => {
 
 async function toggleFavorite() {
     if (!isFavorited.value) {
-        addFavorite(productId.value).then(() => {
+        addFavorite(productId.value).then((res) => {
             showSuccessToast('已添加收藏');
             isFavorited.value = !isFavorited.value;
+            favId = res.data;
 
         }).catch((error) => {
             showFailToast('添加收藏失败，请稍后重试');
             console.error('添加收藏失败：', error);
         });
     } else {
-        removeFavorite(productId.value).then(() => {
+        removeFavorite(favId).then(() => {
             showSuccessToast('已取消收藏');
             isFavorited.value = !isFavorited.value;
 

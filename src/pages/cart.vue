@@ -102,7 +102,7 @@ const loading = ref(true);
 // 选中状态：默认都不选
 const selectedIds = ref<Set<number>>(new Set());
 
-// 加载购物车（如接口可用则使用接口）
+// 加载购物车
 const loadCart = async () => {
     loading.value = true;
     try {
