@@ -50,12 +50,29 @@
         </div>
 
         <!-- 个人中心 -->
-        <div class="icon-wrapper user-icon" title="个人中心" @click="onUserIconClick">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
+        <div class="user-icon-wrapper" @click="onUserIconClick">
+          <div class="user-avatar-container">
+            <img
+              v-if="isLoggedIn"
+              :src="currentUser?.avatar ?? defaultAvatarUrl"
+              class="user-avatar-img"
+              alt="用户头像"
+            />
+            <svg
+              v-else
+              class="user-avatar-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <!-- <span v-if="!isLoggedIn" class="login-hint">请登录</span> -->
         </div>
       </div>
     </div>
@@ -267,8 +284,8 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref, watch, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
-import { login, register, uploadImage } from "@/api";
-import type { LoginRequest, RegisterRequest } from "@/api/types";
+import { login, register, uploadImage, getCurrentUser } from "@/api";
+import type { LoginRequest, RegisterRequest, UserDetail } from "@/api/types";
 
 const router = useRouter();
 
@@ -360,6 +377,11 @@ const doSearch = (q: string) => {
 onMounted(() => {
   loadHistory();
   
+  // 如果已登录，获取用户信息
+  if (isLoggedIn.value) {
+    fetchUserInfo();
+  }
+  
   // 添加键盘监听
   const handleKeydown = (e: KeyboardEvent) => {
     if (searchOpen.value && e.key === 'Escape') {
@@ -410,8 +432,39 @@ let loginSuccessTimer: number | null = null;
 
 const defaultAvatarUrl = "https://wonderful1.oss-cn-hangzhou.aliyuncs.com/leaf.jpg";
 
-
 const isLoggedIn = computed(() => !!localStorage.getItem(TOKEN_KEY));
+const currentUser = ref<UserDetail | null>(null);
+
+// 获取当前用户信息
+const fetchUserInfo = async () => {
+  if (!isLoggedIn.value) {
+    currentUser.value = null;
+    return;
+  }
+  try {
+    //leafCount.value =15;
+    const res = await getCurrentUser();
+    currentUser.value = res.data;
+    // 更新绿叶数量
+    if (res.data.leaf !== undefined) {
+      leafCount.value = res.data.leaf;
+    }
+    console.log("获取用户信息", res.data);
+  } catch (err) {
+    console.error('获取用户信息失败', err);
+    currentUser.value = null;
+    leafCount.value = 0;
+  }
+};
+
+// 监听登录状态变化，自动获取用户信息
+watch(isLoggedIn, (loggedIn) => {
+  if (loggedIn) {
+    fetchUserInfo();
+  } else {
+    currentUser.value = null;
+  }
+}, { immediate: true });
 
 const openAuth = (tab: "login" | "register" = "login") => {
   authTab.value = tab;
@@ -425,7 +478,7 @@ const closeAuth = () => {
 };
 
 const onUserIconClick = () => {
-  if (isLoggedIn.value) {
+  if (isLoggedIn) {
     router.push("/profile");
   } else {
     openAuth("login");
@@ -459,6 +512,8 @@ const handleLogin = async () => {
     loginSuccessTimer = window.setTimeout(() => {
       loginSuccess.value = false;
     }, 1500);
+    // 登录成功后获取用户信息
+    await fetchUserInfo();
     router.push("/");
   } catch (e: any) {
     const msg = e?.message || "";
@@ -502,11 +557,11 @@ const handleRegister = async () => {
     const registerRes = await register(payload);
     
     console.log("注册返回信息", registerRes);
-    // 注册成功后自动登录
-    // const loginRes = await login({ telephone: tel, password: registerForm.password });
-    // localStorage.setItem(TOKEN_KEY, loginRes.data.token);
-    // closeAuth();
-    // router.push("/");
+    //注册成功后自动登录
+    await handleLogin();
+    //closeAuth();
+    
+    //router.push("/");
   } catch (e: any) {
     const msg = e?.message || "";
     authError.value = msg || "注册失败，请稍后重试";
@@ -548,7 +603,6 @@ const handleAvatarChange = async (event: Event) => {
 }
 
 .header-inner {
-  max-width: 1280px;
   margin: 0 auto;
   padding: 0 16px;
   height: 56px;
@@ -562,7 +616,7 @@ const handleAvatarChange = async (event: Event) => {
 .left-area {
   display: flex;
   align-items: center;
-  min-width: 280px;
+  max-width: 280px;
 }
 
 .search-pill {
@@ -641,6 +695,70 @@ const handleAvatarChange = async (event: Event) => {
 
 .user-icon {
   border: 1px solid #dddddd;
+}
+
+/* 个人中心头像容器 */
+.user-icon-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: transform 0.2s;
+}
+
+.user-icon-wrapper:hover {
+  transform: translateY(-1px);
+}
+
+.user-avatar-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #dddddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  overflow: hidden;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.user-icon-wrapper:hover .user-avatar-container {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.user-avatar-icon {
+  width: 20px;
+  height: 20px;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.user-icon-wrapper:hover .user-avatar-icon {
+  color: #666;
+}
+
+.login-hint {
+  font-size: 9px;
+  color: #999;
+  line-height: 1;
+  margin-top: 1px;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+
+.user-icon-wrapper:hover .login-hint {
+  color: #777;
 }
 
 /* 去卖书 hover 文案 */

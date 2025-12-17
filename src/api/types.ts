@@ -83,12 +83,14 @@ export type UploadImageData = string
 // ----------------- 用户信息 / 个人中心 -----------------
 
 export interface UserDetail {
-    id: number;
-    leaf: number;
-    username: string;
-    avatar: string | null;
-    telephone: string;
-  }
+  id?: number            // 有的接口可能没有
+  leaf?: number          // 有的接口可能没有
+  username: string
+  avatar: string | null
+  telephone: string
+  password: string
+}
+
 
 // 简单书籍记录，用于「回收订单 / 购书订单 / 我的收藏」预览列表
 export interface SimpleBookRecord {
@@ -99,14 +101,13 @@ export interface SimpleBookRecord {
 }
 
 export interface SoldBookItem {
-    rcld: number;
+    adId: number;
     title: string;
     listPrice: number;
     price: number;
     cover: string;
     writer: string;
     ISBN: string;
-    status: string;
     usedDegree: string;
   }
   export interface OrderItem {
