@@ -1,5 +1,4 @@
 <!-- ProductList.vue  –  Final Edition -->
-
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { Close, Search } from '@element-plus/icons-vue'
@@ -12,6 +11,7 @@ import {
   searchBooks
 } from '@/api'
 import type { FavoriteItem } from '@/api/types'
+import router from "@/router";
 
 
 interface BookItem {
@@ -333,10 +333,10 @@ onMounted(async () => {
 
     <!-- 面包屑 -->
     <nav class="breadcrumb">
-      <span class="crumb link" @click="$router.push('/')">首页</span>
-      <span class="sep">/</span>
+      <span class="crumb" @click.prevent="router.push('/')">首页</span>
+      <span class="sep">|</span>
       <span class="crumb link">商城</span>
-      <span class="sep">/</span>
+      <span class="sep">|</span>
 
       <span class="category-container" @mouseenter="isCategoryHover = true" @mouseleave="closeDropdown">
         <span

@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed } from 'vue';
+import { ref, onMounted, watch, computed, onBeforeUnmount } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
 import HeaderBar from "../components/HeaderBar.vue";
 import Footer from "../components/Footer.vue";
+import { getMyOrderById, getAddressList } from '@/api/index'
 
 // 订单数据类型定义
 interface OrderItem {
@@ -15,18 +17,52 @@ interface OrderItem {
   totalPrice: number;
 }
 
+interface AddressItem {
+  id: number
+  name: string
+  telephone: string
+  province: string
+  city: string
+  district: string
+  detail: string
+}
+
 interface OrderDetails {
   orderId: string;
   totalAmount: number;
   paymentMethod: string;
   status: string;
   createTime: string;
-  adId: string;
+  adId: number | string; // 可能是地址 id（数字）或字符串
   orderItems: OrderItem[];
+  // 后端可能返回以下可选字段（为了展示而声明）
+  trackingNumber?: string;
+  courier?: string;
+  payTime?: string;
+  shipTime?: string;
+  completeTime?: string;
+  leaf?: number;
+  cover?: string;
 }
 
 // 响应式订单数据
+const route = useRoute()
+const router = useRouter()
+const orderIdParam = Number(route.params.orderId || route.query.orderId || 0)
 const orderDetails = ref<OrderDetails | null>(null);
+// 选中的地址详情
+const selectedAddress = ref<any | null>(null)
+
+// 格式化地址显示
+const formattedAddress = computed(() => {
+  console.log('格式化地址', orderDetails.value?.adId)
+  const a = selectedAddress.value
+  if (!a) return orderDetails.value?.adId ? `地址ID: ${orderDetails.value?.adId}` : '—'
+  // 可能字段：province, city, district, detail, name, phone
+  const parts = [a.province, a.city, a.district, a.detail].filter(Boolean)
+  return `${parts.join(' ')} ${a.name ? ' 联系人:' + a.name : ''} ${a.phone ? a.phone : ''}`.trim()
+})
+
 // 控制物流信息的展开和收起
 const isLogisticsOpen = ref(false);
 
@@ -42,88 +78,150 @@ const mapStatusToStep = (status: string | undefined) => {
     case 'PAID': return 1
     case 'SHIPPED': return 2
     case 'COMPLETED': return 3
-    case 'CANCELLED': return 0 // 取消视为在第 0 步之后中断
+    case 'CANCELLED': return 1 // 取消显示为第 1 步（已取消）
     default: return 0
   }
 }
 
 // 动画：逐步推进 displayedStep 到目标位置
-const animateTo = (target: number, cancelled = false) => {
-  displayedStep.value = -1
-  isCanceled.value = false
-  const stepDelay = 500 // 增大延迟以便观察动画
-  let i = -1
-  const tick = () => {
-    i++
-    if (i > target) {
-      if (cancelled) {
-        // 在到达第 0 步后短延迟显示取消状态
-        setTimeout(() => {
-          isCanceled.value = true
-        }, 200)
-      }
-      return
-    }
-    displayedStep.value = i
-    setTimeout(tick, stepDelay)
+let timers: Array<ReturnType<typeof setTimeout>> = []
+const clearAnimation = () => {
+  if (timers.length) {
+    for (const t of timers) clearTimeout(t)
+    timers = []
   }
-  tick()
+}
+
+const animateTo = (target: number, cancelled = false) => {
+  clearAnimation()
+  // 如果目标小于等于当前已展示，则直接设定并返回
+  if (target <= displayedStep.value) {
+    displayedStep.value = target
+    if (cancelled) isCanceled.value = true
+    return
+  }
+
+  const stepDelay = 400
+  const start = Math.max(0, displayedStep.value + 1)
+  for (let step = start; step <= target; step++) {
+    const t = setTimeout(() => {
+      displayedStep.value = step
+      if (step === target) {
+        if (cancelled) isCanceled.value = true
+        clearAnimation()
+      }
+    }, stepDelay * (step - start + 1))
+    timers.push(t)
+  }
 }
 
 // 新增：步骤文本数组（用于渲染节点）
-const steps = ['拍下宝贝', '买家付款', '卖家发货', '确认收货']
+const steps = computed(() =>
+    orderDetails.value?.status === 'CANCELLED'
+        ? ['拍下宝贝', '取消订单']
+        : ['拍下宝贝', '买家付款', '卖家发货', '确认收货']
+);
 
-// 进度条百分比（用于横向进度动画），4 步：0..3
-const progressPercent = computed(() => {
-  if (displayedStep.value < 0) return 0
-  const stepsCount = steps.length
-  return Math.round(((displayedStep.value + 1) / stepsCount) * 100)
+
+// 获取订单详情（调用后端新接口）
+const makePlaceholder = (): OrderDetails => ({
+  orderId: String(orderIdParam || 10001),
+  totalAmount: 120.0,
+  paymentMethod: 'ALIPAY',
+  status: 'PAID',
+  createTime: '2025-04-12T14:30:00',
+  adId: 0,
+  orderItems: [
+    {
+      ubId: 1,
+      title: '示例商品：计算机网络教材（回收版）',
+      writer: '示例商家',
+      publisher: '示例店铺',
+      cover: '/src/assets/book1.jpg',
+      quantity: 1,
+      price: 60.0,
+      totalPrice: 60.0,
+    },
+  ],
+  trackingNumber: 'YT123456789',
+  courier: '中通快递',
+  payTime: '2025-11-02 10:12:00',
+  shipTime: '2025-11-05 08:20:00',
+  completeTime: '2025-11-21 12:53:23',
+  leaf: 0,
+  cover: '/src/assets/book1.jpg'
 })
 
-// 获取订单详情（演示数据或真实接口）
+const selectedStep = ref<number>(-1)
+
 const fetchOrderDetails = async () => {
   try {
-    // 真实接口处可替换为 axios.get('/api/orders/my/' + orderId)
-    // 这里使用模拟数据
-    orderDetails.value = {
-      orderId: '10001',
-      totalAmount: 120.00,
-      paymentMethod: 'ALIPAY',
-      status: 'PAID',
-      createTime: '2025-04-12T14:30:00',
-      adId: '江苏省 苏州市 虎丘区 东渚街道 东渚街道太湖大道1520号南京大学东校区（邮政快递服务中心）',
-      orderItems: [
-        {
-          ubId: 1,
-          title: '【小猴子同款】INSBAHA原色波塔眼线胶笔砍刀卧蚕笔持久不易晕',
-          writer: 'INSBAHA',
-          publisher: 'INSBAHA旗舰店',
-          cover: 'https://example.com/images/product.jpg',
-          quantity: 1,
-          price: 60.00,
-          totalPrice: 60.00
+    if (!orderIdParam) {
+      orderDetails.value = makePlaceholder()
+      const target = mapStatusToStep(orderDetails.value?.status)
+      animateTo(target)
+      return
+    }
+
+    const res: any = await getMyOrderById(orderIdParam)
+    const data = res?.data || res?.data?.data || res
+    if (!data) {
+      orderDetails.value = makePlaceholder()
+    } else {
+      console.log(data)
+      // 若有 adId，去 /api/address 获取地址详情并匹配
+      if (orderDetails.value?.adId) {
+        try {
+          console.log('获取地址列表')
+          const addrRes: any = await getAddressList()
+          const list: AddressItem[] = addrRes?.data || []
+          selectedAddress.value =
+              list.find(a => Number(a.id) === Number(orderDetails.value!.adId)) || null
+          console.log('匹配到的地址', selectedAddress.value)
+        } catch (e) {
+          console.error('获取地址列表失败', e)
+          selectedAddress.value = null
         }
-      ]
-    };
-  } catch (error) {
-    console.error('Failed to fetch order details:', error);
+      }
+      // 直接使用后端返回的字段（兼容性合并占位字段），并映射常见命名差异
+      const merged: any = {  ...data }
+      // 后端可能返回 paymentTime 字段
+      merged.payTime = data.paymentTime ?? data.payTime ?? merged.payTime
+      merged.createTime = data.createTime ?? merged.createTime
+      merged.leaf = typeof data.leaf !== 'undefined' ? data.leaf : merged.leaf
+      merged.cover = data.cover ?? merged.cover
+      // 保证 adId 为数字或原值
+      merged.adId = typeof data.adId !== 'undefined' ? data.adId : merged.adId
+
+      orderDetails.value = merged
+    }
+
+    const target = mapStatusToStep(orderDetails.value?.status)
+    displayedStep.value = -1
+    animateTo(target)
+    selectedStep.value = target   // 👈 默认选中当前节点
+  } catch (e) {
+    console.error('获取订单详情失败', e)
+    orderDetails.value = makePlaceholder()
+    const target = mapStatusToStep(orderDetails.value?.status)
+    displayedStep.value = -1
+    animateTo(target)
   }
-};
+}
+
+const handleStepClick = (idx: number) => {
+  if (displayedStep.value >= idx) {
+    selectedStep.value = idx
+  }
+}
 
 onMounted(() => {
-  // 模拟获取数据
   fetchOrderDetails()
-});
+})
 
-// 监听订单数据变化，触发进度条动画
-watch(orderDetails, (val) => {
-  const target = mapStatusToStep(val?.status)
-  if (val?.status === 'CANCELLED') {
-    // 取消：先动画到第 0 步，再显示中断 ❌
-    animateTo(target, true)
-  } else {
-    animateTo(target, false)
-  }
+// 组件卸载时清理定时器
+onBeforeUnmount(() => {
+  clearAnimation()
 })
 
 </script>
@@ -131,83 +229,132 @@ watch(orderDetails, (val) => {
 <template>
   <div class="order-details-page">
     <HeaderBar />
+
+    <!-- 面包屑 -->
+    <nav class="breadcrumb">
+      <span class="crumb" @click.prevent="router.push('/')">首页</span>
+      <span class="sep">|</span>
+      <span class="crumb" @click.prevent="router.push('/orders')">购书订单</span>
+      <span class="sep">|</span>
+      <span class="crumb current">订单详情</span>
+    </nav>
+
     <div class="order-details-layout">
       <!-- 左侧主内容 -->
       <div class="main-content">
-        <!-- 页面标题 -->
-        <div class="page-title">
-          <h1>小绿书 - 订单详情</h1>
-        </div>
 
-        <!-- 改造后的进度条：节点在进度条上 -->
-        <div class="progress-bar">
-          <div class="progress-track">
-            <div class="progress-line" aria-hidden="true" :style="{ '--filled': progressPercent + '%' }">
-              <div class="progress-inner" :style="{ width: progressPercent + '%' }"></div>
-            </div>
-
-            <div class="nodes">
+        <!-- 替换：使用横向步骤条（模仿 UbRecycleOrderDetails 的逐步动画逻辑） -->
+        <div class="recruit-steps horizontal">
+          <!-- 横向节点行 -->
+          <div class="steps-row">
+            <template v-for="(label, idx) in steps" :key="idx">
               <div
-                v-for="(label, idx) in steps"
-                :key="idx"
-                class="node"
-                :class="{ active: displayedStep >= idx, current: displayedStep === idx, cancelled: isCanceled && idx === (displayedStep + 1) }
-                "
-                :style="{ left: (idx / (steps.length - 1) * 100) + '%' }"
+                  class="h-node"
+                  :class="{ active: displayedStep >= idx, current: selectedStep === idx, 'cancel-node': label === '取消订单' }"
+                  @click="handleStepClick(idx)"
               >
-                <div class="node-circle">
-                  <span class="node-mark">{{ displayedStep > idx ? '✓' : (isCanceled && idx === displayedStep + 1 ? '❌' : (displayedStep === idx ? '' : idx + 1)) }}</span>
-                </div>
-                <div class="node-label">{{ label }}</div>
+                <div class="h-dot">{{ (displayedStep > idx || displayedStep === idx) ? '' : (idx + 1) }}</div>
+                <div class="h-label">{{ label }}</div>
               </div>
+
+              <div v-if="idx < steps.length - 1" class="h-connector" :class="{ filled: displayedStep > idx }"></div>
+            </template>
+          </div>
+
+          <!-- 步骤对应的详细信息（保持原有条件渲染） -->
+          <div class="steps-details">
+            <div v-if="selectedStep === 0" class="detail-card">
+              <h3>订单已提交，等待付款</h3>
+              <p class="muted">订单号：20251121001　|　下单时间：{{ orderDetails?.createTime }}</p>
+              <ul>
+                <li>收货信息：
+                  <span v-if="selectedAddress">
+                    {{ selectedAddress.name }} {{ selectedAddress.telephone }}<br />
+                    {{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}
+                    {{ selectedAddress.detail }}
+                  </span>
+                </li>
+                <li>订单金额：¥{{ orderDetails?.totalAmount }}</li>
+                <li>配送方式：中通快递（标快）</li>
+                <li>预计发货：付款后 24 小时内</li>
+                <li>自动取消：2025-11-22 09:12:34 前未付款将自动关闭订单</li>
+              </ul>
+            </div>
+
+            <div v-if="selectedStep === 1" class="detail-card">
+              <h3>付款成功，等待商家发货</h3>
+              <ul>
+                <li>支付方式：{{ orderDetails?.paymentMethod }}</li>
+                <li>支付时间：{{ orderDetails?.payTime ?? orderDetails?.createTime }}</li>
+                <li>发票类型：电子普通发票（个人）</li>
+                <li>商家承诺：付款后 24 小时内发货，超时自动赔付 3 元优惠券</li>
+              </ul>
+            </div>
+
+            <div v-if="selectedStep === 2" class="detail-card">
+              <h3>已发货，快递运输中</h3>
+              <p class="muted">中通快递　运单号：{{ orderDetails?.trackingNumber ?? 'YT123456789' }}（可点击复制）</p>
+              <div class="shipping-summary">
+                <div><strong>承运网点：</strong>苏州园区一部（0512-6666 8888）</div>
+                <div><strong>揽件员：</strong>王师傅 138****1234</div>
+                <div><strong>发货时间：</strong>{{ orderDetails?.shipTime ?? '2025-11-05 08:20:00' }}</div>
+                <div><strong>预计到达：</strong>2-4 个工作日</div>
+              </div>
+              <div class="timeline">
+                <div class="timeline-item">
+                  <div class="time">2025-11-21 14:30</div>
+                  <div class="desc">【苏州市】快件已由苏州园区一部揽收</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">2025-11-21 20:15</div>
+                  <div class="desc">【苏州市】快件已到达 苏州转运中心</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">2025-11-22 03:42</div>
+                  <div class="desc">【无锡市】快件已发车前往 南京分拨中心（车牌苏E·D12345）</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">2025-11-22 08:06</div>
+                  <div class="desc">【南京市】快件已到达 南京分拨中心，正在分拣</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">2025-11-22 12:30</div>
+                  <div class="desc">【南京市】快件已装车，发往 苏州虎丘区（车牌苏A·B67890）</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">2025-11-23 07:55</div>
+                  <div class="desc">【苏州市】快件已到达 虎丘区营业部</div>
+                </div>
+                <div class="timeline-item">
+                  <div class="time">2025-11-23 09:10</div>
+                  <div class="desc">【苏州市】快递员 李师傅 138****9876 正在派送</div>
+                </div>
+              </div>
+
+              <p class="note">📱 快递短信：【中通快递】您的包裹 7730... 正在派送，请保持电话畅通。</p>
+            </div>
+
+            <div v-if="selectedStep === 3" class="detail-card">
+              <h3>已签收，交易完成</h3>
+              <p class="muted">签收时间：{{ orderDetails?.completeTime ?? orderDetails?.createTime }}　|　签收人：本人（前台代收）</p>
+              <ul>
+                <li>签收地址：江苏省苏州市虎丘区竹园路 209 号 3 栋 2 单元 801</li>
+                <li>包裹状态：完好无损，已拍照留档</li>
+                <li>售后服务：7 天无理由退货（运费险已生效）</li>
+                <li>评价奖励：晒图返 2 元红包 + 10 积分</li>
+              </ul>
             </div>
           </div>
         </div>
 
-        <!-- 交易成功提示 -->
-        <div class="transaction-success">
-          <h2>交易成功</h2>
-          <div class="note">
-            <p>
-              <span class="icon">📦</span> 已签收 您的快件已在代收点取出签收，如遇问题请联系快递员【姜长霞：18020275037】，无需找商家/平台。签收代收点：代收点-南京大学苏州校区东区邮局，网点电话：0512-87821834，投诉电话：18020272107。关注“中通快递”官方微信公众号反馈问题，处理更快速！
-              <a href="#" class="link" @click.prevent="isLogisticsOpen = !isLogisticsOpen">
-                {{ isLogisticsOpen ? '收起' : '查看物流详情' }}
-              </a>
-            </p>
-            <div v-if="isLogisticsOpen" class="expanded-logistics">
-              <p><strong>快递公司：</strong>中通快递</p>
-              <p><strong>快递单号：</strong>YT123456789</p>
-              <p><strong>当前状态：</strong>已签收</p>
-              <p><strong>预计送达：</strong>2025-11-21</p>
-            </div>
-          </div>
-          <p class="address">
-            <span class="icon">📍</span> 江苏省 苏州市 虎丘区 东渚街道 东渚街道太湖大道1520号南京大学东校区（邮政快递服务中心）
-            <br />
-            彭馨怡 86-182****5810
-          </p>
-        </div>
+      </div>
 
-        <!-- 操作按钮 -->
-        <div class="action-buttons">
-          <button class="btn-primary">评价</button>
-          <button class="btn-secondary">再买一单</button>
-          <button class="btn-secondary">查看物流</button>
-          <button class="btn-secondary">加入购物车</button>
-          <button class="btn-secondary">申请开票</button>
-          <button class="btn-secondary">删除订单</button>
-          <button class="btn-secondary">打印</button>
-        </div>
-
-        <!-- 分割线 -->
-        <div class="divider"></div>
-
+      <!-- 右侧信息栏 -->
+      <div class="sidebar">
         <!-- 商品信息 -->
         <div class="product-info">
           <div class="store-badge">
-            <span class="badge">天猫</span>
-            <span class="store-name">INSBAHA原色波塔旗舰店</span>
-            <button class="view-fast">查看交易快照</button>
+            <span class="badge">订单商品</span>
           </div>
 
           <div class="product-item">
@@ -215,24 +362,16 @@ watch(orderDetails, (val) => {
             <div class="product-details">
               <h3>{{ orderDetails?.orderItems[0]?.title }}</h3>
               <p class="price">¥{{ orderDetails?.orderItems[0]?.totalPrice }}</p>
-              <p class="quantity">x1</p>
-              <div class="actions">
-                <button class="btn-secondary">申请售后</button>
-                <button class="btn-secondary">加入购物车</button>
-              </div>
+              <p class="quantity">x{{ orderDetails?.orderItems[0]?.quantity }}</p>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- 右侧信息栏 -->
-      <div class="sidebar">
+        <!-- 分割线 -->
+        <div class="divider"></div>
         <div class="section">
           <h3>付款详情</h3>
           <ul>
             <li><span>商品总价：</span> ¥{{ orderDetails?.totalAmount }}</li>
-            <li><span>运费(快递)：</span> ¥0.00</li>
-            <li><span>店铺优惠：</span> -¥20.00</li>
             <li><span>实付款：</span> ¥{{ orderDetails?.totalAmount }}</li>
           </ul>
         </div>
@@ -243,12 +382,17 @@ watch(orderDetails, (val) => {
         <div class="section">
           <h3>订单信息</h3>
           <ul>
-            <li><span>订单编号：</span> {{ orderDetails?.orderId }}</li>
-            <li><span>收货信息：</span> {{ orderDetails?.adId }}</li>
+            <li><span>收货信息：</span>
+              <span v-if="selectedAddress">
+                {{ selectedAddress.name }} {{ selectedAddress.telephone }}<br />
+                {{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}
+                {{ selectedAddress.detail }}
+              </span>
+              <span v-else>—</span>
+            </li>
             <li><span>创建时间：</span> {{ orderDetails?.createTime }}</li>
-            <li><span>付款时间：</span> {{ orderDetails?.createTime }}</li>
-            <li><span>发货时间：</span> 2025-11-11 12:53:18</li>
-            <li><span>成交时间：</span> 2025-11-21 12:53:23</li>
+            <li><span>付款时间：</span> {{ orderDetails?.payTime ?? orderDetails?.createTime }}</li>
+            <li><span>小绿叶：</span> {{ orderDetails?.leaf ?? 0 }}片</li>
           </ul>
         </div>
 
@@ -265,7 +409,6 @@ watch(orderDetails, (val) => {
   </div>
 </template>
 
-
 <style scoped>
 .order-details-page {
   display: flex;
@@ -280,15 +423,46 @@ watch(orderDetails, (val) => {
   margin-top: 40px;
   margin-bottom: 20px;
   max-width: 1400px;
-  margin-left: auto; /* 左侧留白 */
-  margin-right: auto; /* 居中对齐 */
+  margin-left: auto;
+  margin-right: auto;
+  /* 保持容器居中，但内部两列宽度固定 */
 }
 
+/* 将主内容区设为固定宽度，避免因进度条伸长导致整体布局拉伸 */
 .main-content {
-  flex-grow: 1;
-  width: 70%;
+  flex: 0 0 820px; /* 固定主栏宽度 */
+  width: 820px;
   padding: 0 20px;
   min-height: 0;
+}
+
+/* 右侧固定宽度面板 */
+.sidebar {
+  width: 30%;
+  margin-left: auto;
+  padding: 20px;
+  border: 1px solid #eaeaea;
+  border-radius: 8px;
+  background-color: #ffffff;
+  justify-content: flex-end; /* 内容靠右 */
+  height: 700px;
+}
+
+/* 调整横向步骤条在固定主栏内的最大宽度，不再影响左右栏 */
+.steps-row { display:flex; align-items:center; justify-content:space-between; width:100%; max-width:100%; padding: 12px 12px; box-sizing:border-box }
+.steps-details { width:100%; max-width:100% }
+
+/* 面包屑：左对齐，取消居中 */
+.breadcrumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  color: #666;
+  max-width: none; /* 不限制宽度，以便靠左对齐 */
+  margin: 12px 0 0 24px; /* 左对齐，不再居中 */
 }
 
 .page-title {
@@ -298,121 +472,18 @@ watch(orderDetails, (val) => {
   font-weight: bold;
 }
 
-.progress-bar {
-  padding: 20px 0 6px;
-}
+.recruit-steps { display:flex; gap:24px; }
+.steps-left { width:140px; display:flex; flex-direction:column; align-items:flex-start; padding-left: 8px }
+.step { position:relative; display:flex; flex-direction:column; align-items:flex-start; margin:12px 0; }
+.dot { width:40px; height:40px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-weight:bold; transition: background 240ms ease, transform 240ms ease, color 240ms ease; }
+.step.active .dot { background:#b5dcc7; color:#fff; transform: scale(1.05); }
+.label { margin-top:8px; font-size:13px; color:#333; margin-left:8px }
+.connector { width:4px; height:40px; background:#e6e6e6; margin:8px 0 8px 18px; transition: background 240ms ease; }
+.connector.filled { background:#b5dcc7; }
+.steps-right { flex:1; min-width: 0 }
+.detail-card { background:#fff; padding:16px; border-radius:6px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
 
-.progress-track {
-  position: relative;
-  width: 100%;
-  max-width: 880px;
-  margin: 0 auto;
-}
-
-.progress-line {
-  height: 12px;
-  background: #e8efe6;
-  border-radius: 999px;
-  overflow: hidden;
-  position: relative;
-}
-
-.progress-inner {
-  height: 100%;
-  background: linear-gradient(90deg,#b5dcc7,#2d583f);
-  width: 0%;
-  transition: width 0.6s cubic-bezier(.22,.9,.3,1);
-}
-
-.nodes {
-  position: absolute;
-  top: -14px;
-  left: 0;
-  right: 0;
-  height: 48px;
-  pointer-events: none;
-}
-
-.node {
-  position: absolute;
-  transform: translateX(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 120px;
-  pointer-events: auto;
-}
-
-.node-circle {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: #f0f6ef;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  box-shadow: 0 2px 6px rgba(45,88,63,0.08);
-  transition: transform 300ms cubic-bezier(.2,.9,.3,1), background-color 300ms ease, box-shadow 300ms ease;
-}
-
-.node-mark {
-  font-weight: 600;
-  color:#4b5b4b;
-  transition: color 200ms ease;
-}
-
-.node-label {
-  margin-top:8px;
-  font-size:12px;
-  color:#666;
-  width:120px;
-  text-align:center;
-}
-
-/* 激活态：进度到达或超过该节点 */
-.node.active .node-circle {
-  background: linear-gradient(180deg,#cfe8d4,#8fc996);
-  transform: scale(1.05);
-  box-shadow: 0 6px 18px rgba(45,88,63,0.18);
-}
-
-.node.active .node-mark {
-  color: #fff;
-}
-
-/* 当前节点：更明显的放大效果，表现注入能量 */
-.node.current .node-circle {
-  transform: scale(1.28);
-  box-shadow: 0 10px 26px rgba(45,88,63,0.28);
-}
-
-/* 取消态：灰色并显示 ❌ （由模板逻辑控制显示） */
-.node.cancelled .node-circle {
-  background: #d8d8d8;
-}
-
-.node.cancelled .node-mark {
-  color: #fff;
-}
-
-/* 连接线根据进度改变：用渐变遮罩来表现能量注入 */
-.progress-line::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  top: 0;
-  bottom: 0;
-  width: 100%;
-  pointer-events: none;
-  background: linear-gradient(90deg, rgba(181,220,199,0.85) 0%, rgba(181,220,199,0.85) var(--filled), rgba(232,239,230,0.5) var(--filled));
-  mix-blend-mode: normal;
-}
-
-/* 兼容旧连接样式，提供更平滑视觉 */
-@media (max-width: 960px) {
-  .node-label { font-size:11px; width:90px }
-}
-
+/* 交易成功提示样式 */
 .transaction-success {
   margin: 20px 0;
   padding: 15px;
@@ -488,7 +559,7 @@ watch(orderDetails, (val) => {
 }
 
 .product-info {
-  margin: 20px 0;
+  margin: 10px 0;
 }
 
 .store-badge {
@@ -559,21 +630,6 @@ watch(orderDetails, (val) => {
   gap: 10px;
 }
 
-.sidebar {
-  width: 30%;
-  margin-left: auto;
-  padding: 20px;
-  border: 1px solid #eaeaea;
-  border-radius: 8px;
-  background-color: #ffffff;
-  justify-content: flex-end; /* 内容靠右 */
-  max-height: 600px;
-}
-
-.section {
-  margin-bottom: 20px;
-}
-
 .section h3 {
   margin: 0 0 10px;
   color: #333;
@@ -600,5 +656,82 @@ watch(orderDetails, (val) => {
 .section p {
   margin: 8px 0;
   color: #666;
+}
+
+.breadcrumb {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px;
+  font-size: 14px;
+  color: #666;
+  max-width: none; /* 不限制宽度，以便靠左对齐 */
+  margin: 12px 0 0 24px; /* 左对齐，不再居中 */
+}
+.crumb { cursor: pointer; transition: color 0.2s; }
+.crumb:hover { color: #2d583f; }
+.crumb.current { color: #222; font-weight: 600 }
+.sep { color: #bbb }
+
+/* 复用现有进度条样式，新增小调整以保证细节展示 */
+.muted { color:#666; margin-bottom:8px }
+.shipping-summary { display:flex; flex-direction:column; gap:6px; margin:12px 0 }
+.result-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-top:12px }
+.timeline { margin-top:8px; }
+.timeline-item { padding:8px 0; border-bottom:1px dashed #eee; }
+.timeline-item .time { font-size:12px; color:#888 }
+
+/* 新增横向步骤条样式 */
+.recruit-steps.horizontal { display:flex; flex-direction:column; gap:18px; align-items:center }
+
+.steps-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 100%;          /* 原来是 1100px，改为 100% */
+  padding: 12px 12px;          /* 去掉左右 16px，让线贴边 */
+  box-sizing: border-box;
+}
+.h-node { display:flex; flex-direction:column; align-items:center; width:120px; text-align:center }
+.h-dot { position:relative; width:48px; height:48px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-weight:bold; transition: background 240ms ease, transform 240ms ease, color 240ms ease }
+.h-node.active .h-dot { background:#b5dcc7; color:#fff; transform:scale(1.05) }
+.h-node.current .h-dot { transform:scale(1.18); box-shadow:0 8px 20px rgba(45,88,63,0.16) }
+.h-label { margin-top:8px; font-size:13px; color:#333 }
+.h-connector { height:8px; flex:1; background:#e6e6e6; margin:0 28px; border-radius:4px; transition:background 240ms ease }
+.h-connector.filled { background:#b5dcc7 }
+.steps-details { width:100%; max-width:1100px }
+
+/* 在已有样式后追加 */
+.h-node.active .h-dot {
+  background: #b5dcc7;
+  color: transparent;          /* 隐藏数字 */
+}
+.h-node.active .h-dot::after {
+  content: '✓';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+}
+
+/* 取消节点样式 */
+.h-node.cancel-node .h-dot {
+  background: #c4c4c4;
+  color: transparent;
+}
+.h-node.cancel-node .h-dot::after {
+  content: '✕';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
 }
 </style>

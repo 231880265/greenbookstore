@@ -159,11 +159,18 @@ export const getUsedBookOrders = (status?: UsedBookOrderStatus) => {
     return request.get<ApiResponse<UsedBookOrderVO[]>>('/used_books/orders', {status})
 }
 
+// 新增：按 id 获取单个回收订单详情
+export const getUsedBookOrderById = (id: number) => {
+  return request.get<ApiResponse<UsedBookOrderVO>>(`/used_books/orders/${id}`)
+}
 
-
-
-
-
+// 新增：获取指定购买订单详情（买家订单）
+// GET /api/orders/my/{orderId}
+// params: userId (可选)
+export const getMyOrderById = (orderId: number, userId?: number) => {
+  const params = userId ? { userId } : undefined
+  return request.get<ApiResponse<any>>(`/orders/my/${orderId}`, params)
+}
 
 /* =========================
  * 3. 获取收藏列表

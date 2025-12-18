@@ -64,7 +64,7 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/myCollections',
+    path: '/my-collections',
     component: MyCollections,
     meta: { requiresAuth: true },
   },
