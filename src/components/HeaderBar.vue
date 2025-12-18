@@ -217,7 +217,9 @@
           <div class="auth-body" v-if="authTab === 'login'">
             <!-- 左：二维码占位 -->
             <div class="auth-left qr-area">
-              <div class="qr-box">扫码进入小程序</div>
+              <div class="qr-box">
+                <img class="qr-img" :src="scanImg" alt="扫码进入小程序" />
+              </div>
               <p class="qr-text">手机端与网站账号互通，支持同步订单与收藏。</p>
             </div>
 
@@ -325,6 +327,7 @@ import { nextTick, onMounted, ref, watch, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
 import { login, register, uploadImage, getCurrentUser } from "@/api";
 import type { LoginRequest, RegisterRequest, UserDetail } from "@/api/types";
+import scanImg from "@/assets/scan.png";
 
 const router = useRouter();
 
@@ -1185,7 +1188,8 @@ const handleAvatarChange = async (event: Event) => {
 }
 
 .auth-dialog {
-  width: 720px;
+  width: 860px;
+  max-width: 92vw;
   background: #ffffff;
   border-radius: 18px;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
@@ -1293,16 +1297,43 @@ const handleAvatarChange = async (event: Event) => {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 10px;
+  margin: 0 auto 10px;
   font-size: 13px;
   color: #7a6b5c;
   background: #fffdf7;
+}
+
+.qr-area .qr-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 12px;
+}
+
+.link-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  color: #8bc34a;
+  font-weight: 600;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+.qr-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .qr-text {
   font-size: 12px;
   color: #777;
   line-height: 1.5;
+  text-align: center;
 }
 
 .avatar-area {
