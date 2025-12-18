@@ -94,8 +94,8 @@ const router = useRouter()
 
 const goOrderDetail = (orderId: number) => {
   router.push({
-    path: '/orderDetails',
-    query: { orderId }
+    name: 'OrderDetails',
+    params:{ orderId: orderId }
   })
 }
 

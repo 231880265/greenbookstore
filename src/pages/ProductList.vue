@@ -2,7 +2,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
-import axios from 'axios'
 import { Close, Search } from '@element-plus/icons-vue'
 import HeaderBar from '../components/HeaderBar.vue'
 import {
@@ -12,7 +11,7 @@ import {
   removeFavorite,
   searchBooks
 } from '@/api'
-import type { Product, FavoriteItem } from '@/api/types'
+import type { FavoriteItem } from '@/api/types'
 
 
 interface BookItem {
@@ -55,6 +54,7 @@ const bindingMap = {
 
 const currentCategory = ref<string | null>(null)
 const showCategoryDropdown = ref(false)
+const isCategoryHover = ref(false)
 let dropdownEl: HTMLElement | null = null
 const openDropdown = () => {
   showCategoryDropdown.value = true
@@ -63,11 +63,24 @@ const openDropdown = () => {
     document.addEventListener('click', closeDropdown)
   })
 }
-const closeDropdown = (e?: MouseEvent) => {
-  if (e && dropdownEl?.contains(e.target as Node)) return
+const closeDropdown = (e?: Event) => {
+  // 如果是点击事件并且点击在下拉内，则不要关闭（用于 document 点击监听）
+  if (e && e.type === 'click' && dropdownEl?.contains((e as MouseEvent).target as Node)) return
   showCategoryDropdown.value = false
+  isCategoryHover.value = false
   document.removeEventListener('click', closeDropdown)
   dropdownEl = null
+}
+
+// 鼠标进入/离开“所有分类”文字的处理
+const crumbEnter = () => {
+  isCategoryHover.value = true
+}
+const crumbLeave = () => {
+  // 只有当下拉未打开时，才清除 hover 状态；下拉打开时用户可能正在移动到下拉菜单，不能立即清除
+  if (!showCategoryDropdown.value) {
+    isCategoryHover.value = false
+  }
 }
 
 /* ---------- 筛选项 ---------- */
@@ -119,7 +132,22 @@ const filteredBooks = computed(() => {
 
   if (filter.value.quality) {
     const min = Number(filter.value.quality)
-    list = list.filter(b => Number(b.usedDegree) >= min)
+    list = list.filter(b => {
+      const degRaw = b.usedDegree
+      const degNum = Number(degRaw)
+      if (isNaN(degNum)) return false
+      // 统一转换为百分比表示：
+      // - 若后端返回 90/80/... 已是百分比，保留
+      // - 若后端返回 9/8/... 表示 9 成、8 成（需 *10）
+      // - 若后端返回 0.9 之类（小数），按 *100 处理
+      let percent = degNum
+      if (degNum < 1) {
+        percent = degNum * 100
+      } else if (degNum < 10) {
+        percent = degNum * 10
+      }
+      return percent >= min
+    })
   }
 
   list = list.filter(
@@ -184,23 +212,25 @@ const removeTag = (k: string) => {
 
 const resetAll = () => {
   filter.value = { quality: null, priceMin: 0, priceMax: 999, binding: null }
-  currentCategory.value = null
+  // 保留当前子分类选择，不应在重置筛选时清空 currentCategory
+  // currentCategory.value = null
 }
 
 /* ----------获取书籍列表 ---------- */
 const fetchBooks = async () => {
   try {
-    const response = await getProductList(currentCategory.value || undefined)
-    allBooks.value = response.data.map(item => ({
+    const { data } = await getProductList(currentCategory.value || undefined)
+    // 保持原来的字段转换逻辑
+    allBooks.value = data.map(item => ({
       ...item,
-      // 处理类型转换
       usedDegree: item.usedDegree?.toString() || '',
-      bookBinding: item.bookBinding || ''
+      bookBinding: item.bookBinding || '',
     })) as BookItem[]
   } catch (e) {
     console.error(e)
   }
 }
+
 
 /* ---------- 收藏 ---------- */
 const favoritedSet = ref<Set<number>>(new Set())
@@ -243,15 +273,17 @@ const toggleFavorite = async (book: BookItem) => {
 }
 
 /* ---------- 搜索 ---------- */
+//TODO:这里目前是前端自己的筛选，而不是调用了后端搜索接口的版本
 const searchKeyword = ref('')
 const performSearch = async () => {
   if (!searchKeyword.value.trim()) {
     await fetchBooks()
     return
   }
-
   try {
-    const response = await searchBooks(searchKeyword.value.trim())
+    console.log('搜索信息', searchKeyword.value)
+    const response = await searchBooks(searchKeyword.value)
+    console.log('搜索结果', response.data)
     allBooks.value = response.data.map(item => ({
       ...item,
       usedDegree: item.usedDegree?.toString() || '',
@@ -303,27 +335,41 @@ onMounted(async () => {
     <nav class="breadcrumb">
       <span class="crumb link" @click="$router.push('/')">首页</span>
       <span class="sep">/</span>
-      <span class="crumb link" @click="$router.push('/products')">商城</span>
+      <span class="crumb link">商城</span>
       <span class="sep">/</span>
-      <span class="crumb" :class="{ hover: showCategoryDropdown }" @click.stop="openDropdown">
-        所有分类
-      </span>
 
-      <transition name="fade">
-        <ul v-if="showCategoryDropdown" class="dropdown category-dropdown">
-          <li
-              v-for="(code, name) in categoryMap"
-              :key="code"
-              :class="{ active: currentCategory === code }"
-              @click.stop="currentCategory = code; closeDropdown()"
+      <span class="category-container" @mouseenter="isCategoryHover = true" @mouseleave="closeDropdown">
+        <span
+          class="crumb"
+          :class="{ hover: isCategoryHover || showCategoryDropdown }"
+          @mouseenter="crumbEnter"
+          @mouseleave="crumbLeave"
+          @click.stop="openDropdown"
+        >
+          所有分类
+        </span>
+
+        <transition name="fade">
+          <ul
+            v-if="showCategoryDropdown"
+            class="dropdown category-dropdown"
+            @mouseenter="isCategoryHover = true"
+            @mouseleave="closeDropdown"
           >
-            {{ name }}
-          </li>
-          <li :class="{ active: currentCategory === null }" @click.stop="currentCategory = null; closeDropdown()">
-            全部分类
-          </li>
-        </ul>
-      </transition>
+            <li
+                v-for="(code, name) in categoryMap"
+                :key="code"
+                :class="{ active: currentCategory === code }"
+                @click.stop="currentCategory = code; closeDropdown()"
+            >
+              {{ name }}
+            </li>
+            <li :class="{ active: currentCategory === null }" @click.stop="currentCategory = null; closeDropdown()">
+              全部分类
+            </li>
+          </ul>
+        </transition>
+      </span>
 
       <template v-if="currentCategory">
         <span class="sep"> > </span>
@@ -821,5 +867,16 @@ onMounted(async () => {
   justify-content: center;
   margin-top: 32px;
   margin-bottom: 20px;
+}
+
+/* 下拉容器使菜单位于“所有分类”下方 */
+.category-container {
+  position: relative;
+  display: inline-block;
+}
+.dropdown {
+  left: 0; /* 相对于 category-container */
+  top: calc(100% - 2px); /* 稍微重叠，避免鼠标经过中缝导致 mouseleave */
+  margin: 0; /* 去掉 margin 导致的空隙 */
 }
 </style>

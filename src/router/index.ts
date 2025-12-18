@@ -9,22 +9,30 @@ import UsedBookOrder from '../pages/UsedBookOrder.vue'
 import SellBook from '../pages/SellBook.vue'
 import ProductList from '../pages/ProductList.vue'
 import Cart from "../pages/cart.vue";
+import MyCollections from "../pages/MyCollections.vue";
+import UbRecycleOrderDetails from "../pages/UbRecycleOrderDetails.vue";
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
-    component: ProductList,
+    component: Home,
   },
   {
     path: '/orders',
     component: Order,
   },
   {
+    path: '/orderDetails/:orderId',
+    name: 'OrderDetails',
+    component: OrderDetails,
+  },
+  {
     path: '/usedBook/orders',
     component: UsedBookOrder,
   },
   {
-    path: '/orderDetails',
-    component: OrderDetails,
+    path: '/usedBookRecycleOrderDetails/:orderId',
+    name: 'UbRecycleOrderDetails',
+    component: UbRecycleOrderDetails,
   },
   {
     path: '/product-detail/:id',

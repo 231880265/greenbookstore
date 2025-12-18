@@ -1,122 +1,78 @@
 <!-- MyCollections.vue -->
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
-import { Search, Close, ArrowDown } from '@element-plus/icons-vue'
+import { Search, ArrowDown } from '@element-plus/icons-vue'
 import HeaderBar from '../components/HeaderBar.vue'
+import { getFavoriteList, removeFavorite as apiRemoveFavorite } from '@/api'
+import type { FavoriteItem } from '@/api/types'
+import { useRouter } from 'vue-router'
 
-/* ---------- 类型 ---------- */
-interface FavoriteItem {
-  favoriteId: number
-  ubId: number
-  title: string
-  cover: string
-  price: number
-}
-
-/* ---------- 数据 ---------- */
+ /* ---------- 数据 / 状态 ---------- */
+const router = useRouter()
+const keyword = ref('')
 const favorites = ref<FavoriteItem[]>([])
 const loading = ref(false)
-
-/* ---------- 搜索 ---------- */
-const keyword = ref('')
-
-/* ---------- 下拉状态 ---------- */
-const open = ref({
-  category: false,
-  status: false,
-  time: false,
-  sort: false,
-})
+// 下拉筛选 UI 占位（模板用到），保持可交互但简单实现
+const open = ref<{ [k: string]: boolean }>({ category: false, status: false, time: false, sort: false })
 const toggle = (k: keyof typeof open.value) => {
   open.value[k] = !open.value[k]
 }
 const closeAll = () => {
-  open.value = { category: false, status: false, time: false, sort: false }
+  Object.keys(open.value).forEach(k => (open.value[k as keyof typeof open.value] = false))
 }
+const categoryOptions = ['全部', '法律', '经济', '文学']
+const statusOptions = ['全部', '在售', '已售']
+const timeOptions = ['全部', '最近一周', '最近一个月']
+const sortOptions = ['默认', '价格从低到高', '价格从高到低']
+const currentCategory = ref<string | null>(null)
+const currentStatus = ref<string | null>(null)
+const currentTime = ref<string | null>(null)
+const currentSort = ref<string | null>(null)
 
-/* ---------- 筛选项 ---------- */
-const categoryOptions = ['全部', '文学', '小说', '艺术', '历史', '社科', '生活', '经济', '政治', '哲学心理学']
-const statusOptions   = ['全部', '正常', '失效']
-const timeOptions     = ['全部', '最近一周', '最近一月', '最近三月', '最近半年', '最近一年']
-const sortOptions     = ['时间↓', '时间↑', '价格↓', '价格↑']
-
-const currentCategory = ref('全部')
-const currentStatus   = ref('全部')
-const currentTime     = ref('全部')
-const currentSort     = ref('时间↓')
-
-/* ---------- 拉取收藏 ---------- */
 const fetchFavorites = async () => {
   loading.value = true
   try {
-    const { data } = await axios.get('http://127.0.0.1:8080/api/favorites', {
-      headers: { token: localStorage.getItem('GB_TOKEN') || '' },
-    })
-    favorites.value = data.data   // 仅使用接口返回字段
-  } catch (e) {
-    console.error(e)
+    const res = await getFavoriteList()
+    // API 返回 ApiResponse<FavoriteItem[]>{ code, data, msg }
+    favorites.value = res.data || []
+ } catch (e) {
+    console.error('fetchFavorites', e)
   } finally {
     loading.value = false
   }
 }
 
-/* ---------- 过滤 + 排序 ---------- */
-const filteredList = computed(() => {
-  let list = [...favorites.value]
-
-  if (keyword.value.trim()) {
-    const kw = keyword.value.toLowerCase()
-    list = list.filter(i => i.title.toLowerCase().includes(kw))
-  }
-
-  if (currentCategory.value !== '全部') {
-    list = list.filter(i => i.title.includes(currentCategory.value))
-  }
-
-  if (currentStatus.value !== '全部') {
-    // 接口无 status 字段，按“失效”关键词简单过滤
-    const invalid = currentStatus.value === '失效'
-    list = list.filter(i => i.title.includes('失效') === invalid)
-  }
-
-  if (currentTime.value !== '全部') {
-    const map: Record<string, number> = {
-      '最近一周': 7 * 24 * 3600 * 1000,
-      '最近一月': 30 * 24 * 3600 * 1000,
-      '最近三月': 90 * 24 * 3600 * 1000,
-      '最近半年': 180 * 24 * 3600 * 1000,
-      '最近一年': 365 * 24 * 3600 * 1000,
-    }
-    const min = Date.now() - map[currentTime.value]
-    // 接口无 collectedAt，用 favoriteId 降序模拟时间
-    list = list.filter(i => i.favoriteId > 0) // 占位，实际可扩展
-  }
-
-  switch (currentSort.value) {
-    case '时间↓': list.sort((a, b) => b.favoriteId - a.favoriteId); break
-    case '时间↑': list.sort((a, b) => a.favoriteId - b.favoriteId); break
-    case '价格↓': list.sort((a, b) => b.price - a.price); break
-    case '价格↑': list.sort((a, b) => a.price - b.price); break
-  }
-
-  return list
-})
-
-/* ---------- 取消收藏 ---------- */
+// 取消收藏（调用后端 API），带确认提示并与 ProductList 行为一致
 const removeFavorite = async (item: FavoriteItem) => {
+  const ok = window.confirm('确认取消收藏该商品吗？')
+  if (!ok) return
   try {
-    await axios.delete('http://127.0.0.1:8080/api/favorites/${item.favoriteId}', {
-      headers: { token: localStorage.getItem('GB_TOKEN') || '' },
-    })
-    favorites.value = favorites.value.filter(f => f.favoriteId !== item.favoriteId)
+    await apiRemoveFavorite(item.favoriteId)
+    // 与 ProductList 行为一致：取消收藏后重新从后端拉取收藏列表
+    await fetchFavorites()
   } catch (e) {
     console.error('取消收藏失败', e)
   }
 }
 
+// 点击卡片进入商品详情
+const goToProduct = (ubId: number) => {
+  router.push({ path: `/product-detail/${ubId}` })
+}
+
 onMounted(fetchFavorites)
-</script>
+
+// 搜索 / 过滤结果（简单前端实现）
+const filteredList = computed(() => {
+  const kw = keyword.value.trim().toLowerCase()
+  let list = [...favorites.value]
+  if (kw) {
+    list = list.filter(i => (i.title || '').toLowerCase().includes(kw))
+  }
+  // 其他过滤器（category/status/time/sort）可在此扩展
+  return list
+})
+ </script>
 
 <template>
   <div class="page">
@@ -140,7 +96,6 @@ onMounted(fetchFavorites)
       <!-- 标题 + 批量管理 -->
       <header class="page-header">
         <h1 class="title">我的收藏</h1>
-        <el-button text class="batch-btn">批量管理</el-button>
       </header>
 
       <!-- 二级筛选 -->
@@ -150,8 +105,6 @@ onMounted(fetchFavorites)
             :key="key"
             class="filter-item"
             :class="{ open: open[key as keyof typeof open] }"
-            @mouseenter="$event.currentTarget.classList.add('hover')"
-            @mouseleave="$event.currentTarget.classList.remove('hover')"
             @click="toggle(key as keyof typeof open)"
         >
           {{ label }}
@@ -167,13 +120,7 @@ onMounted(fetchFavorites)
                   v-for="opt in key === 'category' ? categoryOptions : key === 'status' ? statusOptions : key === 'time' ? timeOptions : sortOptions"
                   :key="opt"
                   :class="{ active: (key === 'category' && currentCategory === opt) || (key === 'status' && currentStatus === opt) || (key === 'time' && currentTime === opt) || (key === 'sort' && currentSort === opt) }"
-                  @click.stop="
-                  key === 'category' ? (currentCategory = opt) :
-                  key === 'status' ? (currentStatus = opt) :
-                  key === 'time' ? (currentTime = opt) :
-                  (currentSort = opt);
-                  closeAll()
-                "
+                  @click.stop="( () => { if (key === 'category') currentCategory = opt; else if (key === 'status') currentStatus = opt; else if (key === 'time') currentTime = opt; else currentSort = opt; closeAll(); } )()"
               >
                 {{ opt }}
               </li>
@@ -183,14 +130,26 @@ onMounted(fetchFavorites)
       </nav>
 
       <!-- 列表 -->
-      <div v-loading="loading" class="list">
+       <div v-loading="loading" class="list">
         <div
             v-for="item in filteredList"
             :key="item.favoriteId"
             class="card"
+            @click="goToProduct(item.ubId)"
         >
           <div class="img-wrap">
             <img :src="item.cover" :alt="item.title" />
+            <!-- 与 ProductList 保持一致的收藏浮层按钮（红心填充，点击取消收藏） -->
+            <span class="favorite-btn active" @click.stop="removeFavorite(item)">
+              <svg viewBox="0 0 24 24" width="18" height="18">
+                <path
+                  fill="#e53935"
+                  stroke="#e53935"
+                  stroke-width="2"
+                  d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                />
+              </svg>
+            </span>
           </div>
           <div class="info">
             <p class="book-title" :title="item.title">{{ item.title }}</p>
@@ -199,14 +158,13 @@ onMounted(fetchFavorites)
               <span class="num">{{ item.price.toFixed(2) }}</span>
             </p>
           </div>
-          <el-icon class="close" @click="removeFavorite(item)"><Close /></el-icon>
         </div>
 
         <div v-if="!loading && filteredList.length === 0" class="empty">
-          暂无收藏
-        </div>
-      </div>
-    </main>
+           暂无收藏
+         </div>
+       </div>
+     </main>
   </div>
 </template>
 
@@ -254,15 +212,6 @@ onMounted(fetchFavorites)
   font-weight: 300;
   letter-spacing: 2px;
   color: #111;
-}
-.batch-btn {
-  font-size: 13px;
-  color: #666;
-  letter-spacing: 1px;
-  transition: color 0.25s;
-}
-.batch-btn:hover {
-  color: #000;
 }
 
 /* ---------- 二级筛选 ---------- */
@@ -366,6 +315,29 @@ onMounted(fetchFavorites)
 .symbol {
   font-size: 12px;
   margin-right: 2px;
+}
+
+/* ---------- 收藏按钮 ---------- */
+.favorite-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.25s;
+}
+.card:hover .favorite-btn {
+  opacity: 1;
+}
+.favorite-btn.active {
+  opacity: 1;
 }
 
 /* ---------- 删除按钮 ---------- */
