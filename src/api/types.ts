@@ -198,3 +198,21 @@ export interface TopItem {
   price: number
   cover: string
 }
+
+/* ==========发起订单的响应=============== */
+export interface SubmitOrderResponse {
+  order_id: number;
+  user_id: number;
+  total_amount: number;
+  payment_method: string;
+  create_time: string;
+  status: string;
+}
+
+/* ==========发起支付的响应=============== */
+export interface SubmitPaymentResponse {
+  payment_form: string,
+  order_id: string,
+  total_amount: number,
+  payment_method: string
+}

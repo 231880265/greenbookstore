@@ -65,7 +65,7 @@ const routes: RouteRecordRaw[] = [
     path: '/product-list',
     component: ProductList,
     meta: { requiresAuth: true },
-  },
+  }
 
 ]
 

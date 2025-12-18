@@ -16,7 +16,9 @@ import type {
   UpdateUserInfoRequest,
   CreateUsedBookRequest,
   Cart,
-  TopItem
+  TopItem,
+  SubmitOrderResponse,
+  SubmitPaymentResponse
 } from './types'
 
 /* ----------------- 商品相关 api ----------------- */
@@ -237,4 +239,32 @@ export const getTop5UsedBookOrders = () => {
 // GET /api/favorites/top5
 export const getTop5Favorites = () => {
   return request.get<ApiResponse<TopItem[]>>('/favorites/top5')
+}
+
+
+/*-------------------- 订单相关api --------------------*/
+// 提交订单(购物车发起)
+export const submitOrderFromCart = (useLeaf:number, cartItemIds:number[], addressId: number, paymentMethod: string) => {
+  return request.post<ApiResponse<SubmitOrderResponse>>('/cart/checkout', {
+    "leaf": useLeaf,
+    "cart_item_ids": cartItemIds,
+    "ad_id": addressId,
+    "payment_method": paymentMethod
+  });
+}
+
+// 提交订单(商品详情页发起)
+export const submitOrderFromProduct = (useLeaf:number, ubId:number, quantity:number, addressId: number, paymentMethod: string) => {
+  return request.post<ApiResponse<SubmitOrderResponse>>('/immediate/checkout', {
+    "leaf": useLeaf,
+    "ubId": ubId,
+    "count": quantity,
+    "ad_id": addressId,
+    "payment_method": paymentMethod
+  });
+}
+
+//发起支付
+export const initiatePayment = (orderId: number) => {
+  return request.post<ApiResponse<SubmitPaymentResponse>>(`/orders/${orderId}/pay`);
 }
