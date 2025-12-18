@@ -41,7 +41,7 @@
 
                         <div v-if="usableLeaf > 0" class="leaf-section">
                             <el-checkbox v-model="useLeaf">使用{{ usableLeaf }}个小绿叶抵扣￥{{ leafDeduction.toFixed(2)
-                            }}</el-checkbox>
+                                }}</el-checkbox>
                         </div>
                         <div class="pay-row">
                             <van-button class="pay-button" :disabled="!selectedAddressId || settleItems.length === 0"
@@ -476,6 +476,11 @@ async function goPay() {
 
     &:hover {
         opacity: 0.9;
+    }
+
+    &:disabled {
+        cursor: not-allowed;
+        opacity: 0.6;
     }
 }
 
