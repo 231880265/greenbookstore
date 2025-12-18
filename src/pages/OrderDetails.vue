@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
-import axios from 'axios';
+import { ref, onMounted, watch, computed } from 'vue';
 import HeaderBar from "../components/HeaderBar.vue";
 import Footer from "../components/Footer.vue";
 
@@ -31,47 +30,101 @@ const orderDetails = ref<OrderDetails | null>(null);
 // 控制物流信息的展开和收起
 const isLogisticsOpen = ref(false);
 
-// 获取订单详情
-const fetchOrderDetails = async (orderId: string) => {
+// 新增：用于控制进度条动态展示的变量
+const displayedStep = ref(-1) // 当前已经展示到的步骤索引（动画过程中增长）
+const isCanceled = ref(false) // 标记是否已取消
+
+// 根据订单状态决定目标步骤索引（PENDING=0, PAID=1, SHIPPED=2, COMPLETED=3）
+const mapStatusToStep = (status: string | undefined) => {
+  if (!status) return 0
+  switch (status) {
+    case 'PENDING': return 0
+    case 'PAID': return 1
+    case 'SHIPPED': return 2
+    case 'COMPLETED': return 3
+    case 'CANCELLED': return 0 // 取消视为在第 0 步之后中断
+    default: return 0
+  }
+}
+
+// 动画：逐步推进 displayedStep 到目标位置
+const animateTo = (target: number, cancelled = false) => {
+  displayedStep.value = -1
+  isCanceled.value = false
+  const stepDelay = 500 // 增大延迟以便观察动画
+  let i = -1
+  const tick = () => {
+    i++
+    if (i > target) {
+      if (cancelled) {
+        // 在到达第 0 步后短延迟显示取消状态
+        setTimeout(() => {
+          isCanceled.value = true
+        }, 200)
+      }
+      return
+    }
+    displayedStep.value = i
+    setTimeout(tick, stepDelay)
+  }
+  tick()
+}
+
+// 新增：步骤文本数组（用于渲染节点）
+const steps = ['拍下宝贝', '买家付款', '卖家发货', '确认收货']
+
+// 进度条百分比（用于横向进度动画），4 步：0..3
+const progressPercent = computed(() => {
+  if (displayedStep.value < 0) return 0
+  const stepsCount = steps.length
+  return Math.round(((displayedStep.value + 1) / stepsCount) * 100)
+})
+
+// 获取订单详情（演示数据或真实接口）
+const fetchOrderDetails = async () => {
   try {
-    const response = await axios.get(`/api/orders/my/${orderId}`, {
-      headers: { token: 'your-token-here' },
-      params: { userId: 123 }, // 请替换为真实的 userId
-    });
-    orderDetails.value = response.data.data;
+    // 真实接口处可替换为 axios.get('/api/orders/my/' + orderId)
+    // 这里使用模拟数据
+    orderDetails.value = {
+      orderId: '10001',
+      totalAmount: 120.00,
+      paymentMethod: 'ALIPAY',
+      status: 'PAID',
+      createTime: '2025-04-12T14:30:00',
+      adId: '江苏省 苏州市 虎丘区 东渚街道 东渚街道太湖大道1520号南京大学东校区（邮政快递服务中心）',
+      orderItems: [
+        {
+          ubId: 1,
+          title: '【小猴子同款】INSBAHA原色波塔眼线胶笔砍刀卧蚕笔持久不易晕',
+          writer: 'INSBAHA',
+          publisher: 'INSBAHA旗舰店',
+          cover: 'https://example.com/images/product.jpg',
+          quantity: 1,
+          price: 60.00,
+          totalPrice: 60.00
+        }
+      ]
+    };
   } catch (error) {
     console.error('Failed to fetch order details:', error);
   }
 };
 
-// onMounted(() => {
-//   // 模拟订单ID为 '10001' 获取数据
-//   fetchOrderDetails('10001');
-// });
-
 onMounted(() => {
-  // 模拟订单详情数据
-  orderDetails.value = {
-    orderId: '10001',
-    totalAmount: 120.00,
-    paymentMethod: 'ALIPAY',
-    status: 'PAID',
-    createTime: '2025-04-12T14:30:00',
-    adId: '江苏省 苏州市 虎丘区 东渚街道 东渚街道太湖大道1520号南京大学东校区（邮政快递服务中心）',
-    orderItems: [
-      {
-        ubId: 1,
-        title: '【小猴子同款】INSBAHA原色波塔眼线胶笔砍刀卧蚕笔持久不易晕',
-        writer: 'INSBAHA',
-        publisher: 'INSBAHA旗舰店',
-        cover: 'https://example.com/images/product.jpg',
-        quantity: 1,
-        price: 60.00,
-        totalPrice: 60.00
-      }
-    ]
-  };
+  // 模拟获取数据
+  fetchOrderDetails()
 });
+
+// 监听订单数据变化，触发进度条动画
+watch(orderDetails, (val) => {
+  const target = mapStatusToStep(val?.status)
+  if (val?.status === 'CANCELLED') {
+    // 取消：先动画到第 0 步，再显示中断 ❌
+    animateTo(target, true)
+  } else {
+    animateTo(target, false)
+  }
+})
 
 </script>
 
@@ -85,41 +138,49 @@ onMounted(() => {
         <div class="page-title">
           <h1>小绿书 - 订单详情</h1>
         </div>
-        <!-- 进度条 -->
+
+        <!-- 改造后的进度条：节点在进度条上 -->
         <div class="progress-bar">
-          <div class="step-item">
-            <div class="step-icon completed">✓</div>
-            <div class="step-text">拍下宝贝</div>
-          </div>
-          <div class="step-item">
-            <div class="step-icon completed">✓</div>
-            <div class="step-text">买家付款</div>
-          </div>
-          <div class="step-item">
-            <div class="step-icon completed">✓</div>
-            <div class="step-text">卖家发货</div>
-          </div>
-          <div class="step-item">
-            <div class="step-icon completed">✓</div>
-            <div class="step-text">确认收货</div>
+          <div class="progress-track">
+            <div class="progress-line" aria-hidden="true" :style="{ '--filled': progressPercent + '%' }">
+              <div class="progress-inner" :style="{ width: progressPercent + '%' }"></div>
+            </div>
+
+            <div class="nodes">
+              <div
+                v-for="(label, idx) in steps"
+                :key="idx"
+                class="node"
+                :class="{ active: displayedStep >= idx, current: displayedStep === idx, cancelled: isCanceled && idx === (displayedStep + 1) }
+                "
+                :style="{ left: (idx / (steps.length - 1) * 100) + '%' }"
+              >
+                <div class="node-circle">
+                  <span class="node-mark">{{ displayedStep > idx ? '✓' : (isCanceled && idx === displayedStep + 1 ? '❌' : (displayedStep === idx ? '' : idx + 1)) }}</span>
+                </div>
+                <div class="node-label">{{ label }}</div>
+              </div>
+            </div>
           </div>
         </div>
 
         <!-- 交易成功提示 -->
         <div class="transaction-success">
           <h2>交易成功</h2>
-          <p class="note">
-            <span class="icon">📦</span> 已签收 您的快件已在代收点取出签收，如遇问题请联系快递员【姜长霞：18020275037】，无需找商家/平台。签收代收点：代收点-南京大学苏州校区东区邮局，网点电话：0512-87821834，投诉电话：18020272107。关注“中通快递”官方微信公众号反馈问题，处理更快速！
-            <a href="#" class="link" @click.prevent="isLogisticsOpen = !isLogisticsOpen">
-              {{ isLogisticsOpen ? '收起' : '查看物流详情' }}
-            </a>
+          <div class="note">
+            <p>
+              <span class="icon">📦</span> 已签收 您的快件已在代收点取出签收，如遇问题请联系快递员【姜长霞：18020275037】，无需找商家/平台。签收代收点：代收点-南京大学苏州校区东区邮局，网点电话：0512-87821834，投诉电话：18020272107。关注“中通快递”官方微信公众号反馈问题，处理更快速！
+              <a href="#" class="link" @click.prevent="isLogisticsOpen = !isLogisticsOpen">
+                {{ isLogisticsOpen ? '收起' : '查看物流详情' }}
+              </a>
+            </p>
             <div v-if="isLogisticsOpen" class="expanded-logistics">
               <p><strong>快递公司：</strong>中通快递</p>
               <p><strong>快递单号：</strong>YT123456789</p>
               <p><strong>当前状态：</strong>已签收</p>
               <p><strong>预计送达：</strong>2025-11-21</p>
             </div>
-          </p>
+          </div>
           <p class="address">
             <span class="icon">📍</span> 江苏省 苏州市 虎丘区 东渚街道 东渚街道太湖大道1520号南京大学东校区（邮政快递服务中心）
             <br />
@@ -210,7 +271,7 @@ onMounted(() => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: rgba(255, 246, 239, 0.84);
+  background-color: #f8f5ef;
 }
 
 .order-details-layout {
@@ -238,65 +299,124 @@ onMounted(() => {
 }
 
 .progress-bar {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 20px;
-  width: 80%; /* 缩小宽度，更紧凑 */
-  margin-left: auto;
-  margin-right: auto;
+  padding: 20px 0 6px;
+}
+
+.progress-track {
+  position: relative;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.progress-line {
+  height: 12px;
+  background: #e8efe6;
+  border-radius: 999px;
+  overflow: hidden;
   position: relative;
 }
 
-.step-item {
+.progress-inner {
+  height: 100%;
+  background: linear-gradient(90deg,#b5dcc7,#2d583f);
+  width: 0%;
+  transition: width 0.6s cubic-bezier(.22,.9,.3,1);
+}
+
+.nodes {
+  position: absolute;
+  top: -14px;
+  left: 0;
+  right: 0;
+  height: 48px;
+  pointer-events: none;
+}
+
+.node {
+  position: absolute;
+  transform: translateX(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 8px;
-  position: relative;
+  width: 120px;
+  pointer-events: auto;
 }
 
-.step-icon {
-  width: 28px; /* 增大 */
-  height: 28px;
+.node-circle {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  border: 1px solid #fff0da;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px; /* 增大字体 */
-  color: #C8B196;
+  background: #f0f6ef;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow: 0 2px 6px rgba(45,88,63,0.08);
+  transition: transform 300ms cubic-bezier(.2,.9,.3,1), background-color 300ms ease, box-shadow 300ms ease;
 }
 
-.step-icon.completed {
-  background-color: #B5DCC7;
-  color: white;
+.node-mark {
+  font-weight: 600;
+  color:#4b5b4b;
+  transition: color 200ms ease;
 }
 
-.step-text {
-  font-size: 15px;
-  color: #0e0e0e;
+.node-label {
+  margin-top:8px;
+  font-size:12px;
+  color:#666;
+  width:120px;
+  text-align:center;
 }
 
-/* 连接线 */
-.step-item::before {
+/* 激活态：进度到达或超过该节点 */
+.node.active .node-circle {
+  background: linear-gradient(180deg,#cfe8d4,#8fc996);
+  transform: scale(1.05);
+  box-shadow: 0 6px 18px rgba(45,88,63,0.18);
+}
+
+.node.active .node-mark {
+  color: #fff;
+}
+
+/* 当前节点：更明显的放大效果，表现注入能量 */
+.node.current .node-circle {
+  transform: scale(1.28);
+  box-shadow: 0 10px 26px rgba(45,88,63,0.28);
+}
+
+/* 取消态：灰色并显示 ❌ （由模板逻辑控制显示） */
+.node.cancelled .node-circle {
+  background: #d8d8d8;
+}
+
+.node.cancelled .node-mark {
+  color: #fff;
+}
+
+/* 连接线根据进度改变：用渐变遮罩来表现能量注入 */
+.progress-line::after {
   content: '';
   position: absolute;
-  top: 14px;
-  right: -160px;
-  width: 160px;
-  height: 4px;
-  background-color: #B5DCC7;
-  z-index: 2;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(181,220,199,0.85) 0%, rgba(181,220,199,0.85) var(--filled), rgba(232,239,230,0.5) var(--filled));
+  mix-blend-mode: normal;
 }
 
-.step-item:last-child::before {
-  display: none;
+/* 兼容旧连接样式，提供更平滑视觉 */
+@media (max-width: 960px) {
+  .node-label { font-size:11px; width:90px }
 }
 
 .transaction-success {
   margin: 20px 0;
   padding: 15px;
-  background-color: #fff0DA;
+  background-color: #ffffff;
   border-radius: 8px;
 }
 
@@ -323,7 +443,7 @@ onMounted(() => {
   margin-top: 10px;
   padding: 10px;
   background-color: rgba(200, 177, 150, 0.18);
-  border-left: 3px solid #C8B196;
+  border-left: 3px solid #ffffff;
   border-radius: 4px;
   font-size: 14px;
 }
@@ -445,7 +565,7 @@ onMounted(() => {
   padding: 20px;
   border: 1px solid #eaeaea;
   border-radius: 8px;
-  background-color: #fff0DA;
+  background-color: #ffffff;
   justify-content: flex-end; /* 内容靠右 */
   max-height: 600px;
 }

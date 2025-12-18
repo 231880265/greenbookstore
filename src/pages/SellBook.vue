@@ -89,7 +89,7 @@
 
             <label class="field">
               <span>ISBN</span>
-              <input v-model="form.ISBN" placeholder="请输入 ISBN 编号" />
+              <input v-model="form.isbn" placeholder="请输入 ISBN 编号" />
               <small class="tip">
                 提示：ISBN 一般印在书籍背面的条形码附近，通常为 10 或 13 位数字。
               </small>
@@ -257,7 +257,7 @@ const platformFactor = 0.6
 const form = reactive({
   adId: 1,
   title: '',
-  ISBN: '',
+  isbn: '',
   price: 0,
   listPrice: 0,
   writer: '',
@@ -295,7 +295,7 @@ const progressPercent = computed(() => {
   if (form.title) filled++
   if (form.writer) filled++
   if (form.listPrice) filled++
-  if (form.ISBN) filled++
+  if (form.isbn) filled++
   if (form.cover) filled++
   if (selectedAddressId.value) filled++
   return Math.min(100, Math.round((filled / 6) * 100))
@@ -379,7 +379,7 @@ const submitAddress = async () => {
 }
 
 const onSubmit = async () => {
-  if (!form.title || !form.ISBN || !form.cover || !selectedAddressId.value) {
+  if (!form.title || !form.isbn || !form.cover || !selectedAddressId.value) {
     alert('请先完善书名、ISBN、封面和地址信息')
     return
   }
@@ -397,7 +397,7 @@ const onSubmit = async () => {
     const createUsedBookRes = await createUsedBook({
       adId: form.adId,
       title: form.title,
-      ISBN: form.ISBN,
+      isbn: form.isbn,
       price: form.price || estimatedPrice.value,
       listPrice: form.listPrice,
       writer: form.writer,
@@ -410,7 +410,7 @@ const onSubmit = async () => {
     Object.assign(form, {
       adId: 1,
       title: '',
-      ISBN: '',
+      isbn: '',
       price: 0,
       listPrice: 0,
       writer: '',
@@ -438,7 +438,7 @@ onMounted(async () => {
 <style scoped>
 .sell-page {
   min-height: 100vh;
-  background: #f8f5ef;
+  background: #fcfbf8;
 }
 
 .sell-main {

@@ -37,10 +37,10 @@ export const getRecommendedProducts = (id: number) => {
 
 // 获取商品列表
 export const getProductList = (category?: string) => {
-  return request.get<ApiResponse<Product[]>>('/used_books/category', {
-    params: category ? {category} : undefined
-  })
+    const params = category ? { category: category } : {}
+    return request.get<ApiResponse<Product[]>>('/used_books/category', params)
 }
+
 
 // 获取某分类下的前5本热门二手书
 export const getTop5ByCategory = (category: string) => {
@@ -51,6 +51,7 @@ export const getTop5ByCategory = (category: string) => {
 
 // 搜索二手书
 export const searchBooks = (keyword: string) => {
+    console.log('API调用：搜索图书，关键词=', keyword);
   return request.get<ApiResponse<Product[]>>(`/usedbook/search/${keyword}`)
 }
 

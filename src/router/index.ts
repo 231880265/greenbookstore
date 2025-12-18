@@ -11,6 +11,7 @@ import ProductList from '../pages/ProductList.vue'
 import Cart from "../pages/cart.vue";
 import Checkout from '@/pages/Checkout.vue'
 import MyCollections from '../pages/MyCollections.vue'
+import UbRecycleOrderDetails from "../pages/UbRecycleOrderDetails.vue";
 const routes: RouteRecordRaw[] = [
   {
     path: '/',
@@ -22,13 +23,19 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
+    path: '/orderDetails/:orderId',
+    name: 'OrderDetails',
+    component: OrderDetails,
+  },
+  {
     path: '/usedBook/orders',
     component: UsedBookOrder,
     meta: { requiresAuth: true },
   },
   {
-    path: '/orderDetails',
-    component: OrderDetails,
+    path: '/usedBookRecycleOrderDetails/:orderId',
+    name: 'UbRecycleOrderDetails',
+    component: UbRecycleOrderDetails,
     meta: { requiresAuth: true },
   },
   {

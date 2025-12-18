@@ -89,8 +89,8 @@ const router = useRouter()
 
 const goOrderDetail = (orderId: number) => {
   router.push({
-    path: '/orderDetails',
-    query: { orderId }
+    name: 'UbRecycleOrderDetails',
+    params: { orderId: orderId }
   })
 }
 
