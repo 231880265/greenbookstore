@@ -124,7 +124,7 @@ export interface SoldBookItem {
     price: number;
     cover: string;
     writer: string;
-    ISBN: string;
+    isbn: string;
     usedDegree: string;
   }
   export interface OrderItem {
@@ -185,7 +185,7 @@ export interface UpdateUserInfoRequest {
 export interface CreateUsedBookRequest {
   adId: number
   title: string
-  ISBN: string
+  isbn: string
   price: number
   listPrice: number
   writer: string
