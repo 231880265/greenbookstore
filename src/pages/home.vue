@@ -2,7 +2,7 @@
   <div class="home-container">
     <HeaderBar />
 
-    <HomeCarousel />  
+    <HomeCarousel />  
     
     <section class="top-category-section">
       <div class="category-grid">
@@ -162,11 +162,10 @@ const goProfile = () => {
 
 .banner-content {
     /* 限制宽度，使其与主体内容对齐，而不是全屏铺满 */
-    max-width: 1200px; 
+  max-width: 1200px;
     height: 380px; /* 调整高度，略低于之前，更协调 */
     margin: 30px auto 30px; /* 顶部 30px，底部 30px，衔接自然 */
     position: relative;
-    overflow: hidden;
     border-radius: 8px; 
     cursor: pointer;
     box-shadow: 0 5px 20px rgba(0, 0, 0, 0.08); /* 柔和阴影 */
@@ -266,7 +265,7 @@ const goProfile = () => {
     color: #666666;
     transition: color 0.3s;
     font-weight: 500;
-    display: flex;
+  display: flex;
     align-items: center;
 }
 
@@ -283,7 +282,7 @@ const goProfile = () => {
 
 /* 书籍卡片列表 (横向滚动) */
 .book-card-list {
-    display: flex;
+  display: flex;
     overflow-x: auto; 
     padding: 10px 0;
     padding-bottom: 20px;
@@ -300,7 +299,7 @@ const goProfile = () => {
     flex-shrink: 0;
     background: #ffffff; /* 卡片使用白色，在米白背景上突出 */
     border-radius: 6px;
-    cursor: pointer;
+  cursor: pointer;
     transition: box-shadow 0.3s, transform 0.3s;
 }
 
@@ -310,7 +309,7 @@ const goProfile = () => {
 }
 
 .card-img-wrapper {
-    width: 100%;
+  width: 100%;
     height: 280px; 
     overflow: hidden;
     border-radius: 6px 6px 0 0;

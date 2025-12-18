@@ -25,13 +25,10 @@ export type Product = {
     stock?: number;
     sales?: number;
 }
-
-// 购物车列表
 export type Cart = {
-    total: number;
-    items: (Product & { cartItemId: number, quantity: number })[];
+  total: number;
+  items: (Product & { cartItemId: number, quantity: number })[];
 }
-
 export type OrderStatus = 'PENDING' | 'PAID' | 'SHIPPED' | 'COMPLETED' | 'CANCELLED';
 
 export interface OrderItemVO {
@@ -45,22 +42,6 @@ export interface OrderItemVO {
     totalPrice: number
     cover: string
 }
-
-export interface OrderVO {
-    orderId: number
-    userId: number
-    adId: number
-    leaf: number
-    status: OrderStatus
-    totalAmount: number
-    cover: string
-    createTime: string
-    paymentTime: string
-    paymentMethod: string
-    tradeNo: string
-    orderItems: OrderItemVO[]
-}
-
 export type UsedBookOrderStatus = 'CHECKING' | 'SHIPPED' | 'COMPLETED';
 
 export interface UsedBookOrderVO {
@@ -75,6 +56,20 @@ export interface UsedBookOrderVO {
     writer: string
     usedDegree: number
     isbn: string
+}
+export interface OrderVO {
+    orderId: number
+    userId: number
+    adId: number
+    leaf: number
+    status: OrderStatus
+    totalAmount: number
+    cover: string
+    createTime: string
+    paymentTime: string
+    paymentMethod: string
+    tradeNo: string
+    orderItems: OrderItemVO[]
 }
 
 // ----------------- 认证相关类型 -----------------
@@ -105,12 +100,14 @@ export type UploadImageData = string
 // ----------------- 用户信息 / 个人中心 -----------------
 
 export interface UserDetail {
-    id: number;
-    leaf: number;
-    username: string;
-    avatar: string | null;
-    telephone: string;
-  }
+  id?: number            // 有的接口可能没有
+  leaf?: number          // 有的接口可能没有
+  username: string
+  avatar: string | null
+  telephone: string
+  password: string
+}
+
 
 // 简单书籍记录，用于「回收订单 / 购书订单 / 我的收藏」预览列表
 export interface SimpleBookRecord {
@@ -119,28 +116,48 @@ export interface SimpleBookRecord {
     title: string
     price: number
 }
-
+//我要卖书模块
 export interface SoldBookItem {
-    rcld: number;
+    adId: number;
     title: string;
     listPrice: number;
     price: number;
     cover: string;
     writer: string;
     ISBN: string;
-    status: string;
     usedDegree: string;
   }
-
+  export interface OrderItem {
+    ubId: number;
+    title: string;
+    writer: string;
+    publisher: string;
+    cover: string;
+    quantity: number;
+    price: number;
+    totalPrice: number;
+  }
+  
+  export interface OrderVO {
+    orderId: number;
+    totalAmount: number;
+    paymentMethod: string;
+    status: OrderStatus;
+    createTime: string;
+    paymentTime: string;
+    tradeNo: string;
+    addId: number;
+    leaf: number;
+    orderItems: OrderItemVO[];
+  }
   export interface FavoriteItem {
     favoriteId: number;
     ubId: number;
     title: string;
     cover: string;
     price: number;
-}
-
-// AddressVO
+  }
+  // AddressVO
 export interface AddressItem {
     id: number
     userId: number
@@ -173,5 +190,11 @@ export interface CreateUsedBookRequest {
   listPrice: number
   writer: string
   usedDegree: number
+  cover: string
+}
+export interface TopItem {
+  id: number
+  title: string
+  price: number
   cover: string
 }

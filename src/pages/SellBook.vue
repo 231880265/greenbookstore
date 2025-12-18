@@ -98,16 +98,21 @@
             <label class="field">
               <span>新旧程度</span>
               <select v-model.number="form.usedDegree">
-                <option :value="1">全新（100%）</option>
-                <option :value="0.9">九成新（90%）</option>
-                <option :value="0.8">八成新（80%）</option>
-                <option :value="0.7">七成新（70%）</option>
-                <option :value="0.5">五成新（50%）</option>
+                <option :value="10">全新（100%）</option>
+                <option :value="9">九成新（90%）</option>
+                <option :value="8">八成新（80%）</option>
+                <option :value="7">七成新（70%）</option>
+                <option :value="6">六成新（60%）</option>
+                <option :value="5">五成新（50%）</option>
+                <option :value="4">四成新（40%）</option>
+                <option :value="3">三成新（30%）</option>
+                <option :value="2">二成新（20%）</option>
+                <option :value="1">一成新（10%）</option>
               </select>
             </label>
           </div>
 
-          <h3 class="section-subtitle mt24">2. 选择取件地址</h3>
+          <h3 class="section-subtitle mt24">2. 寄件人地址（我的地址）</h3>
           <div class="address-row">
             <div class="address-text" v-if="selectedAddressText">
               当前地址：{{ selectedAddressText }}
@@ -116,7 +121,7 @@
               暂未选择地址
             </div>
             <button class="outline-btn" @click="openAddressModal">
-              选择 / 新增地址
+              地址簿
             </button>
           </div>
         </div>
@@ -130,7 +135,7 @@
             </div>
             <div class="row">
               <span>新旧程度系数</span>
-              <span>x {{ form.usedDegree }}</span>
+              <span>{{ usedDegreePercent }}%</span>
             </div>
             <div class="row">
               <span>平台折扣系数</span>
@@ -159,19 +164,22 @@
       <!-- 已卖书籍列表 -->
       <section class="sold-list-section">
         <h3 class="section-subtitle">我的卖书记录</h3>
-        <ul v-if="soldList.length" class="sold-list">
-          <li v-for="item in soldList" :key="item.rcld" class="sold-item">
-            <img :src="item.cover" class="sold-cover" />
-            <div class="sold-meta">
-              <div class="title">{{ item.title }}</div>
-              <div class="price-row">
-                <span>成交价：¥{{ item.price }}</span>
-                <span class="status">{{ item.status }}</span>
-              </div>
+        <div class="book-card-list">
+          <div
+            v-for="item in soldList"
+            :key="item.adId"
+            class="book-card"
+          >
+            <div class="card-img-wrapper">
+              <img :src="item.cover" class="book-card-img" />
             </div>
-          </li>
-        </ul>
-        <div v-else class="empty-row">还没有卖出记录，快来卖出你的第一本书吧。</div>
+            <div class="card-info">
+              <div class="card-title">{{ item.title || '订单商品' }}</div>
+              <div class="card-price">¥{{ item.price }}</div>
+            </div>
+          </div>
+          <div v-if="!soldList.length" class="empty-state">还没有卖出记录，快来卖出你的第一本书吧。</div>
+        </div>
       </section>
     </main>
 
@@ -204,7 +212,7 @@
           </div>
 
           <div class="modal-footer">
-            <button class="outline-btn" @click="addressModalOpen = false">关闭</button>
+            <button class="outline-btn" @click="addressModalOpen = false">确定</button>
           </div>
         </div>
       </div>
@@ -253,7 +261,7 @@ const form = reactive({
   price: 0,
   listPrice: 0,
   writer: '',
-  usedDegree: 0.9,
+  usedDegree: 9,
   cover: '',
 })
 
@@ -293,9 +301,26 @@ const progressPercent = computed(() => {
   return Math.min(100, Math.round((filled / 6) * 100))
 })
 
+/**
+ * 新旧程度百分比显示
+ */
+const usedDegreePercent = computed(() => {
+  return form.usedDegree * 10
+})
+
+/**
+ * 新旧程度系数（用于计算，将整数1-10转换为0.1-1.0）
+ */
+const usedDegreeFactor = computed(() => {
+  return form.usedDegree * 0.1
+})
+
+/**
+ * 预计可得金额
+ */
 const estimatedPrice = computed(() => {
   if (!form.listPrice) return 0
-  return Number((form.listPrice * form.usedDegree * platformFactor).toFixed(2))
+  return Number((form.listPrice * usedDegreeFactor.value * platformFactor).toFixed(2))
 })
 
 const estimatedLeaf = computed(() => {
@@ -314,7 +339,7 @@ const onCoverChange = async (e: Event) => {
   if (!file) return
   try {
     const res = await uploadImage(file)
-    form.cover = res.data
+    form.cover =  String(res.data).trim() || ''
   } catch (err) {
     console.error('上传封面失败', err)
     alert('上传封面失败，请稍后重试')
@@ -360,7 +385,16 @@ const onSubmit = async () => {
   }
   try {
     submitting.value = true
-    await createUsedBook({
+    /**
+     * 打印前端卖书传参的所有参数
+     */
+     console.log(
+  '卖书填写的表单form',
+  JSON.stringify(form, null, 2)
+)
+
+
+    const createUsedBookRes = await createUsedBook({
       adId: form.adId,
       title: form.title,
       ISBN: form.ISBN,
@@ -370,6 +404,7 @@ const onSubmit = async () => {
       usedDegree: form.usedDegree,
       cover: form.cover,
     })
+    console.log("创建卖书记录返回信息createUsedBookRes", createUsedBookRes)
     alert('提交成功，我们会尽快与您联系')
     // 重置表单
     Object.assign(form, {
@@ -379,7 +414,7 @@ const onSubmit = async () => {
       price: 0,
       listPrice: 0,
       writer: '',
-      usedDegree: 0.9,
+      usedDegree: 9,
       cover: '',
     })
     fileInputRef.value && (fileInputRef.value.value = '')
@@ -403,7 +438,7 @@ onMounted(async () => {
 <style scoped>
 .sell-page {
   min-height: 100vh;
-  background: #f8f5ef;
+  background: #fcfbf8;
 }
 
 .sell-main {
@@ -689,52 +724,84 @@ onMounted(async () => {
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
 }
 
-.sold-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.sold-item {
+/* 书籍卡片列表 (横向滚动) */
+.book-card-list {
   display: flex;
-  align-items: center;
-  gap: 12px;
+  overflow-x: auto;
   padding: 10px 0;
-  border-top: 1px solid #f0f0f0;
+  padding-bottom: 20px;
+  gap: 16px;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
-.sold-item:first-child {
-  border-top: none;
+.book-card-list::-webkit-scrollbar {
+  display: none;
 }
 
-.sold-cover {
-  width: 48px;
-  height: 64px;
+.book-card {
+  min-width: 190px;
+  max-width: 240px;
+  flex-shrink: 0;
+  background: #ffffff;
   border-radius: 6px;
+  cursor: pointer;
+  transition: box-shadow 0.3s, transform 0.3s;
+  border: 1px solid #f0f0f0;
+}
+
+.book-card:hover {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+  transform: translateY(-5px);
+}
+
+.card-img-wrapper {
+  width: 100%;
+  height: 200px;
+  overflow: hidden;
+  border-radius: 6px 6px 0 0;
+  background: #f8f8f8;
+}
+
+.book-card-img {
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  background: #f5f5f5;
+  display: block;
+  transition: transform 0.3s;
 }
 
-.sold-meta .title {
-  font-size: 14px;
-  margin-bottom: 4px;
+.book-card:hover .book-card-img {
+  transform: scale(1.05);
 }
 
-.sold-meta .price-row {
-  font-size: 13px;
-  color: #666;
-  display: flex;
-  gap: 12px;
+.card-info {
+  padding: 12px;
+  text-align: left;
 }
 
-.sold-meta .status {
-  color: #2d583f;
+.card-title {
+  font-size: 17px;
+  color: #1a1a1a;
+  font-weight: 600;
+  margin-bottom: 5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.empty-row {
-  font-size: 13px;
+.card-price {
+  font-size: 18px;
+  color: #c0392b;
+  font-weight: 700;
+}
+
+.empty-state {
+  padding: 40px 0;
+  text-align: center;
+  font-size: 16px;
   color: #999;
-  padding: 12px 0;
+  width: 100%;
 }
 
 /* 地址弹窗样式简化版，复用 profile 页面变量 */

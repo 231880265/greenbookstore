@@ -15,7 +15,8 @@ import type {
   AddressItem,
   UpdateUserInfoRequest,
   CreateUsedBookRequest,
-  Cart
+  Cart,
+  TopItem
 } from './types'
 
 /* ----------------- 商品相关 api ----------------- */
@@ -56,6 +57,38 @@ export const searchBooks = (keyword: string) => {
 export const searchSuggest = (keyword: string) => {
   return request.get<ApiResponse<string[]>>(`/usedbook/search/suggest/${keyword}`)
 }
+// 获取分类Top6
+export const getTopProductsByCategory = (category: string) => {
+  return request.get<ApiResponse<Product[]>>('/used_books/category/top', {category})
+}
+
+/*-------------------购物相关api--------------------*/
+//将商品加入购物车
+export const addToCart = (ubId: number, quantity: number) => {
+  return request.post<ApiResponse>('/cart', {
+    "ubId": ubId,
+    "quantity": quantity
+  });
+}
+
+// 获取购物车列表
+export const getCart = () => {
+  return request.get<ApiResponse<Cart>>('/cart/');
+}
+
+// 修改购物车商品数量
+export const updateCartItem = (cartItemId: string, quantity: number) => {
+  return request.patch<ApiResponse>(`/cart/${cartItemId}`, {
+    "quantity": quantity
+  });
+}
+
+// 删除购物车项
+export const removeCartItem = (cartItemId: string) => {
+  return request.delete<ApiResponse>(`/cart/${cartItemId}`);
+}
+
+
 /* ----------------- 认证 / 用户相关 api ----------------- */
 
 // 登录
@@ -89,10 +122,10 @@ export const uploadImage = (file: File) => {
 
 
 export const getCurrentUser = () => {
-    return request.get<ApiResponse<UserDetail>>("/accounts");
-  };
+  return request.get<ApiResponse<UserDetail>>("/accounts");
+};
 
-  export type SoldBookStatus = "CHECKING" | "SHIPPED" | "COMPLETED";
+export type SoldBookStatus = "CHECKING" | "SHIPPED" | "COMPLETED";
 
 
 
@@ -113,6 +146,8 @@ export const getSoldBookList = (status?: SoldBookStatus) => {
  * Headers: token（由 request 自动注入）
  * ========================= */
 
+
+
 export const getMyOrders = (status?: OrderStatus) => {
     return request.get<ApiResponse<OrderVO[]>>('/orders/my', {status})
 }
@@ -124,19 +159,7 @@ export const getUsedBookOrders = (status?: UsedBookOrderStatus) => {
 
 
 
-/*--购物相关api--*/
-//将商品加入购物车
-export const addToCart = (productId: string, quantity: number) => {
-    return request.post<ApiResponse>('/cart', {
-        "productId": productId,
-        "quantity": quantity
-    });
-}
 
-// 获取购物车列表
-export const getCart = () => {
-    return request.get<ApiResponse<Cart>>('/cart');
-}
 
 
 
@@ -166,24 +189,27 @@ export const removeFavorite = (favoriteId: number) => {
   return request.delete<ApiResponse<boolean>>(`/favorites/${favoriteId}`)
 }
 
+
+/*--------------------地址相关api--------------------*/
+// 获取地址列表
 export const getAddressList = () => {
-    return request.get<ApiResponse<AddressItem[]>>('/address')
-  }
-  
-  export const createAddress = (data: Omit<AddressItem, 'id' | 'userId'>) => {
-    return request.post<ApiResponse<number>>('/address', data)
-  }
-  
-  export const deleteAddress = (id: number) => {
-    return request.delete(`/address/${id}`)
-  }
-  
-  export const updateAddress = (
-    id: number,
-    data: Omit<AddressItem, 'id' | 'userId'>
-  ) => {
-    return request.put(`/address/${id}`, data)
-  }
+  return request.get<ApiResponse<AddressItem[]>>('/address')
+}
+
+export const createAddress = (data: Omit<AddressItem, 'id' | 'userId'>) => {
+  return request.post<ApiResponse<number>>('/address', data)
+}
+
+export const deleteAddress = (id: number) => {
+  return request.delete(`/address/${id}`)
+}
+
+export const updateAddress = (
+  id: number,
+  data: Omit<AddressItem, 'id' | 'userId'>
+) => {
+  return request.put(`/address/${id}`, data)
+}
 
 // 更新用户信息
 // PUT /api/accounts
@@ -196,4 +222,20 @@ export const updateUserInfo = (data: UpdateUserInfoRequest) => {
 // POST /api/used_books/create
 export const createUsedBook = (data: CreateUsedBookRequest) => {
   return request.post<ApiResponse<number>>('/used_books/create', data)
+}
+// 获取购书订单前 5
+// GET /api/orders/top5
+export const getTop5Orders = () => {
+  return request.get<ApiResponse<TopItem[]>>('/orders/top5')
+}
+// 获取回收订单前 5
+// GET /api/used_books/orders/top5
+export const getTop5UsedBookOrders = () => {
+  console.log('获取回收订单前5调用接口中接口文档ing······')
+  return request.get<ApiResponse<TopItem[]>>('/used_books/orders/top5')
+}
+// 获取收藏前 5
+// GET /api/favorites/top5
+export const getTop5Favorites = () => {
+  return request.get<ApiResponse<TopItem[]>>('/favorites/top5')
 }

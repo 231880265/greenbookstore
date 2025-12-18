@@ -3,12 +3,37 @@
         <HeaderBar />
         <div class="content">
             <h2 class="cart-title">购物车</h2>
+            <el-breadcrumb separator="/" class="breadcrumb">
+                <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
+                <el-breadcrumb-item>购物车</el-breadcrumb-item>
+            </el-breadcrumb>
 
-            <div v-if="cart && cart.items.length">
+            <!-- 加载中骨架屏 -->
+            <div v-if="loading" class="loading-container">
+                <div v-for="index in 3" :key="index" class="cart-item-skeleton">
+                    <van-skeleton :row="0" class="checkbox-skeleton">
+                        <template #template>
+                            <van-skeleton-avatar size="20px" />
+                        </template>
+                    </van-skeleton>
+                    <van-skeleton :row="0" class="cover-skeleton">
+                        <template #template>
+                            <van-skeleton-image class="skeleton-cover-img" />
+                        </template>
+                    </van-skeleton>
+                    <van-skeleton title :row="2" class="meta-skeleton" />
+                    <van-skeleton :row="1" class="price-skeleton" />
+                    <van-skeleton :row="1" class="num-skeleton" />
+                    <van-skeleton :row="1" class="actions-skeleton" />
+                </div>
+            </div>
+
+            <!-- 购物车内容 -->
+            <div v-else-if="cart && cart.items.length">
                 <div class="cart-controls">
                     <van-checkbox :model-value="isAllSelected" @update:model-value="onToggleAll"
                         checked-color="#2d583f">全选</van-checkbox>
-                    <button class="favor-button">移入收藏</button>
+                    <button class="favor-button" @click="moveSelectedToFavorites">移入收藏</button>
                 </div>
                 <div class="cart-item" v-for="item in cart.items" :key="item.cartItemId">
                     <!-- 选择框（默认不选） -->
@@ -21,11 +46,11 @@
                     </div>
 
                     <!-- 信息区域 -->
-                    <div class="meta">
+                    <a class="meta" :href="`/product-detail/${item.ubId}`" target="_blank">
                         <div class="title">{{ item.title }}</div>
                         <div class="author">{{ item.writer }}</div>
                         <div class="publisher">{{ item.publisher }}</div>
-                    </div>
+                    </a>
 
                     <!-- 价格 -->
                     <div class="price">￥{{ item.price.toFixed(2) }}</div>
@@ -40,9 +65,22 @@
                         <button @click="removeItem(item.cartItemId)">删除</button>
                     </div>
                 </div>
+
+                <div class="sum">
+                    <div class="total-money">合计：
+                        <span class="money">￥{{ totalPrice.toFixed(2) }}</span>
+                    </div>
+                    <button class="checkout" @click="handleCheckout">结算<span v-if="selectedNum > 0">({{ selectedNum
+                            }})</span></button>
+                </div>
             </div>
 
-            <div v-else>购物车为空</div>
+            <!-- 空购物车 -->
+            <div v-else-if="!loading" class="vacant-cart">
+                <img src="./image/vacant-cart.svg"></img>
+                <div class="text">Oops！这里空空如也</div>
+            </div>
+
         </div>
     </div>
 
@@ -51,17 +89,22 @@
 <script setup lang="ts">
 import HeaderBar from '@/components/HeaderBar.vue';
 import { ref, onMounted, computed } from 'vue';
-import { getCart } from '@/api';
+import { getCart, updateCartItem, addFavorite, removeCartItem } from '@/api';
 import type { Cart } from '@/api/types';
+import { showToast } from 'vant';
 
 // 购物车数据
 const cart = ref<Cart | null>(null);
 
+// 加载状态
+const loading = ref(true);
+
 // 选中状态：默认都不选
 const selectedIds = ref<Set<number>>(new Set());
 
-// 加载购物车（如接口可用则使用接口）
+// 加载购物车
 const loadCart = async () => {
+    loading.value = true;
     try {
         if (typeof getCart === 'function') {
             const res = await getCart();
@@ -70,38 +113,7 @@ const loadCart = async () => {
     } catch (e) {
         console.error('请求购物车信息错误:', e);
     } finally {
-        // 如果没有数据或接口未连通，用示例数据占位
-        if (!cart.value) {
-            cart.value = {
-                total: 2,
-                items: [
-                    {
-                        cartItemId: 4,
-                        quantity: 1,
-                        ubId: 3,
-                        title: '天下·法学原论 合同法总论',
-                        price: 122.74,
-                        stock: 167,
-                        cover:
-                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/1ce0/1ce0bd9d928f85be7fc7e406c3de6404_0_1_300_300.jpg',
-                        writer: '韩世远著',
-                        publisher: '法律出版社'
-                    },
-                    {
-                        cartItemId: 5,
-                        quantity: 1,
-                        ubId: 77,
-                        title: '投资最重要的事',
-                        price: 24.9,
-                        stock: 11,
-                        cover:
-                            'https://booklibimg.kfzimg.com/data/book_lib_img_v2/isbn/1/3b53/3b5361cabafa9bf1a01fd0683bee4040_0_1_300_300.jpg',
-                        writer: '[美]霍华德·马克斯著,李莉译,石继志译',
-                        publisher: '中信出版社'
-                    }
-                ]
-            } as Cart;
-        }
+        loading.value = false;
     }
 };
 
@@ -117,16 +129,44 @@ const onSelectToggle = (id: number, checked: boolean) => {
 };
 
 // 数量变化（可在此调用更新接口）
-function handleChange(value: number, item: any) {
+async function handleChange(value: number, item: any) {
     item.quantity = value;
-
+    // 调用后端更新接口
+    updateCartItem(item.cartItemId, value).then(() => {
+        console.debug('更新购物车项成功', item.cartItemId, value);
+    }).catch((e) => {
+        console.error('更新购物车项失败', e);
+    });
 }
 
 // 移入收藏
 const moveToFavorites = async (id: number) => {
-    // TODO: 调用后端“移入收藏”接口
-    console.debug('移入收藏', id);
+    addFavorite(id).then(() => {
+        showToast({ message: '已移入收藏', duration: 1500 });
+        // 删除购物车项
+        removeItem(id);
+    }).catch((e) => {
+        console.error('移入收藏失败', e);
+    });
 };
+
+// 移入收藏（批量）
+const moveSelectedToFavorites = async () => {
+    const ids = Array.from(selectedIds.value);
+    if (ids.length === 0) {
+        showToast({ message: '请选择要移入收藏的商品', duration: 1500 });
+        return;
+    }
+    try {
+        for (const id of ids) {
+            await addFavorite(id);
+            removeItem(id);
+        }
+        showToast({ message: '已移入收藏', duration: 1500 });
+    } catch (e) {
+        console.error('批量移入收藏失败', e);
+    }
+}
 
 // 删除条目
 const removeItem = async (id: number) => {
@@ -134,13 +174,22 @@ const removeItem = async (id: number) => {
     cart.value.items = cart.value.items.filter((i) => i.cartItemId !== id);
     selectedIds.value.delete(id);
     cart.value.total = cart.value.items.length;
-    // TODO: 如果有后端，调用 deleteCartItem(id)
+    // 调用后端删除接口
+    removeCartItem(id.toString()).then(() => {
+        console.debug('删除购物车项成功', id);
+    }).catch((e) => {
+        console.error('删除购物车项失败', e);
+    });
 };
 
 // 全选状态
 const isAllSelected = computed(() => {
     if (!cart.value || cart.value.items.length === 0) return false;
     return cart.value.items.every(i => selectedIds.value.has(i.cartItemId));
+});
+
+const selectedNum = computed(() => {
+    return selectedIds.value.size;
 });
 
 // 切换全选/全不选
@@ -153,23 +202,58 @@ const onToggleAll = (checked: boolean) => {
         selectedIds.value.clear();
     }
 };
+
+// 计算总价
+const totalPrice = computed(() => {
+    if (!cart.value) return 0;
+    let sum = 0;
+    cart.value.items.forEach(i => {
+        if (selectedIds.value.has(i.cartItemId)) {
+            sum += i.price * i.quantity;
+        }
+    });
+    return sum;
+});
+
+import { useRouter } from 'vue-router';
+const router = useRouter();
+const handleCheckout = () => {
+    if (selectedIds.value.size === 0) {
+        showToast({ message: '请选择要结算的商品', duration: 1500 });
+    } else {
+        const selectedItems = cart.value?.items.filter(i => selectedIds.value.has(i.cartItemId)) || [];
+        router.push({
+            path: '/checkout',
+            query: {
+                cartItemIds: selectedItems.map(i => i.cartItemId).join(',')
+            }
+        });
+    }
+};
 </script>
 
 <style src="./global.scss"></style>
 <style scoped lang="scss">
-.page-container {
-    display: flex;
-    flex-direction: column;
-}
-
 .content {
-    flex:1;
     padding: 28px 60px;
+    padding-bottom: 140px; // 给底部留空间，避免结算条覆盖内容
 }
 
 .cart-title {
     color: #2d583f;
 }
+
+.breadcrumb {
+    margin: 8px 0 16px;
+    font-size: 14px;
+
+    :deep(.el-breadcrumb__inner) {
+        &:hover {
+            color: #2d583f;
+        }
+    }
+}
+
 
 .cart-controls {
     display: flex;
@@ -225,11 +309,11 @@ const onToggleAll = (checked: boolean) => {
         cursor: pointer;
         transition: all 0.3s;
         width: 400px;
+        color: #1a1a1a;
 
 
         .title {
             font-size: 16px;
-            color: #1a1a1a;
             text-overflow: ellipsis;
             overflow: hidden;
             white-space: nowrap;
@@ -274,7 +358,7 @@ const onToggleAll = (checked: boolean) => {
         flex-direction: column;
         gap: 10px;
 
-        button{
+        button {
             background-color: transparent;
             border: none;
             color: #b1aeae;
@@ -286,6 +370,116 @@ const onToggleAll = (checked: boolean) => {
                 color: #2d583f;
             }
         }
+    }
+}
+
+.sum {
+    position: fixed; // 固定在视口
+    bottom: 20px;
+    right: 60px;
+    display: flex;
+    align-items: center;
+    border-radius: 16px;
+    padding: 12px 24px;
+    border: 1px solid #b1aeae;
+    background-color: white;
+    z-index: 10; // 确保浮在其他内容之上
+
+    .checkout {
+        border: none;
+        background-color: #2d583f;
+        color: white;
+        padding: 12px 24px;
+        border-radius: 12px;
+        cursor: pointer;
+        transition: opacity 0.3s;
+        font-size: 16px;
+        font-weight: bold;
+        width: 140px;
+        margin-left: 40px;
+
+        &:hover {
+            opacity: 0.9;
+        }
+    }
+
+    .total-money {
+        font-size: 18px;
+        font-weight: bold;
+
+        .money {
+            color: #2d583f;
+        }
+    }
+}
+
+.vacant-cart {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 100px;
+
+    img {
+        width: 200px;
+        height: 200px;
+        margin-bottom: 20px;
+    }
+
+    .text {
+        font-size: 20px;
+        color: #888888;
+        font-style: italic;
+    }
+}
+
+// 加载骨架屏样式
+.loading-container {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 16px;
+}
+
+.cart-item-skeleton {
+    display: flex;
+    align-items: center;
+    background-color: #fff;
+    padding: 16px 24px;
+    border-radius: 16px;
+    gap: 16px;
+
+    .checkbox-skeleton {
+        flex-shrink: 0;
+    }
+
+    .cover-skeleton {
+        flex-shrink: 0;
+        width: 80px;
+        height: 120px;
+
+        .skeleton-cover-img {
+            width: 80px;
+            height: 120px;
+            border-radius: 8px;
+        }
+    }
+
+    .meta-skeleton {
+        flex: 1;
+        min-width: 200px;
+    }
+
+    .price-skeleton {
+        width: 100px;
+    }
+
+    .num-skeleton {
+        width: 120px;
+    }
+
+    .actions-skeleton {
+        width: 100px;
     }
 }
 </style>

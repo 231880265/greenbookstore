@@ -14,7 +14,7 @@
       </div>
 
       <!-- 中间 Logo -->
-      <div class="center-logo">
+      <div class="center-logo" @click="goToHome">
         <span class="main-logo">GREEN BOOK</span>
       </div>
 
@@ -40,7 +40,7 @@
         </div>
 
         <!-- 购物车 -->
-        <div class="icon-wrapper" title="购物车">
+        <div class="icon-wrapper" title="购物车" @click="goToCart">
           <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="9" cy="21" r="1"></circle>
@@ -50,15 +50,71 @@
         </div>
 
         <!-- 个人中心 -->
-        <div class="icon-wrapper user-icon" title="个人中心" @click="onUserIconClick">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-            <circle cx="12" cy="7" r="4"></circle>
-          </svg>
+        <div
+          ref="userIconWrapperRef"
+          class="user-icon-wrapper"
+          @click="onUserIconClick"
+          @mouseenter="handleUserMenuEnter"
+          @mouseleave="handleUserMenuLeave"
+        >
+          <div class="user-avatar-container">
+            <img
+              v-if="isLoggedIn"
+              :src="currentUser?.avatar ?? defaultAvatarUrl"
+              class="user-avatar-img"
+              alt="用户头像"
+            />
+            <svg
+              v-else
+              class="user-avatar-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+              <circle cx="12" cy="7" r="4"></circle>
+            </svg>
+          </div>
+          <!-- <span v-if="!isLoggedIn" class="login-hint">请登录</span> -->
         </div>
       </div>
     </div>
+
+    <!-- 用户下拉菜单（使用 teleport 传送到 body，避免被遮挡） -->
+    <teleport to="body">
+      <transition name="dropdown-fade">
+        <div
+          v-if="isLoggedIn && showUserMenu"
+          class="user-dropdown-menu"
+          :style="dropdownMenuStyle"
+          @mouseenter="showUserMenu = true"
+          @mouseleave="showUserMenu = false"
+          @click.stop
+        >
+          <div
+            class="dropdown-item"
+            @click.stop="goToAllSoldOrders"
+          >
+            <span>回收订单</span>
+          </div>
+          <div
+            class="dropdown-item"
+            @click.stop="goToAllOrders"
+          >
+            <span>购书订单</span>
+          </div>
+          <div
+            class="dropdown-item"
+            @click.stop="goToAllFavorites"
+          >
+            <span>我的收藏</span>
+          </div>
+        </div>
+      </transition>
+    </teleport>
 
     <!-- 搜索抽屉和遮罩层 -->
     <teleport to="body">
@@ -267,8 +323,8 @@
 <script setup lang="ts">
 import { nextTick, onMounted, ref, watch, reactive, computed } from "vue";
 import { useRouter } from "vue-router";
-import { login, register, uploadImage } from "@/api";
-import type { LoginRequest, RegisterRequest } from "@/api/types";
+import { login, register, uploadImage, getCurrentUser } from "@/api";
+import type { LoginRequest, RegisterRequest, UserDetail } from "@/api/types";
 
 const router = useRouter();
 
@@ -277,6 +333,9 @@ const leafCount = ref(12);
 const searchOpen = ref(false);
 const keyword = ref("");
 const inputRef = ref<HTMLInputElement | null>(null);
+const showUserMenu = ref(false);
+const userIconWrapperRef = ref<HTMLElement | null>(null);
+const dropdownMenuStyle = ref<{ top: string; right: string }>({ top: '0px', right: '0px' });
 
 const HOT_KEY = "greenbook_search_history";
 const TOKEN_KEY = "GB_TOKEN";
@@ -340,6 +399,20 @@ const goSellBook = () => {
   router.push('/sell');
 };
 
+/**
+ * 跳转到购物车页面
+ */
+const goToCart = () => {
+  router.push('/cart');
+};
+
+/**
+ * 跳转到首页
+ */
+const goToHome = () => {
+  router.push('/');
+};
+
 /** 这里先用 console.log 占位，你后面接路由/接口就行 */
 const doSearch = (q: string) => {
   const query = q.trim();
@@ -356,9 +429,26 @@ const doSearch = (q: string) => {
   closeSearch();
 };
 
+// 监听认证要求事件（当 API 返回 401 时触发）
+const handleAuthRequired = (event: CustomEvent) => {
+  // 如果当前未登录，打开登录弹窗
+  if (!isLoggedIn.value) {
+    openAuth('login');
+    // 如果有错误信息，显示在登录表单中
+    if (event.detail?.reason) {
+      authError.value = event.detail.reason;
+    }
+  }
+};
+
 // 监听组件卸载，确保恢复滚动
 onMounted(() => {
   loadHistory();
+  
+  // 如果已登录，获取用户信息
+  if (isLoggedIn.value) {
+    fetchUserInfo();
+  }
   
   // 添加键盘监听
   const handleKeydown = (e: KeyboardEvent) => {
@@ -368,10 +458,13 @@ onMounted(() => {
   };
   
   window.addEventListener('keydown', handleKeydown);
+  // 监听认证要求事件
+  window.addEventListener('auth:required', handleAuthRequired as EventListener);
   
   // 清理函数
   return () => {
     window.removeEventListener('keydown', handleKeydown);
+    window.removeEventListener('auth:required', handleAuthRequired as EventListener);
     // 确保恢复滚动
     document.body.style.overflow = '';
   };
@@ -381,6 +474,30 @@ onMounted(() => {
 watch(searchOpen, (newVal) => {
   if (!newVal) {
     document.body.style.overflow = '';
+  }
+});
+
+// 监听窗口大小变化和滚动，更新下拉菜单位置
+watch(showUserMenu, (isOpen) => {
+  if (isOpen) {
+    updateDropdownPosition();
+    window.addEventListener('scroll', updateDropdownPosition, true);
+    window.addEventListener('resize', updateDropdownPosition);
+  } else {
+    window.removeEventListener('scroll', updateDropdownPosition, true);
+    window.removeEventListener('resize', updateDropdownPosition);
+  }
+});
+
+// 监听窗口大小变化和滚动，更新下拉菜单位置
+watch(showUserMenu, (isOpen) => {
+  if (isOpen) {
+    updateDropdownPosition();
+    window.addEventListener('scroll', updateDropdownPosition, true);
+    window.addEventListener('resize', updateDropdownPosition);
+  } else {
+    window.removeEventListener('scroll', updateDropdownPosition, true);
+    window.removeEventListener('resize', updateDropdownPosition);
   }
 });
 
@@ -410,8 +527,39 @@ let loginSuccessTimer: number | null = null;
 
 const defaultAvatarUrl = "https://wonderful1.oss-cn-hangzhou.aliyuncs.com/leaf.jpg";
 
-
 const isLoggedIn = computed(() => !!localStorage.getItem(TOKEN_KEY));
+const currentUser = ref<UserDetail | null>(null);
+
+// 获取当前用户信息
+const fetchUserInfo = async () => {
+  if (!isLoggedIn.value) {
+    currentUser.value = null;
+    return;
+  }
+  try {
+    //leafCount.value =15;
+    const res = await getCurrentUser();
+    currentUser.value = res.data;
+    // 更新绿叶数量
+    if (res.data.leaf !== undefined) {
+      leafCount.value = res.data.leaf;
+    }
+    console.log("获取用户信息", res.data);
+  } catch (err) {
+    console.error('获取用户信息失败', err);
+    currentUser.value = null;
+    leafCount.value = 0;
+  }
+};
+
+// 监听登录状态变化，自动获取用户信息
+watch(isLoggedIn, (loggedIn) => {
+  if (loggedIn) {
+    fetchUserInfo();
+  } else {
+    currentUser.value = null;
+  }
+}, { immediate: true });
 
 const openAuth = (tab: "login" | "register" = "login") => {
   authTab.value = tab;
@@ -425,11 +573,66 @@ const closeAuth = () => {
 };
 
 const onUserIconClick = () => {
+  console.log("点击个人中心图标", isLoggedIn.value);
   if (isLoggedIn.value) {
     router.push("/profile");
   } else {
     openAuth("login");
   }
+};
+
+/**
+ * 计算下拉菜单位置
+ */
+const updateDropdownPosition = () => {
+  if (!userIconWrapperRef.value) return;
+  
+  const rect = userIconWrapperRef.value.getBoundingClientRect();
+  dropdownMenuStyle.value = {
+    top: `${rect.bottom + 8}px`,
+    right: `${window.innerWidth - rect.right}px`
+  };
+};
+
+/**
+ * 处理鼠标进入头像区域
+ */
+const handleUserMenuEnter = () => {
+  showUserMenu.value = true;
+  nextTick(() => {
+    updateDropdownPosition();
+  });
+};
+
+/**
+ * 处理鼠标离开头像区域
+ */
+const handleUserMenuLeave = () => {
+  showUserMenu.value = false;
+};
+
+/**
+ * 跳转到全部回收订单页面
+ */
+const goToAllSoldOrders = () => {
+  showUserMenu.value = false;
+  router.push('/usedBook/orders');
+};
+
+/**
+ * 跳转到全部购书订单页面
+ */
+const goToAllOrders = () => {
+  showUserMenu.value = false;
+  router.push('/orders');
+};
+
+/**
+ * 跳转到全部收藏页面
+ */
+const goToAllFavorites = () => {
+  showUserMenu.value = false;
+  router.push('/my-collections');
 };
 
 const validateTelephone = (tel: string) => /^1\d{10}$/.test(tel);
@@ -459,6 +662,8 @@ const handleLogin = async () => {
     loginSuccessTimer = window.setTimeout(() => {
       loginSuccess.value = false;
     }, 1500);
+    // 登录成功后获取用户信息
+    await fetchUserInfo();
     router.push("/");
   } catch (e: any) {
     const msg = e?.message || "";
@@ -502,11 +707,11 @@ const handleRegister = async () => {
     const registerRes = await register(payload);
     
     console.log("注册返回信息", registerRes);
-    // 注册成功后自动登录
-    // const loginRes = await login({ telephone: tel, password: registerForm.password });
-    // localStorage.setItem(TOKEN_KEY, loginRes.data.token);
-    // closeAuth();
-    // router.push("/");
+    //注册成功后自动登录
+    await handleLogin();
+    //closeAuth();
+    
+    //router.push("/");
   } catch (e: any) {
     const msg = e?.message || "";
     authError.value = msg || "注册失败，请稍后重试";
@@ -548,7 +753,6 @@ const handleAvatarChange = async (event: Event) => {
 }
 
 .header-inner {
-  max-width: 1280px;
   margin: 0 auto;
   padding: 0 16px;
   height: 56px;
@@ -562,7 +766,7 @@ const handleAvatarChange = async (event: Event) => {
 .left-area {
   display: flex;
   align-items: center;
-  min-width: 280px;
+  max-width: 280px;
 }
 
 .search-pill {
@@ -596,6 +800,12 @@ const handleAvatarChange = async (event: Event) => {
   color: #2d583f;
   left: 50%;
   transform: translateX(-50%);
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.center-logo:hover {
+  opacity: 0.8;
 }
 
 .main-logo {
@@ -641,6 +851,129 @@ const handleAvatarChange = async (event: Event) => {
 
 .user-icon {
   border: 1px solid #dddddd;
+}
+
+/* 个人中心头像容器 */
+.user-icon-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  cursor: pointer;
+  padding: 2px 0;
+  transition: transform 0.2s;
+  position: relative;
+}
+
+.user-icon-wrapper:hover {
+  transform: translateY(-1px);
+}
+
+.user-avatar-container {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 1px solid #dddddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f5f5f5;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+.user-icon-wrapper:hover .user-avatar-container {
+  background: #f0f0f0;
+  border-color: #ccc;
+}
+
+.user-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.user-avatar-icon {
+  width: 20px;
+  height: 20px;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.user-icon-wrapper:hover .user-avatar-icon {
+  color: #666;
+}
+
+.login-hint {
+  font-size: 9px;
+  color: #999;
+  line-height: 1;
+  margin-top: 1px;
+  white-space: nowrap;
+  transition: color 0.2s;
+}
+
+.user-icon-wrapper:hover .login-hint {
+  color: #777;
+}
+
+/* 用户下拉菜单 */
+.user-dropdown-menu {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  min-width: 140px;
+  padding: 6px 0;
+  z-index: 10000;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: background-color 0.2s ease;
+}
+
+.dropdown-item:hover {
+  background-color: #f6fbf8;
+  color: #2d583f;
+}
+
+.item-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
+/* 下拉菜单动画 */
+.dropdown-fade-enter-active,
+.dropdown-fade-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.dropdown-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.dropdown-fade-enter-to {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dropdown-fade-leave-from {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dropdown-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-8px);
 }
 
 /* 去卖书 hover 文案 */
