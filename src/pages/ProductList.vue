@@ -332,52 +332,58 @@ onMounted(async () => {
     <HeaderBar />
 
     <!-- 面包屑 -->
-    <nav class="breadcrumb">
-      <span class="crumb" @click.prevent="router.push('/')">首页</span>
-      <span class="sep">|</span>
-      <span class="crumb link">商城</span>
-      <span class="sep">|</span>
+    <section class="breadcrumb-bar">
+      <div class="breadcrumb-inner">
+        <span class="crumb link" @click.prevent="router.push('/')">首页</span>
+        <span class="sep">/</span>
+        <span class="crumb link">商城</span>
+        <span class="sep">/</span>
 
-      <span class="category-container" @mouseenter="isCategoryHover = true" @mouseleave="closeDropdown">
-        <span
-          class="crumb"
-          :class="{ hover: isCategoryHover || showCategoryDropdown }"
-          @mouseenter="crumbEnter"
-          @mouseleave="crumbLeave"
-          @click.stop="openDropdown"
-        >
-          所有分类
-        </span>
-
-        <transition name="fade">
-          <ul
-            v-if="showCategoryDropdown"
-            class="dropdown category-dropdown"
-            @mouseenter="isCategoryHover = true"
-            @mouseleave="closeDropdown"
+        <span class="category-container" @mouseenter="isCategoryHover = true" @mouseleave="closeDropdown">
+          <span
+            class="crumb"
+            :class="{ link: true, hover: isCategoryHover || showCategoryDropdown }"
+            @mouseenter="crumbEnter"
+            @mouseleave="crumbLeave"
+            @click.stop="openDropdown"
           >
-            <li
-                v-for="(code, name) in categoryMap"
-                :key="code"
-                :class="{ active: currentCategory === code }"
-                @click.stop="currentCategory = code; closeDropdown()"
-            >
-              {{ name }}
-            </li>
-            <li :class="{ active: currentCategory === null }" @click.stop="currentCategory = null; closeDropdown()">
-              全部分类
-            </li>
-          </ul>
-        </transition>
-      </span>
+            所有分类
+          </span>
 
-      <template v-if="currentCategory">
-        <span class="sep"> > </span>
-        <span class="crumb">
-          {{ Object.keys(categoryMap).find(k => categoryMap[k as keyof typeof categoryMap] === currentCategory) }}
+          <transition name="fade">
+            <ul
+              v-if="showCategoryDropdown"
+              class="dropdown category-dropdown"
+              @mouseenter="isCategoryHover = true"
+              @mouseleave="closeDropdown"
+            >
+              <li
+                  v-for="(code, name) in categoryMap"
+                  :key="code"
+                  :class="{ active: currentCategory === code }"
+                  @click.stop="currentCategory = code; closeDropdown()"
+              >
+                {{ name }}
+              </li>
+              <li :class="{ active: currentCategory === null }" @click.stop="currentCategory = null; closeDropdown()">
+                全部分类
+              </li>
+            </ul>
+          </transition>
         </span>
-      </template>
-    </nav>
+
+        <template v-if="currentCategory">
+          <span class="sep">/</span>
+          <span class="crumb current">
+            {{ Object.keys(categoryMap).find(k => categoryMap[k as keyof typeof categoryMap] === currentCategory) }}
+          </span>
+        </template>
+
+        <button class="back-btn" @click="router.push('/')">
+          ← 返回首页
+        </button>
+      </div>
+    </section>
 
     <div class="divider" />
 
@@ -786,31 +792,59 @@ onMounted(async () => {
 }
 
 /* 面包屑 */
-.breadcrumb {
-  position: relative;
+.breadcrumb-bar {
+  border-bottom: 1px solid #eee;
+  background: #fff;
+}
+
+.breadcrumb-inner {
+  margin: 0 auto;
+  padding: 12px 20px;
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 16px 60px 0;
-  font-size: 14px;
-  color: #000;
-  margin-bottom: 20px;
-}
-.crumb {
-  cursor: pointer;
-  transition: color 0.2s;
+  gap: 6px;
   font-size: 15px;
 }
 
+.crumb {
+  color: #666;
+}
+
 .crumb.link {
+  cursor: pointer;
   color: #2d583f;
+  transition: color 0.2s ease;
+}
+
+.crumb.link:hover {
+  color: #1a3d2a;
+}
+
+.crumb.current {
+  color: #999;
 }
 
 .crumb.hover {
-  color: #b8860b;
+  color: #1a3d2a;
 }
+
 .sep {
-  color: #bbb;
+  color: #ccc;
+}
+
+.back-btn {
+  margin-left: auto;
+  border: 1px solid #ddd;
+  background: #fff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s ease;
+}
+
+.back-btn:hover {
+  background: #f6f6f6;
 }
 .dropdown {
   position: absolute;

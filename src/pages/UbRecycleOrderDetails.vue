@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import HeaderBar from '../components/HeaderBar.vue'
+import BreadcrumbBar from '../components/BreadcrumbBar.vue'
 import Footer from '../components/Footer.vue'
 import { getUsedBookOrderById } from '../api/index'
 import type { UsedBookOrderVO } from '../api/types'
 
 const route = useRoute()
-const router = useRouter()
 const id = Number(route.params.orderId || route.query.orderId || 0)
 // loosen type to any because UI accesses demo-only fields not present in API type
 const order = ref<any | null>(null)
@@ -174,14 +174,9 @@ const handleStepClick = (idx: number) => {
   <div class="recycle-order-page">
     <HeaderBar />
 
-    <!-- 面包屑：与站内其他页面样式一致 -->
-    <nav class="breadcrumb">
-      <span class="crumb" @click.prevent="router.push('/')">首页</span>
-      <span class="sep">|</span>
-      <span class="crumb" @click.prevent="router.push('/usedBook/orders')">回收订单</span>
-      <span class="sep">|</span>
-      <span class="crumb current">订单详情</span>
-    </nav>
+    <!-- 面包屑 -->
+    <BreadcrumbBar :items="[{ label: '回收订单', path: '/usedBook/orders' }, { label: '订单详情' }]" />
+
 
     <div class="order-details-layout">
       <div class="main-content">
@@ -294,7 +289,6 @@ const handleStepClick = (idx: number) => {
 .sidebar { flex:0 0 360px; width:360px; margin-left:auto; padding:20px; box-sizing:border-box }
 .steps-row { display:flex; align-items:center; justify-content:space-between; width:100%; max-width:100%; padding:12px 12px; box-sizing:border-box }
 .steps-details { width:100%; max-width:100% }
-.breadcrumb { position:relative; display:flex; align-items:center; gap:8px; padding:12px 24px; font-size:14px; color:#666; max-width:none; margin:12px 0 0 24px }
 .recruit-steps { display:flex; gap:24px }
 .steps-left { width:140px; display:flex; flex-direction:column; align-items:flex-start; padding-left:8px }
 .step { position:relative; display:flex; flex-direction:column; align-items:flex-start; margin:12px 0 }
@@ -319,11 +313,6 @@ const handleStepClick = (idx: number) => {
 .section li { margin:8px 0; display:flex; gap:10px }
 .section span { font-weight:bold; color:#666; min-width:80px }
 .section p { margin:8px 0; color:#666 }
-.breadcrumb { position:relative; display:flex; align-items:center; gap:8px; padding:12px 24px; font-size:14px; color:#666; max-width:none; margin:12px 0 0 24px }
-.crumb { cursor:pointer; transition: color 0.2s }
-.crumb:hover { color:#2d583f }
-.crumb.current { color:#222; font-weight:600 }
-.sep { color:#bbb }
 .muted { color:#666; margin-bottom:8px }
 .shipping-summary { display:flex; flex-direction:column; gap:6px; margin:12px 0 }
 .result-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-top:12px }
