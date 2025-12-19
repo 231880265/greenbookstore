@@ -4,6 +4,11 @@
   <!-- 面包屑 -->
   <BreadcrumbBar :items="[{ label: '购书订单' }]" />
 
+  <!-- 页面标题 -->
+  <div class="page-title-section">
+    <h2 class="page-title">购书订单</h2>
+  </div>
+
   <div class="tabs-sticky">
     <div class="tabs-container">
       <div class="status-tabs">
@@ -220,6 +225,20 @@ onMounted(loadOrders)
 </script>
 
 <style scoped>
+/* 页面标题 */
+.page-title-section {
+  width: 80%;
+  margin: 0 auto;
+  padding: 20px 20px 10px;
+}
+
+.page-title {
+  color: #2d583f;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
 .order-page {
   width: 80%;
   margin: 0 auto;

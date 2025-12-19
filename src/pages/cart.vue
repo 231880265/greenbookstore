@@ -39,9 +39,9 @@
                         @update:model-value="val => onSelectToggle(item.cartItemId, val)" checked-color="#2d583f" />
 
                     <!-- 封面 -->
-                    <div class="cover-wrapper">
+                    <a class="cover-wrapper" :href="`/product-detail/${item.ubId}`" target="_blank">
                         <img :src="item.cover" :alt="item.title" class="cover" />
-                    </div>
+                    </a>
 
                     <!-- 信息区域 -->
                     <a class="meta" :href="`/product-detail/${item.ubId}`" target="_blank">
@@ -292,11 +292,20 @@ const handleCheckout = () => {
         display: flex;
         margin-left: 20px;
         justify-content: center;
+        cursor: pointer;
+        text-decoration: none;
+        transition: transform 0.3s ease;
 
         .cover {
             height: 100px;
+            transition: transform 0.3s ease;
         }
 
+        &:hover {
+            .cover {
+                transform: scale(1.05);
+            }
+        }
     }
 
     .meta {
@@ -343,10 +352,17 @@ const handleCheckout = () => {
 
         :deep(.el-input-number__increase),
         :deep(.el-input-number__decrease) {
-            color: #dcdfe6;
+            color: #8bc34a;
+            background-color: #f1f8e9;
 
             &:hover {
-                color: #2d583f;
+                color: #689f38;
+                background-color: #e8f5e9;
+            }
+
+            &.is-disabled {
+                color: #c5e1a5;
+                background-color: #f1f8e9;
             }
         }
     }

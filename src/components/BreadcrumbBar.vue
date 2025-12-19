@@ -7,6 +7,9 @@
         <span v-if="item.path" class="crumb link" @click="router.push(item.path)">
           {{ item.label }}
         </span>
+        <span v-else-if="item.slot" class="crumb-slot">
+          <slot :name="item.slot" />
+        </span>
         <span v-else class="crumb current">{{ item.label }}</span>
         <span v-if="index < items.length - 1" class="sep">/</span>
       </template>
@@ -18,8 +21,9 @@
 import { useRouter } from 'vue-router'
 
 interface BreadcrumbItem {
-  label: string
+  label?: string
   path?: string
+  slot?: string  // 用于插槽名称
 }
 
 interface Props {
@@ -67,6 +71,11 @@ const router = useRouter()
 
 .sep {
   color: #ccc;
+}
+
+.crumb-slot {
+  display: inline-flex;
+  align-items: center;
 }
 </style>
 

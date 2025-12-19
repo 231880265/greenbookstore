@@ -1,6 +1,7 @@
 <script setup lang="ts">
     import { ref, computed } from 'vue'
-    import { ElMessage, ElMessageBox } from 'element-plus'
+    import { ElMessage, ElMessageBox, ElIcon } from 'element-plus'
+    import { Check } from '@element-plus/icons-vue'
     import {
       getAddressList,
       createAddress,
@@ -10,11 +11,23 @@
     import type { AddressItem } from '@/api/types'
     import ChinaAreaCascader from '@/components/ChinaAreaCascader.vue'
     
+    interface Props {
+      selectMode?: boolean // 选择模式：true 时用于选择地址，false 时用于管理地址
+    }
+    const props = withDefaults(defineProps<Props>(), {
+      selectMode: false
+    })
+    
+    const emit = defineEmits<{
+      select: [address: AddressItem]
+    }>()
+    
     const visible = ref(false)
     const mode = ref<'list' | 'form'>('list')
     const list = ref<AddressItem[]>([])
     const editingId = ref<number | null>(null)
     const defaultAddressId = ref<number | null>(null)
+    const selectedAddressId = ref<number | null>(null) // 选择模式下的选中地址ID
     
     /* 表单 */
     const form = ref({
@@ -51,7 +64,7 @@
     })
     
     /* 打开 */
-    const open = async () => {
+    const open = async (initialSelectedId?: number | null) => {
       visible.value = true
       mode.value = 'list'
       const res = await getAddressList()
@@ -60,13 +73,35 @@
       if (list.value.length > 0 && !defaultAddressId.value) {
         defaultAddressId.value = list.value[0]!.id
       }
+      // 选择模式：设置初始选中地址
+      if (props.selectMode) {
+        selectedAddressId.value = initialSelectedId || defaultAddressId.value
+      }
     }
     defineExpose({ open })
+    
+    /* 选择地址（选择模式下） */
+    const handleSelectAddress = (item: AddressItem) => {
+      if (props.selectMode) {
+        selectedAddressId.value = item.id
+      }
+    }
     
     /* 关闭（叉叉 / 取消） */
     const closeDialog = () => {
       visible.value = false
       mode.value = 'list'
+    }
+    
+    /* 确定（选择模式下触发选择事件） */
+    const handleConfirm = () => {
+      if (props.selectMode && selectedAddressId.value) {
+        const selectedAddress = list.value.find(item => item.id === selectedAddressId.value)
+        if (selectedAddress) {
+          emit('select', selectedAddress)
+        }
+      }
+      closeDialog()
     }
     
     /* 新增 */
@@ -161,18 +196,31 @@
             v-for="item in sortedList"
             :key="item.id"
             class="address-card"
+            :class="{ 'selected': props.selectMode && selectedAddressId === item.id }"
             shadow="never"
+            @click="props.selectMode ? handleSelectAddress(item) : undefined"
+            :style="{ cursor: props.selectMode ? 'pointer' : 'default' }"
           >
             <div class="top">
               <div>
                 <span class="name">{{ item.name }}</span>
                 <span class="phone">{{ item.phone }}</span>
               </div>
-              <el-radio-group v-model="defaultAddressId" @change="() => setDefault(defaultAddressId)">
+              <el-radio-group 
+                v-if="!props.selectMode"
+                v-model="defaultAddressId" 
+                @change="() => setDefault(defaultAddressId)"
+              >
                 <el-radio :label="item.id">
                   默认地址
                 </el-radio>
               </el-radio-group>
+              <div v-else class="select-indicator">
+                <el-icon v-if="selectedAddressId === item.id" class="check-icon">
+                  <Check />
+                </el-icon>
+                <span v-else class="select-placeholder"></span>
+              </div>
             </div>
     
             <div class="addr">
@@ -231,9 +279,9 @@
         </div>
     
         <template #footer>
-          <!-- 列表模式：只有确定按钮 -->
+          <!-- 列表模式：确定按钮 -->
           <div v-if="mode === 'list'" style="text-align: right;">
-            <el-button type="primary" @click="closeDialog">确定</el-button>
+            <el-button type="primary" @click="props.selectMode ? handleConfirm() : closeDialog()">确定</el-button>
           </div>
           <!-- 表单模式：只有保存按钮 -->
           <div v-else style="text-align: right;">
@@ -292,6 +340,69 @@
     .add-btn {
       width: 100%;
       margin-top: 12px;
+    }
+    
+    /* 选择模式样式 */
+    .address-card.selected {
+      border: 2px solid #2d583f;
+      background-color: #f6fbf8;
+    }
+    
+    .select-indicator {
+      width: 24px;
+      height: 24px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .check-icon {
+      color: #2d583f;
+      font-size: 18px;
+    }
+    
+    .select-placeholder {
+      width: 18px;
+      height: 18px;
+      border: 2px solid #ddd;
+      border-radius: 50%;
+    }
+    
+    /* 绿色主题样式 */
+    :deep(.el-button--primary) {
+      background-color: #2d583f;
+      border-color: #2d583f;
+    }
+    :deep(.el-button--primary:hover) {
+      background-color: #1a3d2a;
+      border-color: #1a3d2a;
+    }
+    :deep(.el-button--primary:focus) {
+      background-color: #2d583f;
+      border-color: #2d583f;
+    }
+    :deep(.el-button--primary.is-plain) {
+      color: #2d583f;
+      background-color: #f6fbf8;
+      border-color: #2d583f;
+    }
+    :deep(.el-button--primary.is-plain:hover) {
+      color: #fff;
+      background-color: #2d583f;
+      border-color: #2d583f;
+    }
+    :deep(.el-radio__input.is-checked .el-radio__inner) {
+      background-color: #2d583f;
+      border-color: #2d583f;
+    }
+    :deep(.el-radio__input.is-checked + .el-radio__label) {
+      color: #2d583f;
+    }
+    :deep(.el-input__wrapper.is-focus) {
+      box-shadow: 0 0 0 1px #2d583f inset;
+    }
+    :deep(.el-input__inner:focus) {
+      border-color: #2d583f;
     }
     </style>
     

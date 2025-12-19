@@ -2,7 +2,12 @@
   <HeaderBar />
 
   <!-- 面包屑 -->
-  <BreadcrumbBar :items="[{ label: '回收订单' }]" />
+  <BreadcrumbBar :items="[{ label: '卖书记录' }]" />
+
+  <!-- 页面标题 -->
+  <div class="page-title-section">
+    <h2 class="page-title">卖书订单</h2>
+  </div>
 
   <!-- 吸顶状态 Tabs -->
   <div class="tabs-sticky">
@@ -187,6 +192,20 @@ onMounted(loadUsedOrders)
 
 
 <style scoped>
+/* 页面标题 */
+.page-title-section {
+  width: 80%;
+  margin: 0 auto;
+  padding: 20px 20px 10px;
+}
+
+.page-title {
+  color: #2d583f;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
 .order-page {
   width: 80%;
   margin: 0 auto;

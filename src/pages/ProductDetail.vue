@@ -1,11 +1,22 @@
 <template>
     <div class="page-container">
         <HeaderBar />
+        <BreadcrumbBar 
+            v-if="!productDetail"
+            :items="[{ label: '商城', path: '/product-list' }, { label: '商品详情' }]" 
+        />
+        <BreadcrumbBar 
+            v-if="productDetail"
+            :items="[
+                { label: '商城', path: '/product-list' },
+                ...(productDetail.category ? [{ label: getCategoryName(productDetail.category) }] : []),
+                { label: productDetail.title }
+            ]" 
+        />
         <div class="content">
 
             <!-- 骨架屏 -->
             <div class="product-container skeleton-container" v-if="!productDetail">
-                <BreadcrumbBar :items="[{ label: '商城', path: '/product-list' }, { label: '商品详情' }]" />
 
                 <div class="product-wrapper">
                     <van-skeleton :row="0" class="img-skeleton">
@@ -29,14 +40,6 @@
 
             <!-- 实际内容 -->
             <div class="product-container" v-if="productDetail">
-                <BreadcrumbBar 
-                    :items="[
-                        { label: '商城', path: '/product-list' },
-                        ...(productDetail.category ? [{ label: getCategoryName(productDetail.category) }] : []),
-                        { label: productDetail.title }
-                    ]" 
-                />
-
                 <div class="product-wrapper">
                     <div class="img-wrapper">
                         <img :src="productDetail.cover" alt="二手书封面" class="product-cover" />
@@ -372,7 +375,7 @@ async function toggleFavorite() {
 
 .info-container {
     color: white;
-    margin-left: 12px;
+    margin-left: 20px;
 
     .writer {
         font-size: 20px;
@@ -540,14 +543,14 @@ async function toggleFavorite() {
 
     .el-input-number__decrease,
     .el-input-number__increase {
-        color: #fff;
-        background-color: #f0f8f0;
+        color: #8bc34a;
+        background-color: #f1f8e9;
     }
 
     .el-input-number__decrease.is-disabled,
     .el-input-number__increase.is-disabled {
-        color: #fff;
-        background-color: #f0f8f0;
+        color: #c5e1a5;
+        background-color: #f1f8e9;
     }
 
     &:hover {
@@ -558,7 +561,8 @@ async function toggleFavorite() {
 
         .el-input-number__decrease,
         .el-input-number__increase {
-            color: #2d583f;
+            color: #689f38;
+            background-color: #e8f5e9;
         }
     }
 }
