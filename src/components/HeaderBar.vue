@@ -1105,7 +1105,7 @@ const handleAvatarChange = async (event: Event) => {
   flex: 1;
   font-size: 18px;
   border: none;
-  border-bottom: 2px solid #111;
+  border-bottom: 2px solid #2d583f;
   outline: none;
   padding: 10px 0;
 }
