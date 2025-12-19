@@ -16,10 +16,6 @@ import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const routerr = useRouter()
-import { useRoute, useRouter } from 'vue-router'
-
-const route = useRoute()
-const routerr = useRouter()
 
 
 interface BookItem {
@@ -324,7 +320,6 @@ function debounce<T extends (...args: any[]) => any>(
 
 // 监听筛选条件变化，重置页码
 watch([filter, searchKeyword], () => {
-watch([filter, searchKeyword], () => {
   currentPage.value = 1
 })
 
@@ -388,18 +383,9 @@ onMounted(async () => {
                   router.push({ path: `/product-list/${code}` });
                   closeDropdown()
                 "
-                @click.stop="
-                  router.push({ path: `/product-list/${code}` });
-                  closeDropdown()
-                "
             >
               {{ name }}
             </li>
-            <li :class="{ active: currentCategory === null }" 
-                @click.stop="
-                  router.push('/product-list');
-                  closeDropdown()
-            ">
             <li :class="{ active: currentCategory === null }" 
                 @click.stop="
                   router.push('/product-list');
