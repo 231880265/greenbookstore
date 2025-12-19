@@ -94,6 +94,7 @@ import new3Img from "../assets/new3.jpg";
 import new4Img from "../assets/new4.jpg";
 import { getCurrentUser, getProductDetail } from "@/api";
 import type { UserDetail, Product } from "@/api/types";
+import { showToast } from "vant";
 
 /**
  * 书籍卡片数据接口
@@ -448,6 +449,11 @@ const goProfile = () => {
  * @param categoryName - 分类名称
  */
 const handleMoreClick = (categoryName: string) => {
+  if (localStorage.getItem("GB_TOKEN") === null) {
+    // 未登录则调起登录弹窗
+    showToast("请登录后查看");
+    return;
+  }
   if (categoryName === "更多" || categoryName === "推荐" || categoryName === "更多推荐") {
     // 跳转到全部书籍页面
     router.push("/product-list");

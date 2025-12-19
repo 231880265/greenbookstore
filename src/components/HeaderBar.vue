@@ -389,6 +389,10 @@ const closeSearch = () => {
 
 // 跳转到卖书页
 const goSellBook = () => {
+  if (!isLoggedIn.value) {
+    openAuth('login');
+    return;
+  }
   router.push('/sell');
 };
 
@@ -396,6 +400,10 @@ const goSellBook = () => {
  * 跳转到购物车页面
  */
 const goToCart = () => {
+  if (!isLoggedIn.value) {
+    openAuth('login');
+    return;
+  }
   router.push('/cart');
 };
 
