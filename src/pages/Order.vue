@@ -37,7 +37,7 @@
       <!-- 订单头 -->
       <div class="order-header">
         <span>订单号：{{ order.orderId }}</span>
-        <span>下单时间：{{ order.createTime }}</span>
+        <span>下单时间：{{ formatTime(order.createTime) }}</span>
         <span class="status">{{ statusText[order.status] }}</span>
       </div>
 
@@ -58,7 +58,7 @@
         </div>
 
         <div class="col-price">¥{{ item.price }}</div>
-        <div class="col-qty">{{ item.quantity }}</div>
+        <div class="col-qty">x{{ item.quantity }}</div>
         <div class="col-total">¥{{ item.totalPrice }}</div>
       </div>
 
@@ -89,6 +89,16 @@ import book2Img from "../assets/book2.jpg" ;
 import book3Img from "../assets/book3.jpg";
 import book4Img from "../assets/book4.jpg"; 
 import { useRouter } from 'vue-router'
+
+const formatTime = (time?: string) => {
+  if (!time) return ''
+  const date = new Date(time)
+
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}
+          ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
 
 const router = useRouter()
 
@@ -316,11 +326,25 @@ onMounted(loadOrders)
   margin-bottom: 20px;
   transition: box-shadow 0.25s;
   border-radius: 6px;
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .order-block:hover {
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  border-color: #cfe1d6;
 }
+
+.order-block:hover .order-row {
+  background: #f8faf8;
+}
+
+/* .order-block:hover {
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+} */
 
 .order-header {
   padding: 10px 16px;
@@ -344,14 +368,6 @@ onMounted(loadOrders)
 
   transition:
     background-color 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.order-row:hover {
-  background: #f8faf8;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04);
 }
 
 
