@@ -1,9 +1,9 @@
 <template>
     <div class="page-container">
         <HeaderBar />
+        <BreadcrumbBar :items="[{ label: '购物车', path: '/cart' }, { label: '结算' }]" />
         <div class="content">
             <h2 class="checkout-title">结算</h2>
-            <BreadcrumbBar :items="[{ label: '购物车', path: '/cart' }, { label: '结算' }]" />
 
             <div class="checkout-wrapper">
                 <!-- 左侧：地址与支付 -->
@@ -11,21 +11,18 @@
                     <!-- 地址选择器 -->
                     <section class="section">
                         <div class="section-title">收货地址</div>
-                        <div v-if="addresses.length > 0" class="address-list">
-                            <div v-for="addr in addresses" :key="addr.id" class="address-card"
-                                :class="{ active: selectedAddressId === addr.id }" @click="selectedAddressId = addr.id">
-                                <div class="addr-line">
-                                    <span class="name">{{ addr.name }}</span>
-                                    <span class="phone">{{ addr.phone }}</span>
-                                </div>
-                                <div class="addr-text">{{ formatAddress(addr) }}</div>
+                        <div class="address-row">
+                            <div class="address-text" v-if="selectedAddressText">
+                                当前地址：{{ selectedAddressText }}
                             </div>
+                            <div class="address-text muted" v-else>
+                                暂未选择地址
+                            </div>
+                            <button class="outline-btn" @click="openAddressModal">
+                                地址簿
+                            </button>
                         </div>
-                        <div v-else class="address-empty">暂无地址，请新增</div>
-                        <div class="address-actions">
-                            <button class="address-button" @click="openAddressDialog">新增/管理地址</button>
-                        </div>
-                        <AddressDialog ref="addressDialogRef" />
+                        <AddressDialog ref="addressDialogRef" :select-mode="true" @select="handleAddressSelect" />
                     </section>
 
                     <!-- 支付方式 -->
@@ -104,15 +101,42 @@ const router = useRouter()
 const addresses = ref<AddressItem[]>([])
 const selectedAddressId = ref<number | null>(null)
 const addressDialogRef = ref<InstanceType<typeof AddressDialog> | null>(null)
-const openAddressDialog = async () => {
-    await addressDialogRef.value?.open()
-    // 关闭后刷新一次列表
+
+/**
+ * 选中的地址文本
+ */
+const selectedAddressText = computed(() => {
+    const item = addresses.value.find(a => a.id === selectedAddressId.value)
+    if (!item) return ''
+    return `${item.name} ${item.phone} ${item.province}${item.city || ''}${item.district || ''}${item.detail || ''}`
+})
+
+/**
+ * 处理地址选择
+ */
+const handleAddressSelect = (address: AddressItem) => {
+    selectedAddressId.value = address.id
+    // 刷新地址列表
+    loadAddresses()
+}
+
+/**
+ * 打开地址选择对话框
+ */
+const openAddressModal = async () => {
+    await addressDialogRef.value?.open(selectedAddressId.value)
+    // 关闭后刷新地址列表
     await loadAddresses()
 }
+
+/**
+ * 加载地址列表
+ */
 const loadAddresses = async () => {
     try {
         const res = await getAddressList()
         addresses.value = res.data || []
+        // 如果没有选中地址且有地址列表，自动选择第一个
         if (!selectedAddressId.value && addresses.value.length > 0) {
             selectedAddressId.value = addresses.value[0]!.id
         }
@@ -120,7 +144,6 @@ const loadAddresses = async () => {
         console.error('获取地址列表失败:', e)
     }
 }
-const formatAddress = (a: AddressItem) => `${a.province ?? ''} ${a.city ?? ''} ${a.district ?? ''} ${a.detail ?? ''}`.trim()
 
 // 支付方式
 const paymentMethod = ref<'ALIPAY'>('ALIPAY')
@@ -335,98 +358,36 @@ async function goPay() {
     margin-bottom: 12px;
 }
 
-.address-group {
+.address-row {
+    margin-top: 8px;
     display: flex;
-    flex-direction: column;
-    gap: 10px;
-}
-
-.address-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    height: 153px;
-    overflow: auto;
-    padding-right: 4px;
-
-    &::-webkit-scrollbar {
-        width: 6px;
-    }
-
-    &::-webkit-scrollbar-thumb {
-        background-color: #d0d0d0;
-        border-radius: 3px;
-
-        &:hover {
-            background-color: #b0b0b0;
-        }
-    }
-
-    &::-webkit-scrollbar-track {
-        background-color: #f5f5f5;
-    }
-
-    &::-webkit-scrollbar-button {
-        display: none;
-    }
-}
-
-.address-card {
-    padding: 12px 16px;
-    border: 2px solid #e0e0e0;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.3s;
-
-    &:hover {
-        border-color: #d0d0d0;
-    }
-
-    &.active {
-        border-color: #2d583f;
-        background-color: #f0f8f0;
-    }
-}
-
-.addr-line {
-    display: flex;
-    gap: 8px;
     align-items: center;
-    margin-bottom: 4px;
+    justify-content: space-between;
+    gap: 12px;
 }
 
-.addr-line .name {
-    font-weight: 600;
+.address-text {
+    font-size: 16px;
+    flex: 1;
 }
 
-.addr-line .phone {
-    color: #666;
-}
-
-.addr-text {
-    color: #666;
-}
-
-.address-empty {
+.address-text.muted {
     color: #999;
 }
 
-.address-actions {
-    margin-top: 12px;
+.outline-btn {
+    border-radius: 999px;
+    border: 1px solid #c8b196;
+    background: #fff;
+    padding: 8px 16px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s;
 
-    .address-button {
-        padding: 6px 12px;
-        font-size: 14px;
-        border: 1px solid #2d583f;
-        color: #2d583f;
-        background-color: #fff;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: all 0.3s;
-
-        &:hover {
-            background-color: #f0f8f0;
-        }
+    &:hover {
+        background-color: #f0f8f0;
+        border-color: #2d583f;
     }
 }
 
