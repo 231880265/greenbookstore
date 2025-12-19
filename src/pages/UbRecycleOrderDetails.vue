@@ -285,13 +285,11 @@ const statusLabel = computed(() => {
             <p>下单时间：{{ order?.createdAt ?? '2025-11-01 09:00' }}</p>
             <p><span>订单编号：</span> 2817912794342151{{ order?.orderId}}</p>
             <p>收货信息：
-              <span>{{ selectedAddress.name }},
-                    {{ selectedAddress.telephone || selectedAddress.phone }},
-                    {{ selectedAddress.province }}
-                    {{ selectedAddress.city }}
-                    {{ selectedAddress.district }}
-                    {{ selectedAddress.detail }}
-              </span>
+              <div v-if="selectedAddress" class="address-lines">
+                <div class="line">{{ selectedAddress.name }},{{ selectedAddress.telephone || selectedAddress.phone }}</div>
+                <div class="line">{{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}</div>
+                <div class="line">{{ selectedAddress.detail }}</div>
+              </div>
             </p>
             <p>收款方式：{{ order?.payMethod ?? '平台余额' }}</p>
           </div>

@@ -285,23 +285,48 @@ onBeforeUnmount(() => {
               <p class="note">📱 快递短信：【中通快递】您的包裹 7730... 正在派送，请保持电话畅通。</p>
             </div>
 
-            <div v-if="selectedStep === 3" class="detail-card">
-              <h3>已签收，交易完成</h3>
-              <p class="muted">签收人：本人（前台代收）</p>
-              <ul>
-                <li>收货信息：
-                  <span>{{ selectedAddress.name }},
-                    {{ selectedAddress.telephone || selectedAddress.phone }},
-                    {{ selectedAddress.province }}
-                    {{ selectedAddress.city }}
-                    {{ selectedAddress.district }}
-                    {{ selectedAddress.detail }}
-                  </span>
-                </li>
-                <li>包裹状态：完好无损，已拍照留档</li>
-                <li>售后服务：7 天无理由退货（运费险已生效）</li>
-                <li>评价奖励：晒图返 2 元红包 + 10 积分</li>
-              </ul>
+            <div v-if="selectedStep === 3" class="detail-card done-card">
+              <!-- 顶部状态 -->
+              <div class="done-header">
+                <span class="done-icon">✓</span>
+                <div>
+                  <h3>已签收，交易完成</h3>
+                  <p class="done-sub">签收人：本人（前台代收） · {{ formatTime(orderDetails?.completeTime || orderDetails?.shipTime) }}</p>
+                </div>
+              </div>
+
+              <!-- 收货信息 -->
+              <div class="done-section">
+                <div class="sec-title">收货信息</div>
+                <div class="address-box">
+                  <span class="name">{{ selectedAddress.name }}</span>
+                  <span class="phone">{{ selectedAddress.telephone || selectedAddress.phone }}</span>
+                  <div class="addr">{{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }} {{ selectedAddress.detail }}</div>
+                </div>
+              </div>
+
+              <!-- 包裹 & 售后 -->
+              <div class="done-grid">
+                <div class="grid-item">
+                  <div class="label">包裹状态</div>
+                  <div class="value">完好无损，已拍照留档</div>
+                </div>
+                <div class="grid-item">
+                  <div class="label">售后服务</div>
+                  <div class="value">7 天无理由退货（运费险已生效）</div>
+                </div>
+                <div class="grid-item">
+                  <div class="label">评价奖励</div>
+                  <div class="value highlight">晒图返 2 元红包 + 10 积分</div>
+                </div>
+              </div>
+
+              <!-- 快捷按钮 -->
+              <div class="done-actions">
+                <button class="btn primary">立即评价</button>
+                <button class="btn">申请售后</button>
+                <button class="btn">再次购买</button>
+              </div>
             </div>
           </div>
         </div>
@@ -317,13 +342,22 @@ onBeforeUnmount(() => {
           <div v-else class="product-list">
             <div class="product-item" v-for="item in (orderDetails?.orderItems ?? [])" :key="item.ubId || item.id || item.title">
               <img :src="item.cover" alt="Product" class="product-img" />
-              <div class="product-details">
+              <div class="product-info">
                 <h3 class="title">{{ item.title }}</h3>
                 <div class="meta">{{ item.writer }} <span class="sep">|</span> {{ item.publisher }}</div>
-                <div class="price-row">
-                  <div class="unit">单价: <span class="unit-price">¥{{ item.price?.toFixed ? item.price.toFixed(2) : item.price }}</span></div>
-                  <div class="quantity">数量: <span class="qty">{{ item.quantity }}</span></div>
-                  <div class="subtotal">小计: <span class="subtotal-price">¥{{ item.totalPrice?.toFixed ? item.totalPrice.toFixed(2) : item.totalPrice }}</span></div>
+              </div>
+              <div class="product-nums">
+                <div class="num-cell">
+                  <span class="label">单价</span>
+                  <span class="value">¥{{ item.price?.toFixed ? item.price.toFixed(2) : item.price }}</span>
+                </div>
+                <div class="num-cell">
+                  <span class="label">数量</span>
+                  <span class="value">x{{ item.quantity }}</span>
+                </div>
+                <div class="num-cell">
+                  <span class="label">小计</span>
+                  <span class="value highlight">¥{{ item.totalPrice?.toFixed ? item.totalPrice.toFixed(2) : item.totalPrice }}</span>
                 </div>
               </div>
             </div>
@@ -498,42 +532,76 @@ onBeforeUnmount(() => {
 }
 
 .product-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 100px 1fr auto;
   gap: 20px;
-  align-items: flex-start;
+  align-items: center;
+  padding: 16px 0;
+  border-bottom: 1px solid #f0f0f0;
 }
 
 .product-img {
   width: 100px;
   height: 100px;
   object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #eee;
 }
 
-.product-details {
-  flex-grow: 1;
+.product-info {
+  min-width: 0;
 }
+
+.product-info .title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: #333;
+  line-height: 1.4;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.product-info .meta {
+  font-size: 13px;
+  color: #666;
+}
+
+.product-nums {
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  gap: 32px;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.num-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.num-cell .label {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.num-cell .value {
+  font-size: 14px;
+  color: #333;
+}
+
+.num-cell .highlight {
+  font-weight: 600;
+  color: #d40000;
+}
+
 
 .product-details h3 {
   margin: 0 0 8px;
   font-size: 16px;
   color: #333;
-}
-
-.price {
-  font-size: 18px;
-  color: #d40000;
-  font-weight: bold;
-}
-
-.quantity {
-  color: #666;
-  font-size: 14px;
-}
-
-.actions {
-  margin-top: 10px;
-  display: flex;
-  gap: 10px;
 }
 
 .section h3 {
@@ -661,5 +729,133 @@ onBeforeUnmount(() => {
   color: #333;
   font-size: 14px;
   line-height: 1.4;
+}
+
+/* ===== 已签收卡片 ===== */
+.done-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.done-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.done-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #2d583f;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.done-header h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #222;
+}
+
+.done-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: #666;
+}
+
+/* 收货信息 */
+.done-section {
+  margin-bottom: 20px;
+}
+
+.sec-title {
+  font-size: 14px;
+  color: #333;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.address-box {
+  background: #f7f7f7;
+  border-radius: 6px;
+  padding: 12px 16px;
+  line-height: 1.6;
+}
+
+.address-box .name {
+  font-weight: 600;
+  margin-right: 8px;
+}
+
+.address-box .phone {
+  color: #666;
+}
+
+.address-box .addr {
+  color: #444;
+  margin-top: 2px;
+}
+
+/* 网格信息 */
+.done-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.grid-item .label {
+  font-size: 12px;
+  color: #999;
+  margin-bottom: 4px;
+}
+
+.grid-item .value {
+  font-size: 14px;
+  color: #333;
+}
+
+.grid-item .highlight {
+  color: #d40000;
+  font-weight: 600;
+}
+
+/* 按钮 */
+.done-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  padding: 8px 20px;
+  border: 1px solid #dcdcdc;
+  border-radius: 4px;
+  background: #fff;
+  color: #333;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn:hover {
+  border-color: #2d583f;
+  color: #2d583f;
+}
+
+.btn.primary {
+  background: #2d583f;
+  color: #fff;
+  border-color: #2d583f;
+}
+
+.btn.primary:hover {
+  background: #214d17;
 }
 </style>
