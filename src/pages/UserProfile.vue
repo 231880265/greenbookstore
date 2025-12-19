@@ -337,6 +337,8 @@
    */
   const onLogout = () => {
     localStorage.removeItem('GB_TOKEN')
+    // 触发自定义事件，通知 HeaderBar 更新登录状态
+    window.dispatchEvent(new CustomEvent('token:changed'))
     router.replace('/')
   }
   </script>

@@ -603,6 +603,7 @@ watch(isLoggedIn, (loggedIn) => {
     fetchUserInfo();
   } else {
     currentUser.value = null;
+    leafCount.value = 0; // 退出登录时清零小绿叶
   }
 }, { immediate: true });
 
