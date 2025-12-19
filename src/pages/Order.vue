@@ -67,7 +67,7 @@
         <span>
           共 {{ order.orderItems.length }} 件商品，
           订单合计：
-          <strong>¥{{ order.totalAmount }}</strong>
+          <strong class="total-amount">¥{{ order.totalAmount }}</strong>
         </span>
       </div>
     </div>
@@ -312,6 +312,12 @@ onMounted(loadOrders)
 .col-price { flex: 1; text-align: center; }
 .col-qty { flex: 1; text-align: center; }
 .col-total { flex: 1; text-align: center; }
+
+.total-amount {
+  color: #1b5e20;
+  /* font-size: 18px;
+  margin-left: 4px; */
+}
 
 .order-block.clickable {
   cursor: pointer;

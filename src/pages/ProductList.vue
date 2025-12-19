@@ -12,6 +12,10 @@ import {
 } from '@/api'
 import type { FavoriteItem } from '@/api/types'
 import router from "@/router";
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const routerr = useRouter()
 
 
 interface BookItem {
@@ -52,7 +56,10 @@ const bindingMap = {
   其他: 'OTHER',
 }
 
-const currentCategory = ref<string | null>(null)
+const currentCategory = computed<string | null>(() => {
+  const c = route.params.category
+  return typeof c === 'string' ? c : null
+})
 const showCategoryDropdown = ref(false)
 const isCategoryHover = ref(false)
 let dropdownEl: HTMLElement | null = null
@@ -312,14 +319,18 @@ function debounce<T extends (...args: any[]) => any>(
 }
 
 // 监听筛选条件变化，重置页码
-watch([filter, currentCategory, searchKeyword], () => {
+watch([filter, searchKeyword], () => {
   currentPage.value = 1
 })
-watch(currentCategory, async (newVal, oldVal) => {
-  if (oldVal !== undefined) {
+
+watch(
+  () => route.params.category,
+  async () => {
     await fetchBooks()
-  }
-})
+    currentPage.value = 1
+  },
+  { immediate: true }
+)
 
 onMounted(async () => {
   await fetchBooks()
@@ -360,11 +371,18 @@ onMounted(async () => {
                 v-for="(code, name) in categoryMap"
                 :key="code"
                 :class="{ active: currentCategory === code }"
-                @click.stop="currentCategory = code; closeDropdown()"
+                @click.stop="
+                  router.push({ path: `/product-list/${code}` });
+                  closeDropdown()
+                "
             >
               {{ name }}
             </li>
-            <li :class="{ active: currentCategory === null }" @click.stop="currentCategory = null; closeDropdown()">
+            <li :class="{ active: currentCategory === null }" 
+                @click.stop="
+                  router.push('/product-list');
+                  closeDropdown()
+            ">
               全部分类
             </li>
           </ul>

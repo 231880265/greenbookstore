@@ -10,6 +10,7 @@
           v-for="item in topCategories"
           :key="item"
           class="category-item"
+          @click="handleMoreClick(item)"
         >
           {{ item }}
         </div>
