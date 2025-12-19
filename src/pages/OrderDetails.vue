@@ -365,6 +365,7 @@ onBeforeUnmount(() => {
           <ul>
             <li><span>商品总价：</span> ¥{{ orderDetails?.totalAmount }}</li>
             <li><span>小绿叶：</span> {{ orderDetails?.leaf }}片</li>
+            <li><span>支付方式：</span> 支付宝</li>
           </ul>
         </div>
 
@@ -375,7 +376,7 @@ onBeforeUnmount(() => {
           <h3>订单信息</h3>
           <ul>
             <li><span>订单编号：</span> 2817912794342151{{ orderDetails?.orderId}}</li>
-            <li><span>收获信息：</span>
+            <li><span>收货信息：</span>
               <div v-if="selectedAddress" class="address-lines">
                 <div class="line">{{ selectedAddress.name }},{{ selectedAddress.telephone || selectedAddress.phone }}</div>
                 <div class="line">{{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}</div>
@@ -494,34 +495,8 @@ onBeforeUnmount(() => {
   margin: 10px 0;
 }
 
-.store-badge {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 10px;
-}
 
-.badge {
-  background-color: #ff9900;
-  color: white;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-}
 
-.store-name {
-  font-weight: bold;
-  color: #333;
-}
-
-.view-fast {
-  background-color: #f0f0f0;
-  border: 1px solid #ccc;
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-}
 
 .product-item {
   display: grid;
@@ -586,7 +561,7 @@ onBeforeUnmount(() => {
 
 .num-cell .highlight {
   font-weight: 600;
-  color: #d40000;
+  color: #2b522e;
 }
 
 
@@ -815,7 +790,7 @@ onBeforeUnmount(() => {
 }
 
 .grid-item .highlight {
-  color: #d40000;
+  color: #2b522e;
   font-weight: 600;
 }
 
@@ -913,4 +888,101 @@ onBeforeUnmount(() => {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   color: #222;
 }
+/* ========= 左侧步骤卡片统一美化（Ub 风格） ========= */
+.steps-details .detail-card {
+  background: #fff;
+  border: 1px solid #e6ece6;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(45, 88, 63, 0.06);
+}
+
+/* 标题 */
+.steps-details .detail-card h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d583f;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* 副标题 / 辅助灰字 */
+.steps-details .detail-card .muted {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #888;
+}
+
+/* 列表 */
+.steps-details .detail-card ul {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.steps-details .detail-card li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.steps-details .detail-card li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b5dcc7;
+}
+
+/* 时间线 */
+.steps-details .detail-card .timeline {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #e0e0e0;
+}
+
+.steps-details .detail-card .timeline-item {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: none;
+}
+
+.steps-details .detail-card .timeline-item .time {
+  flex-shrink: 0;
+  width: 130px;
+  font-size: 12px;
+  color: #999;
+}
+
+.steps-details .detail-card .timeline-item .desc {
+  font-size: 13px;
+  color: #555;
+}
+
+/* 物流摘要区 */
+.steps-details .detail-card .shipping-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 12px 0;
+  font-size: 14px;
+  color: #333;
+}
+
+.steps-details .detail-card .shipping-summary strong {
+  color: #2d583f;
+}
+
 </style>

@@ -171,6 +171,14 @@ const statusToStep = (st?: string) => {
   }
 }
 
+const showDetail = ref(false)
+const toggleShowDetail = () => (showDetail.value = !showDetail.value)
+
+// 把超过“区”的部分全部替换成 *
+const maskDetail = (detail?: string) => {
+  if (!detail) return ''
+  return detail.replace(/./g, '*')
+}
 
 // 人性化状态文本
 const statusLabel = computed(() => {
@@ -271,7 +279,7 @@ const statusLabel = computed(() => {
               <h3 class="title">{{ order?.title }}</h3>
               <p class="writer">作者：{{ order?.writer }}</p>
               <p class="isbn">ISBN：{{ order?.isbn }}</p>
-              <p class="status-line"><strong>订单状态：</strong>{{ statusLabel }}</p>
+              <p class="status-line">订单状态：{{ statusLabel }}</p>
               <p class="price">
                 <span>回收价：¥{{ order?.price }}</span>
                 <span class="list">原价 ¥{{ order?.listPrice }}</span>
@@ -283,13 +291,12 @@ const statusLabel = computed(() => {
           <!-- 下排：移到下方的字段 -->
           <div class="bottom-row">
             <p>下单时间：{{ order?.createdAt ?? '2025-11-01 09:00' }}</p>
-            <p><span>订单编号：</span> 2817912794342151{{ order?.orderId}}</p>
+            <p>订单编号：2817912794342151{{ order?.orderId}}</p>
             <p>收货信息：
-              <div v-if="selectedAddress" class="address-lines">
-                <div class="line">{{ selectedAddress.name }},{{ selectedAddress.telephone || selectedAddress.phone }}</div>
-                <div class="line">{{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}</div>
-                <div class="line">{{ selectedAddress.detail }}</div>
-              </div>
+                <template v-if="selectedAddress">
+                    {{ selectedAddress.name }} {{ selectedAddress.telephone || selectedAddress.phone }}
+                    {{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}{{ selectedAddress.detail }}
+                </template>
             </p>
             <p>收款方式：{{ order?.payMethod ?? '平台余额' }}</p>
           </div>
@@ -562,5 +569,153 @@ const statusLabel = computed(() => {
 .steps-details .detail-card:last-child .timeline-item .desc {
   font-size: 13px;
   color: #555;
+}
+/* ===== 右侧卡片极简对齐美化 ===== */
+.sidebar .order-card{
+  padding:0;                 /* 去掉内边距 */
+  background:transparent;    /* 去掉白底 */
+  box-shadow:none;           /* 去掉阴影 */
+  border:none;               /* 去掉边框 */
+}
+
+/* 上排：封面 + 信息 */
+.sidebar .order-card .top-row{
+  display:flex;
+  gap:20px;                 /* 图与文字间距 */
+  align-items:flex-start;
+}
+
+.sidebar .order-card .cover{
+  width:140px;
+  height:190px;
+  object-fit:cover;
+  border-radius:4px;
+  flex-shrink:0;
+}
+
+/* 右侧信息统一左对齐 */
+.sidebar .order-card .meta{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  gap:8px;                  /* 行间距统一 */
+  font-size:14px;           /* 统一字号 */
+  line-height:1.5;          /* 统一行高 */
+  color:#333;               /* 统一颜色 */
+}
+
+/* 标题突出 */
+.sidebar .order-card .meta .title{
+  margin:0;
+  font-size:18px;
+  font-weight:600;
+  color:#111;
+}
+
+/* 作者、ISBN 灰色 */
+.sidebar .order-card .meta .writer,
+.sidebar .order-card .meta .isbn,
+.sidebar .order-card .meta .status-line
+{
+  margin:0;
+}
+
+/* 价格区 */
+.sidebar .order-card .meta .price{
+  margin:0;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.sidebar .order-card .meta .price span{
+  font-size:20px;
+  font-weight:600;
+  color: #2b522e;
+}
+.sidebar .order-card .meta .price .list{
+  font-size:14px;
+  color:#999;
+  font-weight:400;
+  text-decoration:line-through;
+}
+
+/* 成色 */
+.sidebar .order-card .meta p:last-of-type{
+  margin:0;
+  color:#444;
+}
+
+/* 下排辅助信息 */
+.sidebar .order-card .bottom-row{
+  margin-top:16px;
+  padding-top:16px;
+  border-top:1px dashed #e0e0e0;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  font-size:14px;
+  color:#666;
+  line-height:1.5;
+}
+.sidebar .order-card .bottom-row p{
+  margin:0;
+}
+.sidebar .order-card .bottom-row span{
+  color:#333;
+  font-weight:500;
+}
+
+/* 地址换行对齐 */
+.sidebar .order-card .address-lines{
+  margin:0;
+  padding-left:0;
+}
+.sidebar .order-card .address-lines .line{
+  font-size:13px;
+  color:#666;
+  line-height:1.5;
+}
+/* 让回收价和原价完全左对齐 */
+.sidebar .order-card .meta .price span,
+.sidebar .order-card .meta .price .list{
+  display:block;
+  margin-left:0;
+  padding-left:0;
+}
+/* 收货信息行与其他字段对齐 */
+.bottom-row .addr-row{
+  display:flex;
+  align-items:flex-start;
+  gap:8px;
+}
+
+.bottom-row .addr-row .label{
+  flex-shrink:0;
+  width:72px;
+  color:#666;
+}
+
+.bottom-row .addr-row .value{
+  flex:1;
+  color:#333;
+  word-break:break-all;
+}
+
+/* 小眼睛图标 */
+.eye-icon{
+  cursor:pointer;
+  margin-left:6px;
+  font-size:14px;
+  color:#2d583f;
+  user-select:none;
+}
+
+/* 展开后的完整地址 */
+.full-addr{
+  display:block;
+  margin-top:4px;
+  font-size:13px;
+  color:#555;
+  line-height:1.4;
 }
 </style>
