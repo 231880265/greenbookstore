@@ -259,7 +259,6 @@ const loadFavorites = async () => {
 const toggleFavorite = async (book: BookItem) => {
   if (favoritedSet.value.has(book.ubId)) {
     const fid = favoriteIdMap.value[book.ubId]
-    if (!fid) return
     console.log('取消收藏', fid)
     try {
       await removeFavorite(fid)
@@ -342,7 +341,7 @@ onMounted(async () => {
     <HeaderBar />
 
     <!-- 面包屑 -->
-    <BreadcrumbBar 
+    <BreadcrumbBar
       :items="[
         { label: '商城' },
         { slot: 'category' },
