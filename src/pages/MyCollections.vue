@@ -504,4 +504,20 @@ const filteredList = computed(() => {
 .fade-leave-to {
   opacity: 0;
 }
+<style scoped>
+   /* ... 你现有的样式 ... */
+
+   /* 添加自定义加载指示器颜色 */
+ .list :deep(.el-loading-spinner .circular) {
+   stroke: #2d583f;
+ }
+
+.list :deep(.el-loading-spinner .path) {
+  stroke: #2d583f;
+}
+
+.list :deep(.el-loading-text) {
+  color: #2d583f;
+}
 </style>
+

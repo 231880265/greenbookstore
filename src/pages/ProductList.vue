@@ -11,7 +11,6 @@ import {
   searchBooks
 } from '@/api'
 import type { FavoriteItem } from '@/api/types'
-import router from "@/router";
 import { useRoute, useRouter } from 'vue-router'
 const routerr = useRouter()
 
@@ -265,29 +264,29 @@ const loadFavorites = async () => {
   }
 }
 
-const toggleFavorite = async (book: BookItem) => {
-  if (favoritedSet.value.has(book.ubId)) {
-    const fid = favoriteIdMap.value[book.ubId]
-    console.log('取消收藏', fid)
-    try {
-      await removeFavorite(fid)
-      favoritedSet.value.delete(book.ubId)
-      delete favoriteIdMap.value[book.ubId]
-    } catch (e) {
-      console.error('取消收藏失败', e)
-    }
-  } else {
-    try {
-      console.log('收藏', book.ubId)
-      const response = await addFavorite(book.ubId)
-      console.log('收藏成功', response.data)
-      favoritedSet.value.add(book.ubId)
-      favoriteIdMap.value[book.ubId] = response.data
-    } catch (e) {
-      console.error('收藏失败', e)
-    }
-  }
-}
+// const toggleFavorite = async (book: BookItem) => {
+//   if (favoritedSet.value.has(book.ubId)) {
+//     const fid = favoriteIdMap.value[book.ubId]
+//     console.log('取消收藏', fid)
+//     try {
+//       await removeFavorite(fid)
+//       favoritedSet.value.delete(book.ubId)
+//       delete favoriteIdMap.value[book.ubId]
+//     } catch (e) {
+//       console.error('取消收藏失败', e)
+//     }
+//   } else {
+//     try {
+//       console.log('收藏', book.ubId)
+//       const response = await addFavorite(book.ubId)
+//       console.log('收藏成功', response.data)
+//       favoritedSet.value.add(book.ubId)
+//       favoriteIdMap.value[book.ubId] = response.data
+//     } catch (e) {
+//       console.error('收藏失败', e)
+//     }
+//   }
+// }
 
 /* ---------- 搜索 ---------- */
 //TODO:这里目前是前端自己的筛选，而不是调用了后端搜索接口的版本
