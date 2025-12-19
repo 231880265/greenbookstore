@@ -24,7 +24,7 @@
       >
         <div class="block-header">
           <h2 class="block-title">{{ cat.name }}</h2>
-          <button class="block-more-btn">
+          <button class="block-more-btn" @click="handleMoreClick(cat.name)">
             更多 {{ cat.name }}
             <span class="arrow">→</span>
           </button>
@@ -118,10 +118,42 @@ const scienceBooks = [
   { title: "三体：黑暗森林", image: book5Img, price: 89.90 },
 ];
 
+/** 艺术类书籍数据 */
+const artBooks = [
+  { title: "艺术的故事", image: book1Img, price: 128.00 },
+  { title: "中国绘画史", image: book2Img, price: 88.50 },
+  { title: "西方美术史", image: book3Img, price: 95.00 },
+  { title: "设计中的设计", image: book4Img, price: 58.00 },
+  { title: "色彩心理学", image: book5Img, price: 42.00 },
+  { title: "摄影构图学", image: book1Img, price: 65.00 },
+];
+
+/** 历史类书籍数据 */
+const historyBooks = [
+  { title: "史记", image: book2Img, price: 78.00 },
+  { title: "资治通鉴", image: book3Img, price: 125.00 },
+  { title: "人类简史", image: book4Img, price: 49.90 },
+  { title: "全球通史", image: book5Img, price: 88.00 },
+  { title: "中国历代政治得失", image: book1Img, price: 35.00 },
+  { title: "万历十五年", image: book2Img, price: 28.00 },
+];
+
+/** 精选书籍（用于"更多"分类） */
+const featuredBooks = [
+  { title: "百年孤独", image: book1Img, price: 35.00 },
+  { title: "时间简史", image: book5Img, price: 62.00 },
+  { title: "艺术的故事", image: book1Img, price: 128.00 },
+  { title: "史记", image: book2Img, price: 78.00 },
+  { title: "三体", image: book4Img, price: 79.90 },
+  { title: "活着", image: book3Img, price: 29.90 },
+];
+
 /** 区块展示的类别 - 包含书籍数据 **/
 const blockCategories = [
     { name: "文学", books: fictionBooks },
-    { name: "生活", books: scienceBooks },
+    { name: "艺术", books: artBooks },
+    { name: "历史", books: historyBooks },
+    { name: "更多", books: featuredBooks },
 ];
 
 /** 个人主页入口逻辑 **/
@@ -145,6 +177,21 @@ onMounted(async () => {
 
 const goProfile = () => {
   router.push("/profile");
+};
+
+/**
+ * 处理"更多"按钮点击事件
+ * @param categoryName - 分类名称
+ */
+const handleMoreClick = (categoryName: string) => {
+  if (categoryName === "更多") {
+    // 跳转到全部书籍页面
+    router.push("/product-list");
+  } else {
+    // 其他分类可以跳转到对应分类的书籍列表
+    // 这里可以根据需要实现分类筛选功能
+    router.push({ path: "/product-list", query: { category: categoryName } });
+  }
 };
 
 </script>

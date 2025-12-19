@@ -98,7 +98,7 @@
             class="dropdown-item"
             @click.stop="goToAllSoldOrders"
           >
-            <span>回收订单</span>
+            <span>卖书记录</span>
           </div>
           <div
             class="dropdown-item"
@@ -197,23 +197,6 @@
     <teleport to="body">
       <div v-if="authOpen" class="auth-mask" @click.self="closeAuth">
         <div class="auth-dialog">
-          <div class="auth-tabs">
-            <button
-              class="auth-tab"
-              :class="{ active: authTab === 'login' }"
-              @click="authTab = 'login'; authError = null"
-            >
-              登录
-            </button>
-            <button
-              class="auth-tab"
-              :class="{ active: authTab === 'register' }"
-              @click="authTab = 'register'; authError = null"
-            >
-              注册
-            </button>
-          </div>
-
           <div class="auth-body" v-if="authTab === 'login'">
             <!-- 左：二维码占位 -->
             <div class="auth-left qr-area">
@@ -509,6 +492,13 @@ watch(showUserMenu, (isOpen) => {
 const authOpen = ref(false);
 const authTab = ref<"login" | "register">("login");
 
+// 监听authOpen变化，确保弹窗关闭时恢复滚动
+watch(authOpen, (newVal) => {
+  if (!newVal) {
+    document.body.style.overflow = '';
+  }
+});
+
 const loginForm = reactive<LoginRequest>({
   telephone: "",
   password: "",
@@ -564,15 +554,26 @@ watch(isLoggedIn, (loggedIn) => {
   }
 }, { immediate: true });
 
+/**
+ * 打开登录/注册弹窗
+ * @param tab - 默认显示的标签页
+ */
 const openAuth = (tab: "login" | "register" = "login") => {
   authTab.value = tab;
   authOpen.value = true;
   authError.value = null;
+  // 阻止背景滚动和点击
+  document.body.style.overflow = 'hidden';
 };
 
+/**
+ * 关闭登录/注册弹窗
+ */
 const closeAuth = () => {
   authOpen.value = false;
   authError.value = null;
+  // 恢复背景滚动
+  document.body.style.overflow = '';
 };
 
 const onUserIconClick = () => {
@@ -1185,42 +1186,29 @@ const handleAvatarChange = async (event: Event) => {
   align-items: center;
   justify-content: center;
   z-index: 4000;
+  /* 阻止背景点击和滚动 */
+  touch-action: none;
+  overscroll-behavior: contain;
 }
 
 .auth-dialog {
   width: 860px;
   max-width: 92vw;
+  min-height: 300px;
   background: #ffffff;
   border-radius: 18px;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);
-  padding: 18px 22px 22px;
-}
-
-.auth-tabs {
+  padding: 32px 22px;
+  overflow-y: auto;
   display: flex;
-  gap: 12px;
-  margin-bottom: 12px;
-}
-
-.auth-tab {
-  border: none;
-  background: transparent;
-  padding: 6px 12px;
-  border-radius: 999px;
-  font-size: 15px;
-  cursor: pointer;
-  color: #777;
-}
-
-.auth-tab.active {
-  background: #2d583f;
-  color: #fff;
+  align-items: center;
+  justify-content: center;
 }
 
 .auth-body {
   display: flex;
   gap: 24px;
-  padding-top: 4px;
+  width: 100%;
 }
 
 .auth-left {

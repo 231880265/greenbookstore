@@ -63,7 +63,7 @@ const slides = [
   {
     id: "s2",
     bg: p2,
-    title: "期末之前",
+    title: "年末之际",
     subtitle: "留一小时，只属于阅读"
   },
   {
@@ -132,7 +132,7 @@ const onSlideChange = () => {
 }
 
 .overlay.show {
-  opacity: 1;
+  opacity: 0.5;
   transform: scale(1);
 }
 
