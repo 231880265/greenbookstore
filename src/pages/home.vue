@@ -26,7 +26,7 @@
         <div class="block-header">
           <h2 class="block-title">{{ cat.name }}</h2>
           <button class="block-more-btn" @click="handleMoreClick(cat.name)">
-            更多 {{ cat.name }}
+            {{ cat.name === "更多推荐" ? "更多" : `更多 ${cat.name}` }}
             <span class="arrow">→</span>
           </button>
         </div>
@@ -34,8 +34,10 @@
         <div class="book-card-list">
           <a
             v-for="(book, index) in cat.books"
-            :key="index"
+            :key="book.ubId || index"
             class="book-card"
+            :class="{ 'no-click': !book.ubId }"
+            @click="handleBookClick(book)"
           >
             <div class="card-img-wrapper">
                 <img :src="book.image" :alt="book.title" class="book-card-img" />
@@ -80,13 +82,27 @@ import { useRouter } from "vue-router";
 import HeaderBar from "../components/HeaderBar.vue";
 import HomeCarousel from "../components/HomeCarousel.vue";
 import Footer from "../components/Footer.vue";
-import book1Img from "../assets/book1.jpg";
-import book2Img from "../assets/book2.jpg";
-import book3Img from "../assets/book3.jpg";
-import book4Img from "../assets/book4.jpg";
-import book5Img from "../assets/book5.jpg";
-import { getCurrentUser } from "@/api";
-import type { UserDetail } from "@/api/types";
+import book12Img from "../assets/book12.jpg";
+import book13Img from "../assets/book13.jpg";
+import book14Img from "../assets/book14.jpg";
+import book15Img from "../assets/book15.jpg";
+import book16Img from "../assets/book16.jpg";
+import book17Img from "../assets/book17.jpg";
+import book18Img from "../assets/book18.jpg";
+import book19Img from "../assets/book19.jpg";
+import book20Img from "../assets/book20.jpg";
+import { getCurrentUser, getProductDetail } from "@/api";
+import type { UserDetail, Product } from "@/api/types";
+
+/**
+ * 书籍卡片数据接口
+ */
+interface BookCard {
+  ubId?: number;
+  title: string;
+  image?: string;
+  price: number;
+}
 /** 顶部导航分类：一行 10 个（与后端枚举 ProductCategory 对应） **/
 const topCategories = [
   "小说",           // DILI
@@ -113,79 +129,231 @@ const CATEGORY_MAP: Record<string, string> = {
   "哲学 / 心理学": "ZHEXUEXINLIXUE",
 };
 
-// 模拟书籍数据（包含价格）
-const fictionBooks = [
-  { title: "红楼梦：珍藏版", image: book1Img, price: 58.50 },
-  { title: "西游记：插画本", image: book2Img, price: 45.00 },
-  { title: "活着 (余华)", image: book3Img, price: 29.90 },
-  { title: "三体 (刘慈欣)", image: book4Img, price: 79.90 },
-  { title: "百年孤独", image: book1Img, price: 35.00 },
-  { title: "挪威的森林", image: book5Img, price: 38.00 },
-];
-
-const scienceBooks = [
-  { title: "时间简史", image: book5Img, price: 62.00 },
-  { title: "人类简史", image: book3Img, price: 49.90 },
-  { title: "费曼物理学讲义", image: book2Img, price: 120.00 },
-  { title: "上帝掷骰子吗", image: book1Img, price: 75.00 },
-  { title: "三体：黑暗森林", image: book5Img, price: 89.90 },
-];
+/** 文学类书籍数据 */
+const literatureBooks = ref<BookCard[]>([]);
 
 /** 艺术类书籍数据 */
-const artBooks = [
-  { title: "艺术的故事", image: book1Img, price: 128.00 },
-  { title: "中国绘画史", image: book2Img, price: 88.50 },
-  { title: "西方美术史", image: book3Img, price: 95.00 },
-  { title: "设计中的设计", image: book4Img, price: 58.00 },
-  { title: "色彩心理学", image: book5Img, price: 42.00 },
-  { title: "摄影构图学", image: book1Img, price: 65.00 },
-];
+const artBooks = ref<BookCard[]>([]);
 
 /** 历史类书籍数据 */
-const historyBooks = [
-  { title: "史记", image: book2Img, price: 78.00 },
-  { title: "资治通鉴", image: book3Img, price: 125.00 },
-  { title: "人类简史", image: book4Img, price: 49.90 },
-  { title: "全球通史", image: book5Img, price: 88.00 },
-  { title: "中国历代政治得失", image: book1Img, price: 35.00 },
-  { title: "万历十五年", image: book2Img, price: 28.00 },
-];
+const historyBooks = ref<BookCard[]>([]);
 
-/** 精选书籍（用于"更多"分类） */
-const featuredBooks = [
-  { title: "百年孤独", image: book1Img, price: 35.00 },
-  { title: "时间简史", image: book5Img, price: 62.00 },
-  { title: "艺术的故事", image: book1Img, price: 128.00 },
-  { title: "史记", image: book2Img, price: 78.00 },
-  { title: "三体", image: book4Img, price: 79.90 },
-  { title: "活着", image: book3Img, price: 29.90 },
-];
+/** 推荐书籍数据 */
+const featuredBooks = ref<BookCard[]>([]);
 
 /** 区块展示的类别 - 包含书籍数据 **/
-const blockCategories = [
-    { name: "文学", books: fictionBooks },
-    { name: "艺术", books: artBooks },
-    { name: "历史", books: historyBooks },
-    { name: "更多", books: featuredBooks },
-];
+const blockCategories = ref([
+  { name: "文学类推荐", books: literatureBooks },
+  { name: "艺术类推荐", books: artBooks },
+  { name: "历史类推荐", books: historyBooks },
+  { name: "更多推荐", books: featuredBooks },
+]);
 
 /** 个人主页入口逻辑 **/
 const router = useRouter();
 const currentUser = ref<UserDetail | null>(null);
 const isLoggedIn = ref(false);
 
-onMounted(async () => {
-  const token = localStorage.getItem("GB_TOKEN");
-  if (!token) return;
-  isLoggedIn.value = true;
+/**
+ * 将 Product 转换为 BookCard
+ * @param product - 产品数据
+ * @returns BookCard 对象
+ */
+const convertToBookCard = (product: Product): BookCard => {
+  return {
+    ubId: product.ubId,
+    title: product.title,
+    image: product.cover,
+    price: product.price,
+  };
+};
+
+/**
+ * 获取文学类书籍（使用 id 916-920 列举式获取，每本都通过 getProductDetail 获取）
+ */
+const fetchLiteratureBooks = async () => {
   try {
-    const res = await getCurrentUser();
-    currentUser.value = res.data;
-  } catch {
-    // token 失效则视为未登录
-    localStorage.removeItem("GB_TOKEN");
-    isLoggedIn.value = false;
+    const ids = [916, 917, 918, 919, 920];
+    const books: BookCard[] = [];
+    
+    // 每本书都按照 getProductDetail(id) 的方式获取
+    for (const id of ids) {
+      try {
+        const response = await getProductDetail(id);
+        if (response.data) {
+          books.push(convertToBookCard(response.data));
+        }
+      } catch (error) {
+        console.warn(`获取文学类书籍 id ${id} 失败:`, error);
+      }
+    }
+    literatureBooks.value = books;
+  } catch (error) {
+    console.error("获取文学类书籍失败:", error);
+    literatureBooks.value = [];
   }
+};
+
+/**
+ * 获取艺术类书籍（使用 id 921-925 列举式获取，每本都通过 getProductDetail 获取）
+ */
+const fetchArtBooks = async () => {
+  try {
+    const ids = [921, 922, 923, 924, 925];
+    const books: BookCard[] = [];
+    
+    // 每本书都按照 getProductDetail(id) 的方式获取
+    for (const id of ids) {
+      try {
+        const response = await getProductDetail(id);
+        if (response.data) {
+          books.push(convertToBookCard(response.data));
+        }
+      } catch (error) {
+        console.warn(`获取艺术类书籍 id ${id} 失败:`, error);
+      }
+    }
+    
+    artBooks.value = books;
+  } catch (error) {
+    console.error("获取艺术类书籍失败:", error);
+    artBooks.value = [];
+  }
+};
+
+/**
+ * 获取历史类书籍（第一本是 id 926，其他4本是模拟数据，没有 id，不可点击）
+ */
+const fetchHistoryBooks = async () => {
+  try {
+    // 获取第一本书（id 926）
+    const firstBookResponse = await getProductDetail(926);
+    const firstBook = firstBookResponse.data ? convertToBookCard(firstBookResponse.data) : null;
+    
+    // 补充4本模拟数据（没有 id，只有封面、名称和价格）
+    const mockBooks: BookCard[] = [
+      { 
+        title: "翦商：殷周之变与华夏新生", 
+        image: book12Img, 
+        price: 68.00 
+      },
+      { 
+        title: "希腊别传", 
+        image: book13Img, 
+        price: 45.00 
+      },
+      { 
+        title: "中国少女：『女学生』的一百年", 
+        image: book14Img, 
+        price: 52.00 
+      },
+      { 
+        title: "始皇帝的遗产：秦汉帝国", 
+        image: book15Img, 
+        price: 58.00 
+      },
+    ];
+    
+    // 合并：第一本（如果有）+ 4本模拟数据
+    if (firstBook) {
+      historyBooks.value = [firstBook, ...mockBooks];
+    } else {
+      historyBooks.value = mockBooks;
+    }
+  } catch (error) {
+    console.error("获取历史类书籍失败:", error);
+    // 如果接口失败，至少显示模拟的书籍
+    historyBooks.value = [
+      { 
+        title: "翦商：殷周之变与华夏新生", 
+        image: book12Img, 
+        price: 68.00 
+      },
+      { 
+        title: "希腊别传", 
+        image: book13Img, 
+        price: 45.00 
+      },
+      { 
+        title: "中国少女：『女学生』的一百年", 
+        image: book14Img, 
+        price: 52.00 
+      },
+      { 
+        title: "始皇帝的遗产：秦汉帝国", 
+        image: book15Img, 
+        price: 58.00 
+      },
+    ];
+  }
+};
+
+/**
+ * 获取推荐书籍（使用 book16-20 的封面，模拟名称和价格）
+ */
+const fetchFeaturedBooks = async () => {
+  // 使用 book16-20 的封面创建模拟数据（没有 ubId，不可点击）
+  featuredBooks.value = [
+    { 
+      title: "格外的活法", 
+      image: book16Img, 
+      price: 25.00 
+    },
+    { 
+      title: "看不见的中东", 
+      image: book17Img, 
+      price: 27.00 
+    },
+    { 
+      title: "哲学家的最后一刻", 
+      image: book18Img, 
+      price: 22.00 
+    },
+    { 
+      title: "我是寨子里长大的女孩", 
+      image: book19Img, 
+      price: 32.00 
+    },
+    { 
+      title: "父亲的解放日志", 
+      image: book20Img, 
+      price: 30.00 
+    },
+  ];
+};
+
+/**
+ * 处理书籍卡片点击事件
+ * @param book - 书籍对象
+ */
+const handleBookClick = (book: BookCard) => {
+  if (book.ubId) {
+    router.push(`/product-detail/${book.ubId}`);
+  }
+};
+
+onMounted(async () => {
+  // 获取用户信息
+  const token = localStorage.getItem("GB_TOKEN");
+  if (token) {
+    isLoggedIn.value = true;
+    try {
+      const res = await getCurrentUser();
+      currentUser.value = res.data;
+    } catch {
+      // token 失效则视为未登录
+      localStorage.removeItem("GB_TOKEN");
+      isLoggedIn.value = false;
+    }
+  }
+  
+  // 获取各类书籍数据
+  await Promise.all([
+    fetchLiteratureBooks(),
+    fetchArtBooks(),
+    fetchHistoryBooks(),
+    fetchFeaturedBooks(),
+  ]);
 });
 
 const goProfile = () => {
@@ -197,14 +365,17 @@ const goProfile = () => {
  * @param categoryName - 分类名称
  */
 const handleMoreClick = (categoryName: string) => {
-  if (categoryName === "更多") {
+  if (categoryName === "更多" || categoryName === "推荐" || categoryName === "更多推荐") {
     // 跳转到全部书籍页面
     router.push("/product-list");
   } else {
     // 其他分类可以跳转到对应分类的书籍列表
-    // 这里可以根据需要实现分类筛选功能
     const categoryCode = CATEGORY_MAP[categoryName];
-    router.push({ path: `/product-list/${categoryCode}` });
+    if (categoryCode) {
+      router.push({ path: `/product-list/${categoryCode}` });
+    } else {
+      router.push("/product-list");
+    }
   }
 };
 
@@ -360,11 +531,21 @@ const handleMoreClick = (categoryName: string) => {
     flex-shrink: 0;
     background: #ffffff; /* 卡片使用白色，在米白背景上突出 */
     border-radius: 6px;
-  cursor: pointer;
+    cursor: pointer;
     transition: box-shadow 0.3s, transform 0.3s;
 }
 
 .book-card:hover {
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    transform: translateY(-5px);
+}
+
+/* 没有 id 的书籍卡片（模拟数据）不可点击，但 hover 效果与可点击书籍一致 */
+.book-card.no-click {
+    cursor: default;
+}
+
+.book-card.no-click:hover {
     box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
     transform: translateY(-5px);
 }
