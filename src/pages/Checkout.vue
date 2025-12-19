@@ -376,8 +376,7 @@ async function goPay() {
 .address-display {
     flex: 1;
     padding: 12px 16px;
-    background: #fcfbf8;
-    border-radius: 8px;
+    border-radius: 28px;
     border: 1px solid #e9ecef;
 }
 
