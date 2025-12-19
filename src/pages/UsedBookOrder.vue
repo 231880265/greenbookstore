@@ -6,7 +6,7 @@
 
   <!-- 页面标题 -->
   <div class="page-title-section">
-    <h2 class="page-title">卖书订单</h2>
+    <h2 class="page-title">卖书记录</h2>
   </div>
 
   <!-- 吸顶状态 Tabs -->
