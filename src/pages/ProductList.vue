@@ -2,7 +2,6 @@
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { Close, Search } from '@element-plus/icons-vue'
-import HeaderBar from '../components/HeaderBar.vue'
 import BreadcrumbBar from '../components/BreadcrumbBar.vue'
 import {
   getProductList,
@@ -348,8 +347,6 @@ onMounted(async () => {
 
 <template>
   <div class="detail-page">
-    <HeaderBar />
-
     <!-- 面包屑 -->
     <BreadcrumbBar
       :items="[

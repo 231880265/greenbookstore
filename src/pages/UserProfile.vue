@@ -1,7 +1,5 @@
 <template>
     <div class="profile-page">
-      <HeaderBar />
-  
       <!-- 面包屑 -->
       <BreadcrumbBar :items="[{ label: '个人中心' }]" />
   
@@ -138,7 +136,6 @@
   <script setup lang="ts">
   import { ref, reactive, onMounted } from 'vue'
   import { useRouter } from 'vue-router'
-  import HeaderBar from '@/components/HeaderBar.vue'
   import Footer from '@/components/Footer.vue'
   import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
   import AddressDialog from '@/components/AddressDialog.vue'

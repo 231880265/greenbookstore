@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import HeaderBar from "../components/HeaderBar.vue";
 import BreadcrumbBar from "../components/BreadcrumbBar.vue";
 import Footer from "../components/Footer.vue";
 import { getMyOrderById, getAddressList } from '@/api/index'
@@ -186,8 +185,6 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="order-details-page">
-    <HeaderBar />
-
     <!-- 面包屑 -->
     <BreadcrumbBar :items="[{ label: '购书订单', path: '/orders' }, { label: '订单详情' }]" />
 

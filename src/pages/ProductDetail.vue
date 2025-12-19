@@ -1,6 +1,5 @@
 <template>
     <div class="page-container">
-        <HeaderBar />
         <BreadcrumbBar v-if="!productDetail" :items="[{ label: '商城', path: '/product-list' }, { label: '商品详情' }]" />
         <BreadcrumbBar v-if="productDetail" :items="[
             { label: '商城', path: '/product-list' },
@@ -126,7 +125,6 @@
 </template>
 
 <script setup lang="ts">
-import HeaderBar from '@/components/HeaderBar.vue';
 import BreadcrumbBar from '@/components/BreadcrumbBar.vue';
 import Footer from '@/components/Footer.vue';
 import { ref, computed } from 'vue';

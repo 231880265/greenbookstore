@@ -1,6 +1,5 @@
 <template>
     <div class="page-container">
-        <HeaderBar />
         <BreadcrumbBar :items="[{ label: '购物车' }]" />
         <div class="content">
             <h2 class="cart-title">购物车</h2>
@@ -85,7 +84,6 @@
 </template>
 
 <script setup lang="ts">
-import HeaderBar from '@/components/HeaderBar.vue';
 import BreadcrumbBar from '@/components/BreadcrumbBar.vue';
 import { ref, onMounted, computed } from 'vue';
 import { getCart, updateCartItem, addFavorite, removeCartItem } from '@/api';

@@ -1,6 +1,5 @@
 <template>
     <div class="page-container">
-        <HeaderBar />
         <BreadcrumbBar :items="[{ label: '购物车', path: '/cart' }, { label: '结算' }]" />
         <div class="content">
             <h2 class="checkout-title">结算</h2>
@@ -92,7 +91,6 @@
 </template>
 
 <script lang="ts" setup>
-import HeaderBar from '@/components/HeaderBar.vue'
 import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
 import Footer from '@/components/Footer.vue'
 import AddressDialog from '@/components/AddressDialog.vue'

@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed, onBeforeUnmount } from 'vue'
 import { useRoute } from 'vue-router'
-import HeaderBar from '../components/HeaderBar.vue'
 import BreadcrumbBar from '../components/BreadcrumbBar.vue'
 import Footer from '../components/Footer.vue'
 import { getUsedBookOrderById } from '../api/index'
@@ -194,8 +193,6 @@ const statusLabel = computed(() => {
 
 <template>
   <div class="recycle-order-page">
-    <HeaderBar />
-
     <!-- 面包屑 -->
     <BreadcrumbBar :items="[{ label: '回收订单', path: '/usedBook/orders' }, { label: '订单详情' }]" />
 

@@ -1,6 +1,4 @@
 <template>
-  <HeaderBar />
-
   <!-- 面包屑 -->
   <BreadcrumbBar :items="[{ label: '卖书记录' }]" />
 
@@ -85,7 +83,6 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import HeaderBar from '@/components/HeaderBar.vue'
 import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
 import { getUsedBookOrders } from '@/api/index'
 import type { UsedBookOrderVO, UsedBookOrderStatus } from '@/api/types'
