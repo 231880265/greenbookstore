@@ -726,6 +726,8 @@ const handleLogin = async () => {
     // 登录成功后获取用户信息
     await fetchUserInfo();
     router.push("/");
+    window.location.reload()
+
   } catch (e: any) {
     const msg = e?.message || "";
     if (msg.includes("用户名") || msg.includes("密码")) {
