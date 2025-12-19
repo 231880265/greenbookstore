@@ -328,13 +328,8 @@ watch(currentCategory, async (_newVal, oldVal) => {
   if (oldVal !== undefined) {
     await fetchBooks()
     currentPage.value = 1
-  },
-  { immediate: true }
-)
-    currentPage.value = 1
-  },
-  { immediate: true }
-)
+  }
+}, { immediate: true })
 
 onMounted(async () => {
   await fetchBooks()
