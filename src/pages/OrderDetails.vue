@@ -2,6 +2,7 @@
 import { ref, onMounted, watch, computed, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import HeaderBar from "../components/HeaderBar.vue";
+import BreadcrumbBar from "../components/BreadcrumbBar.vue";
 import Footer from "../components/Footer.vue";
 import { getMyOrderById, getAddressList } from '@/api/index'
 
@@ -231,13 +232,7 @@ onBeforeUnmount(() => {
     <HeaderBar />
 
     <!-- 面包屑 -->
-    <nav class="breadcrumb">
-      <span class="crumb" @click.prevent="router.push('/')">首页</span>
-      <span class="sep">|</span>
-      <span class="crumb" @click.prevent="router.push('/orders')">购书订单</span>
-      <span class="sep">|</span>
-      <span class="crumb current">订单详情</span>
-    </nav>
+    <BreadcrumbBar :items="[{ label: '购书订单', path: '/orders' }, { label: '订单详情' }]" />
 
     <div class="order-details-layout">
       <!-- 左侧主内容 -->

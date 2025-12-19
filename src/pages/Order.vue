@@ -1,5 +1,9 @@
 <template>
   <HeaderBar />
+  
+  <!-- 面包屑 -->
+  <BreadcrumbBar :items="[{ label: '购书订单' }]" />
+
   <div class="tabs-sticky">
     <div class="tabs-container">
       <div class="status-tabs">
@@ -81,6 +85,7 @@
 
 <script setup lang="ts">
 import HeaderBar from '@/components/HeaderBar.vue';
+import BreadcrumbBar from '@/components/BreadcrumbBar.vue';
 import { ref, onMounted } from 'vue'
 import { getMyOrders } from '@/api/index' // 暂时注释掉，使用本地假数据调试
 import type { OrderStatus } from '@/api/types'

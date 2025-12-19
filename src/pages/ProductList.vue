@@ -16,6 +16,10 @@ import { useRoute, useRouter } from 'vue-router'
 
 const route = useRoute()
 const routerr = useRouter()
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const routerr = useRouter()
 
 
 interface BookItem {
@@ -320,13 +324,22 @@ function debounce<T extends (...args: any[]) => any>(
 
 // 监听筛选条件变化，重置页码
 watch([filter, searchKeyword], () => {
+watch([filter, searchKeyword], () => {
   currentPage.value = 1
 })
 
 watch(
   () => route.params.category,
   async () => {
+
+watch(
+  () => route.params.category,
+  async () => {
     await fetchBooks()
+    currentPage.value = 1
+  },
+  { immediate: true }
+)
     currentPage.value = 1
   },
   { immediate: true }
@@ -375,9 +388,18 @@ onMounted(async () => {
                   router.push({ path: `/product-list/${code}` });
                   closeDropdown()
                 "
+                @click.stop="
+                  router.push({ path: `/product-list/${code}` });
+                  closeDropdown()
+                "
             >
               {{ name }}
             </li>
+            <li :class="{ active: currentCategory === null }" 
+                @click.stop="
+                  router.push('/product-list');
+                  closeDropdown()
+            ">
             <li :class="{ active: currentCategory === null }" 
                 @click.stop="
                   router.push('/product-list');

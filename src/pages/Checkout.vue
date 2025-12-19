@@ -3,11 +3,7 @@
         <HeaderBar />
         <div class="content">
             <h2 class="checkout-title">结算</h2>
-            <el-breadcrumb separator="/" class="breadcrumb">
-                <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-                <el-breadcrumb-item :to="{ path: '/cart' }">购物车</el-breadcrumb-item>
-                <el-breadcrumb-item>结算</el-breadcrumb-item>
-            </el-breadcrumb>
+            <BreadcrumbBar :items="[{ label: '购物车', path: '/cart' }, { label: '结算' }]" />
 
             <div class="checkout-wrapper">
                 <!-- 左侧：地址与支付 -->
@@ -91,6 +87,7 @@
 
 <script lang="ts" setup>
 import HeaderBar from '@/components/HeaderBar.vue'
+import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
 import Footer from '@/components/Footer.vue'
 import AddressDialog from '@/components/AddressDialog.vue'
 import { ref, computed, onMounted } from 'vue'

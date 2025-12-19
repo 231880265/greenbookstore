@@ -1,6 +1,9 @@
 <template>
   <HeaderBar />
 
+  <!-- 面包屑 -->
+  <BreadcrumbBar :items="[{ label: '回收订单' }]" />
+
   <!-- 吸顶状态 Tabs -->
   <div class="tabs-sticky">
     <div class="tabs-container">
@@ -78,6 +81,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import HeaderBar from '@/components/HeaderBar.vue'
+import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
 import { getUsedBookOrders } from '@/api/index'
 import type { UsedBookOrderVO, UsedBookOrderStatus } from '@/api/types'
 import book1 from "../assets/book1.jpg";

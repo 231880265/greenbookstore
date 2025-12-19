@@ -3,13 +3,7 @@
     <HeaderBar />
 
     <!-- 面包屑 -->
-    <section class="breadcrumb-bar">
-      <div class="breadcrumb-inner">
-        <span class="crumb link" @click="$router.push('/')">首页</span>
-        <span class="sep">/</span>
-        <span class="crumb current">我要卖书</span>
-      </div>
-    </section>
+    <BreadcrumbBar :items="[{ label: '我要卖书' }]" />
 
     <main class="sell-main">
       <!-- 顶部：流程提示 + 进度条 -->
@@ -248,6 +242,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import HeaderBar from '@/components/HeaderBar.vue'
+import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
 import Footer from '@/components/Footer.vue'
 import { createUsedBook, getSoldBookList, uploadImage, getAddressList, createAddress } from '@/api'
 import type { SoldBookItem, AddressItem } from '@/api/types'
@@ -447,38 +442,6 @@ onMounted(async () => {
   padding: 0 20px 40px;
 }
 
-/* 面包屑 */
-.breadcrumb-bar {
-  border-bottom: 1px solid #eee;
-  background: #fff;
-}
-
-.breadcrumb-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-}
-
-.crumb {
-  color: #666;
-}
-
-.crumb.link {
-  cursor: pointer;
-  color: #2d583f;
-}
-
-.crumb.current {
-  color: #999;
-}
-
-.sep {
-  color: #ccc;
-}
 
 .section-title {
   font-size: 20px;

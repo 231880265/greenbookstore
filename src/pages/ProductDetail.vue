@@ -5,10 +5,7 @@
 
             <!-- 骨架屏 -->
             <div class="product-container skeleton-container" v-if="!productDetail">
-                <el-breadcrumb separator="/" class="breadcrumb">
-                    <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-                    <el-breadcrumb-item>书城</el-breadcrumb-item>
-                </el-breadcrumb>
+                <BreadcrumbBar :items="[{ label: '商城', path: '/product-list' }, { label: '商品详情' }]" />
 
                 <div class="product-wrapper">
                     <van-skeleton :row="0" class="img-skeleton">
@@ -32,12 +29,13 @@
 
             <!-- 实际内容 -->
             <div class="product-container" v-if="productDetail">
-                <el-breadcrumb separator="/" class="breadcrumb">
-                    <el-breadcrumb-item :to="{ path: '/' }">首页</el-breadcrumb-item>
-                    <el-breadcrumb-item>书城</el-breadcrumb-item>
-                    <el-breadcrumb-item>{{ getCategoryName(productDetail.category ?? '') }}</el-breadcrumb-item>
-                    <el-breadcrumb-item>{{ productDetail.title }}</el-breadcrumb-item>
-                </el-breadcrumb>
+                <BreadcrumbBar 
+                    :items="[
+                        { label: '商城', path: '/product-list' },
+                        ...(productDetail.category ? [{ label: getCategoryName(productDetail.category) }] : []),
+                        { label: productDetail.title }
+                    ]" 
+                />
 
                 <div class="product-wrapper">
                     <div class="img-wrapper">
@@ -131,6 +129,7 @@
 
 <script setup lang="ts">
 import HeaderBar from '@/components/HeaderBar.vue';
+import BreadcrumbBar from '@/components/BreadcrumbBar.vue';
 import Footer from '@/components/Footer.vue';
 import { ref, computed } from 'vue';
 import { useRoute, useRouter } from 'vue-router';

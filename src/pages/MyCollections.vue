@@ -3,6 +3,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { Search, ArrowDown } from '@element-plus/icons-vue'
 import HeaderBar from '../components/HeaderBar.vue'
+import BreadcrumbBar from '../components/BreadcrumbBar.vue'
 import Footer from '../components/Footer.vue'
 import { getFavoriteList, removeFavorite as apiRemoveFavorite, getProductDetail } from '@/api'
 import type { FavoriteItem } from '@/api/types'
@@ -151,12 +152,8 @@ const filteredList = computed(() => {
   <div class="page">
     <HeaderBar />
 
-    <!-- 面包屑：与 OrderDetails.vue 保持一致 -->
-    <nav class="breadcrumb">
-      <span class="crumb" @click.prevent="router.push('/')">首页</span>
-      <span class="sep">|</span>
-      <span class="crumb current">我的收藏</span>
-    </nav>
+    <!-- 面包屑 -->
+    <BreadcrumbBar :items="[{ label: '我的收藏' }]" />
 
     <!-- 主容器 -->
     <main class="container">
