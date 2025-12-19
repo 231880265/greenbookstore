@@ -320,13 +320,6 @@ onBeforeUnmount(() => {
                   <div class="value highlight">晒图返 2 元红包 + 10 积分</div>
                 </div>
               </div>
-
-              <!-- 快捷按钮 -->
-              <div class="done-actions">
-                <button class="btn primary">立即评价</button>
-                <button class="btn">申请售后</button>
-                <button class="btn">再次购买</button>
-              </div>
             </div>
           </div>
         </div>
