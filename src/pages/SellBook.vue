@@ -681,10 +681,10 @@ onMounted(async () => {
 
 .sold-list-section {
   margin-top: 32px;
-  background: #fff;
+  /* background: #fff; */
   border-radius: 16px;
   padding: 18px 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  /* box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04); */
 }
 
 /* 书籍卡片列表 (横向滚动) */
