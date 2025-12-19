@@ -620,5 +620,19 @@ async function goPay() {
         background-color: #2d583f;
         border-color: #2d583f;
     }
+
+    // 小绿叶抵扣复选框改为绿色
+    .el-checkbox__input.is-checked .el-checkbox__inner {
+        background-color: #2d583f;
+        border-color: #2d583f;
+    }
+
+    .el-checkbox__input.is-checked+.el-checkbox__label {
+        color: #2d583f;
+    }
+
+    .el-checkbox__input .el-checkbox__inner:hover {
+        border-color: #2d583f;
+    }
 }
 </style>
