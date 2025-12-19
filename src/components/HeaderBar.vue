@@ -321,7 +321,7 @@ import scanImg from "@/assets/scan.png";
 
 const router = useRouter();
 
-const leafCount = ref(12);
+const leafCount = ref(0);
 
 const searchOpen = ref(false);
 const keyword = ref("");
