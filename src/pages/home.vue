@@ -32,7 +32,7 @@
         </div>
 
         <div class="book-card-list">
-          <div
+          <a
             v-for="(book, index) in cat.books"
             :key="index"
             class="book-card"
@@ -44,7 +44,7 @@
               <div class="card-title">{{ book.title }}</div>
               <div class="card-price">¥ {{ book.price.toFixed(2) }}</div>
             </div>
-          </div>
+          </a>
         </div>
       </div>
     </section>
