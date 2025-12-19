@@ -438,10 +438,8 @@ const handleAuthRequired = (event: CustomEvent) => {
 onMounted(() => {
   loadHistory();
   
-  // 如果已登录，获取用户信息
-  if (isLoggedIn.value) {
-    fetchUserInfo();
-  }
+  // 注意：不在这里调用 fetchUserInfo()，因为 watch(isLoggedIn, { immediate: true }) 已经会在挂载时执行
+  // 这样可以避免重复请求导致头像和绿叶数量刷新
   
   // 添加键盘监听
   const handleKeydown = (e: KeyboardEvent) => {
@@ -459,7 +457,12 @@ onMounted(() => {
   
   // 监听自定义事件：token 变化（同一窗口内）
   const handleTokenChange = () => {
-    isLoggedIn.value = !!localStorage.getItem(TOKEN_KEY);
+    const newToken = localStorage.getItem(TOKEN_KEY);
+    isLoggedIn.value = !!newToken;
+    // 如果 token 变化了，清除缓存，强制重新获取用户信息
+    if (newToken !== lastFetchToken.value) {
+      lastFetchToken.value = null;
+    }
   };
   
   window.addEventListener('keydown', handleKeydown);
@@ -546,21 +549,38 @@ const defaultAvatarUrl = "https://wonderful1.oss-cn-hangzhou.aliyuncs.com/leaf.j
 // 使用 ref 而不是 computed，因为 localStorage 不是响应式的
 const isLoggedIn = ref(!!localStorage.getItem(TOKEN_KEY));
 const currentUser = ref<UserDetail | null>(null);
+// 用于缓存用户信息，避免重复请求
+const fetchingUserInfo = ref(false);
+const lastFetchToken = ref<string | null>(null);
 
 // 获取当前用户信息
 const fetchUserInfo = async () => {
   if (!isLoggedIn.value) {
     currentUser.value = null;
+    leafCount.value = 0;
     return;
   }
+  
+  // 如果正在请求中，避免重复请求
+  if (fetchingUserInfo.value) {
+    return;
+  }
+  
+  // 如果 token 没变且已有用户信息，不重复请求
+  const currentToken = localStorage.getItem(TOKEN_KEY);
+  if (currentToken === lastFetchToken.value && currentUser.value) {
+    return;
+  }
+  
+  fetchingUserInfo.value = true;
   try {
-    //leafCount.value =15;
     const res = await getCurrentUser();
     currentUser.value = res.data;
     // 更新绿叶数量
     if (res.data.leaf !== undefined) {
       leafCount.value = res.data.leaf;
     }
+    lastFetchToken.value = currentToken;
     console.log("获取用户信息", res.data);
   } catch (err) {
     console.error('获取用户信息失败', err);
@@ -571,6 +591,9 @@ const fetchUserInfo = async () => {
     }
     currentUser.value = null;
     leafCount.value = 0;
+    lastFetchToken.value = null;
+  } finally {
+    fetchingUserInfo.value = false;
   }
 };
 
@@ -1239,9 +1262,9 @@ const handleAvatarChange = async (event: Event) => {
 }
 
 .auth-dialog {
-  width: 860px;
+  width: 720px;
   max-width: 92vw;
-  min-height: 300px;
+  min-height: 420px;
   background: #ffffff;
   border-radius: 18px;
   box-shadow: 0 18px 45px rgba(0, 0, 0, 0.18);

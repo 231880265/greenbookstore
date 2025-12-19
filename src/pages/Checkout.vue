@@ -12,8 +12,17 @@
                     <section class="section">
                         <div class="section-title">收货地址</div>
                         <div class="address-row">
-                            <div class="address-text" v-if="selectedAddressText">
-                                当前地址：{{ selectedAddressText }}
+                            <div class="address-display" v-if="selectedAddress">
+                                <div class="address-header">
+                                    <span class="address-name">{{ selectedAddress.name }}</span>
+                                    <span class="address-phone">{{ selectedAddress.phone }}</span>
+                                </div>
+                                <div class="address-location">
+                                    {{ selectedAddress.province }}{{ selectedAddress.city || '' }}{{ selectedAddress.district || '' }}
+                                </div>
+                                <div class="address-detail" v-if="selectedAddress.detail">
+                                    {{ selectedAddress.detail }}
+                                </div>
                             </div>
                             <div class="address-text muted" v-else>
                                 暂未选择地址
@@ -103,12 +112,10 @@ const selectedAddressId = ref<number | null>(null)
 const addressDialogRef = ref<InstanceType<typeof AddressDialog> | null>(null)
 
 /**
- * 选中的地址文本
+ * 选中的地址对象
  */
-const selectedAddressText = computed(() => {
-    const item = addresses.value.find(a => a.id === selectedAddressId.value)
-    if (!item) return ''
-    return `${item.name} ${item.phone} ${item.province}${item.city || ''}${item.district || ''}${item.detail || ''}`
+const selectedAddress = computed(() => {
+    return addresses.value.find(a => a.id === selectedAddressId.value) || null
 })
 
 /**
@@ -361,9 +368,51 @@ async function goPay() {
 .address-row {
     margin-top: 8px;
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 12px;
+}
+
+.address-display {
+    flex: 1;
+    padding: 12px 16px;
+    background: #fcfbf8;
+    border-radius: 8px;
+    border: 1px solid #e9ecef;
+}
+
+.address-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.address-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: #2d583f;
+}
+
+.address-phone {
+    font-size: 14px;
+    color: #666;
+}
+
+.address-location {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 4px;
+}
+
+.address-detail {
+    font-size: 14px;
+    color: #555;
+    margin-top: 4px;
+    padding-top: 4px;
+    border-top: 1px solid #e9ecef;
+    word-break: break-all;
+    line-height: 1.5;
 }
 
 .address-text {
