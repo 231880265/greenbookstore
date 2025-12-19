@@ -91,6 +91,16 @@ const crumbLeave = () => {
   }
 }
 
+// 通过路由切换分类（避免给只读 computed 直接赋值）
+const selectCategory = (code: string | null) => {
+  if (code) {
+    routerr.push({ path: `/product-list/${code}` })
+  } else {
+    routerr.push({ path: '/product-list' })
+  }
+  closeDropdown()
+}
+
 /* ---------- 筛选项 ---------- */
 const qualityOptions = [
   { label: '所有', value: null },
@@ -361,7 +371,7 @@ onMounted(async () => {
           </span>
 
           <transition name="fade">
-            <ul
+              <ul
               v-if="showCategoryDropdown"
               class="dropdown category-dropdown"
               @mouseenter="isCategoryHover = true"
@@ -371,11 +381,11 @@ onMounted(async () => {
                   v-for="(code, name) in categoryMap"
                   :key="code"
                   :class="{ active: currentCategory === code }"
-                  @click.stop="currentCategory = code; closeDropdown()"
+                  @click.stop="selectCategory(code)"
               >
                 {{ name }}
               </li>
-              <li :class="{ active: currentCategory === null }" @click.stop="currentCategory = null; closeDropdown()">
+              <li :class="{ active: currentCategory === null }" @click.stop="selectCategory(null)">
                 全部分类
               </li>
             </ul>
@@ -592,7 +602,7 @@ onMounted(async () => {
   grid-template-columns: 260px 1fr;
   grid-template-rows: auto 1fr;
   gap: 24px 48px;
-  background-color: #f8f5ef;
+  background-color: #fcfbf8;
 }
 /* 左侧筛选卡片 */
 .filter-card {

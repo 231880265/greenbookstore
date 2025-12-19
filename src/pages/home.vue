@@ -91,6 +91,10 @@ import book17Img from "../assets/book17.jpg";
 import book18Img from "../assets/book18.jpg";
 import book19Img from "../assets/book19.jpg";
 import book20Img from "../assets/book20.jpg";
+import new1Img from "../assets/new1.jpg";
+import new2Img from "../assets/new2.jpg";
+import new3Img from "../assets/new3.jpg";
+import new4Img from "../assets/new4.jpg";
 import { getCurrentUser, getProductDetail } from "@/api";
 import type { UserDetail, Product } from "@/api/types";
 
@@ -143,9 +147,9 @@ const featuredBooks = ref<BookCard[]>([]);
 
 /** 区块展示的类别 - 包含书籍数据 **/
 const blockCategories = ref([
-  { name: "文学类推荐", books: literatureBooks },
-  { name: "艺术类推荐", books: artBooks },
-  { name: "历史类推荐", books: historyBooks },
+  { name: "文学", books: literatureBooks },
+  { name: "艺术", books: artBooks },
+  { name: "历史", books: historyBooks },
   { name: "更多推荐", books: featuredBooks },
 ]);
 
@@ -187,6 +191,13 @@ const fetchLiteratureBooks = async () => {
         console.warn(`获取文学类书籍 id ${id} 失败:`, error);
       }
     }
+    // 添加静态书籍（new1.jpg）
+    books.push({
+      title: "茶花女",
+      image: new1Img,
+      price: 38.00
+    });
+    
     literatureBooks.value = books;
   } catch (error) {
     console.error("获取文学类书籍失败:", error);
@@ -213,6 +224,13 @@ const fetchArtBooks = async () => {
         console.warn(`获取艺术类书籍 id ${id} 失败:`, error);
       }
     }
+    
+    // 添加静态书籍（new2.jpg）
+    books.push({
+      title: "中世纪之美",
+      image: new2Img,
+      price: 35.00
+    });
     
     artBooks.value = books;
   } catch (error) {
@@ -254,7 +272,14 @@ const fetchHistoryBooks = async () => {
       },
     ];
     
-    // 合并：第一本（如果有）+ 4本模拟数据
+    // 添加静态书籍（new3.jpg）
+    mockBooks.push({
+      title: "夜宴",
+      image: new3Img,
+      price: 22.00
+    });
+    
+    // 合并：第一本（如果有）+ 4本模拟数据 + 静态书籍
     if (firstBook) {
       historyBooks.value = [firstBook, ...mockBooks];
     } else {
@@ -267,7 +292,7 @@ const fetchHistoryBooks = async () => {
       { 
         title: "翦商：殷周之变与华夏新生", 
         image: book12Img, 
-        price: 68.00 
+        price: 28.00 
       },
       { 
         title: "希腊别传", 
@@ -277,12 +302,17 @@ const fetchHistoryBooks = async () => {
       { 
         title: "中国少女：『女学生』的一百年", 
         image: book14Img, 
-        price: 52.00 
+        price: 32.00 
       },
       { 
         title: "始皇帝的遗产：秦汉帝国", 
         image: book15Img, 
-        price: 58.00 
+        price: 38.00 
+      },
+      {
+        title: "四个春天",
+        image: new3Img,
+        price: 32.00
       },
     ];
   }
@@ -318,6 +348,11 @@ const fetchFeaturedBooks = async () => {
       title: "父亲的解放日志", 
       image: book20Img, 
       price: 30.00 
+    },
+    {
+      title: "精选好书推荐",
+      image: new4Img,
+      price: 45.00
     },
   ];
 };
@@ -574,7 +609,7 @@ const handleMoreClick = (categoryName: string) => {
     font-size: 15px;
     color: #1a1a1a;
     font-weight: 600;
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
