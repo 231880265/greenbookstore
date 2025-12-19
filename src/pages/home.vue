@@ -147,9 +147,9 @@ const featuredBooks = ref<BookCard[]>([]);
 
 /** 区块展示的类别 - 包含书籍数据 **/
 const blockCategories = ref([
-  { name: "文学类推荐", books: literatureBooks },
-  { name: "艺术类推荐", books: artBooks },
-  { name: "历史类推荐", books: historyBooks },
+  { name: "文学", books: literatureBooks },
+  { name: "艺术", books: artBooks },
+  { name: "历史", books: historyBooks },
   { name: "更多推荐", books: featuredBooks },
 ]);
 
