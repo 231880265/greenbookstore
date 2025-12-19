@@ -2,7 +2,6 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { Search, ArrowDown } from '@element-plus/icons-vue'
-import HeaderBar from '../components/HeaderBar.vue'
 import BreadcrumbBar from '../components/BreadcrumbBar.vue'
 import Footer from '../components/Footer.vue'
 import { getFavoriteList, removeFavorite as apiRemoveFavorite, getProductDetail } from '@/api'
@@ -150,8 +149,6 @@ const filteredList = computed(() => {
 
 <template>
   <div class="page">
-    <HeaderBar />
-
     <!-- 面包屑 -->
     <BreadcrumbBar :items="[{ label: '我的收藏' }]" />
 

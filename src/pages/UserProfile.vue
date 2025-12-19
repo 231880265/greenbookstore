@@ -1,7 +1,5 @@
 <template>
     <div class="profile-page">
-      <HeaderBar />
-  
       <!-- 面包屑 -->
       <BreadcrumbBar :items="[{ label: '个人中心' }]" />
   
@@ -38,12 +36,12 @@
   
           <!-- 右侧（订单 & 收藏） -->
           <section class="profile-right">
-            <!-- 回收订单区块 -->
+            <!-- 卖书订单区块 -->
             <div class="order-block">
               <div class="block-header">
-                <h2 class="block-title">回收订单</h2>
+                <h2 class="block-title">卖书订单</h2>
                 <button class="block-more-btn" @click="goToAllSoldOrders">
-                  全部回收订单
+                  全部卖书订单
                   <span class="arrow">→</span>
                 </button>
               </div>
@@ -62,7 +60,7 @@
                     <div class="card-price">¥{{ item.price }}</div>
                   </div>
                 </div>
-                <div v-if="!soldBookList.length" class="empty-state">暂无回收订单</div>
+                <div v-if="!soldBookList.length" class="empty-state">暂无卖书订单</div>
               </div>
             </div>
 
@@ -136,9 +134,8 @@
   </template>
   
   <script setup lang="ts">
-  import { ref, reactive, onMounted } from 'vue'
+  import { ref, reactive } from 'vue'
   import { useRouter } from 'vue-router'
-  import HeaderBar from '@/components/HeaderBar.vue'
   import Footer from '@/components/Footer.vue'
   import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
   import AddressDialog from '@/components/AddressDialog.vue'
@@ -156,6 +153,41 @@
 
   const addressDialogRef = ref<InstanceType<typeof AddressDialog> | null>(null)
   const profileEditDialogRef = ref<InstanceType<typeof ProfileEditDialog> | null>(null)
+
+  /**
+   * 预加载图片
+   * @param url - 图片URL
+   */
+  const preloadImage = (url: string): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (!url) {
+        resolve()
+        return
+      }
+      const img = new Image()
+      img.onload = () => resolve()
+      img.onerror = () => reject(new Error(`Failed to load image: ${url}`))
+      img.src = url
+    })
+  }
+
+  /**
+   * 批量预加载图片
+   * @param urls - 图片URL数组
+   */
+  const preloadImages = async (urls: string[]) => {
+    const validUrls = urls.filter(url => url)
+    if (validUrls.length === 0) return
+    
+    // 并行预加载所有图片，但不阻塞主流程
+    Promise.allSettled(validUrls.map(url => preloadImage(url)))
+      .then(() => {
+        console.log(`预加载完成: ${validUrls.length} 张图片`)
+      })
+      .catch(err => {
+        console.warn('部分图片预加载失败:', err)
+      })
+  }
 
   /**
    * 打开地址簿
@@ -188,20 +220,17 @@
   const favoriteList = ref<TopItem[]>([])
 
   /**
-   * 跳转到回收订单详情页
+   * 跳转到卖书订单详情页
    */
-  const goToSoldOrderDetail = (_id: number) => {
-    router.push('/usedBook/orders')
+  const goToSoldOrderDetail = (id: number) => {
+    router.push(`/usedBookRecycleOrderDetails/${id}`)
   }
 
   /**
    * 跳转到购书订单详情页
    */
   const goToOrderDetail = (id: number) => {
-    router.push({
-      path: '/orderDetails',
-      query: { orderId: id }
-    })
+    router.push(`/orderDetails/${id}`)
   }
 
   /**
@@ -212,7 +241,7 @@
   }
 
   /**
-   * 跳转到全部回收订单页面
+   * 跳转到全部卖书订单页面
    */
   const goToAllSoldOrders = () => {
     router.push('/usedBook/orders')
@@ -234,29 +263,90 @@
   }
   
   /**
-   * 初始化数据
+   * 加载用户数据
    */
-  onMounted(async () => {
-    Object.assign(user, (await getCurrentUser()).data)
+  const loadUserData = async () => {
+    try {
+      const userData = (await getCurrentUser()).data
+      Object.assign(user, userData)
+      return userData
+    } catch (err) {
+      console.error('获取用户信息失败', err)
+      return null
+    }
+  }
+
+  /**
+   * 加载订单和收藏数据
+   */
+  const loadOrderAndFavoriteData = async () => {
+    try {
+      // 获取卖书订单前5
+      console.log('获取卖书订单前5调用接口中······')
+      const soldBookRes = await getTop5UsedBookOrders()
+      console.log('卖书订单前5接口返回数据:', soldBookRes)
+      console.log('卖书订单前5数据列表:', soldBookRes.data)
+      soldBookList.value = soldBookRes.data || []
+      
+      // 获取购书订单前5
+      const orderRes = await getTop5Orders()
+      console.log('购书订单前5接口返回数据:', orderRes)
+      console.log('购书订单前5数据列表:', orderRes.data)
+      orderList.value = orderRes.data || []
+      
+      // 获取收藏前5
+      const favoriteRes = await getTop5Favorites()
+      console.log('收藏前5接口返回数据:', favoriteRes)
+      console.log('收藏前5数据列表:', favoriteRes.data)
+      favoriteList.value = favoriteRes.data || []
+    } catch (err) {
+      console.error('获取订单和收藏数据失败', err)
+    }
+  }
+
+  /**
+   * 预加载所有图片
+   */
+  const preloadAllImages = () => {
+    const imageUrls: string[] = []
     
-    // 获取回收订单前5
-    console.log('获取回收订单前5调用接口中······')
-    const soldBookRes = await getTop5UsedBookOrders()
-    console.log('回收订单前5接口返回数据:', soldBookRes)
-    console.log('回收订单前5数据列表:', soldBookRes.data)
-    soldBookList.value = soldBookRes.data || []
+    // 用户头像
+    if (user.avatar) {
+      imageUrls.push(user.avatar)
+    }
     
-    // 获取购书订单前5
-    const orderRes = await getTop5Orders()
-    console.log('购书订单前5接口返回数据:', orderRes)
-    console.log('购书订单前5数据列表:', orderRes.data)
-    orderList.value = orderRes.data || []
+    // 卖书订单封面
+    soldBookList.value.forEach(item => {
+      if (item.cover) {
+        imageUrls.push(item.cover)
+      }
+    })
     
-    // 获取收藏前5
-    const favoriteRes = await getTop5Favorites()
-    console.log('收藏前5接口返回数据:', favoriteRes)
-    console.log('收藏前5数据列表:', favoriteRes.data)
-    favoriteList.value = favoriteRes.data || []
+    // 购书订单封面
+    orderList.value.forEach(item => {
+      if (item.cover) {
+        imageUrls.push(item.cover)
+      }
+    })
+    
+    // 收藏封面
+    favoriteList.value.forEach(item => {
+      if (item.cover) {
+        imageUrls.push(item.cover)
+      }
+    })
+    
+    // 开始预加载
+    preloadImages(imageUrls)
+  }
+
+  // 在组件初始化时就开始加载数据，不等待挂载
+  Promise.all([
+    loadUserData(),
+    loadOrderAndFavoriteData()
+  ]).then(() => {
+    // 数据加载完成后再预加载图片
+    preloadAllImages()
   })
   
   /**
@@ -275,6 +365,8 @@
    */
   const onLogout = () => {
     localStorage.removeItem('GB_TOKEN')
+    // 触发自定义事件，通知 HeaderBar 更新登录状态
+    window.dispatchEvent(new CustomEvent('token:changed'))
     router.replace('/')
   }
   </script>
@@ -463,8 +555,9 @@
     }
 
     .book-card {
+      width: 190px;
       min-width: 190px;
-      max-width: 240px;
+      max-width: 190px;
       flex-shrink: 0;
       background: #ffffff;
       border-radius: 6px;

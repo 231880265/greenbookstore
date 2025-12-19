@@ -1,7 +1,5 @@
 <template>
   <div class="home-container">
-    <HeaderBar />
-
     <HomeCarousel />  
     
     <section class="top-category-section">
@@ -79,7 +77,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from "vue";
 import { useRouter } from "vue-router";
-import HeaderBar from "../components/HeaderBar.vue";
 import HomeCarousel from "../components/HomeCarousel.vue";
 import Footer from "../components/Footer.vue";
 import book12Img from "../assets/book12.jpg";
@@ -159,6 +156,41 @@ const currentUser = ref<UserDetail | null>(null);
 const isLoggedIn = ref(false);
 
 /**
+ * 预加载图片
+ * @param url - 图片URL
+ */
+const preloadImage = (url: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    if (!url) {
+      resolve();
+      return;
+    }
+    const img = new Image();
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error(`Failed to load image: ${url}`));
+    img.src = url;
+  });
+};
+
+/**
+ * 批量预加载图片
+ * @param urls - 图片URL数组
+ */
+const preloadImages = async (urls: string[]) => {
+  const validUrls = urls.filter(url => url);
+  if (validUrls.length === 0) return;
+  
+  // 并行预加载所有图片，但不阻塞主流程
+  Promise.allSettled(validUrls.map(url => preloadImage(url)))
+    .then(() => {
+      console.log(`预加载完成: ${validUrls.length} 张图片`);
+    })
+    .catch(err => {
+      console.warn('部分图片预加载失败:', err);
+    });
+};
+
+/**
  * 将 Product 转换为 BookCard
  * @param product - 产品数据
  * @returns BookCard 对象
@@ -199,6 +231,10 @@ const fetchLiteratureBooks = async () => {
     });
     
     literatureBooks.value = books;
+    
+    // 预加载图片
+    const imageUrls = books.map(book => book.image).filter(Boolean) as string[];
+    preloadImages(imageUrls);
   } catch (error) {
     console.error("获取文学类书籍失败:", error);
     literatureBooks.value = [];
@@ -233,6 +269,10 @@ const fetchArtBooks = async () => {
     });
     
     artBooks.value = books;
+    
+    // 预加载图片
+    const imageUrls = books.map(book => book.image).filter(Boolean) as string[];
+    preloadImages(imageUrls);
   } catch (error) {
     console.error("获取艺术类书籍失败:", error);
     artBooks.value = [];
@@ -285,6 +325,10 @@ const fetchHistoryBooks = async () => {
     } else {
       historyBooks.value = mockBooks;
     }
+    
+    // 预加载图片
+    const imageUrls = historyBooks.value.map(book => book.image).filter(Boolean) as string[];
+    preloadImages(imageUrls);
   } catch (error) {
     console.error("获取历史类书籍失败:", error);
     // 如果接口失败，至少显示模拟的书籍
@@ -355,6 +399,10 @@ const fetchFeaturedBooks = async () => {
       price: 45.00
     },
   ];
+  
+  // 预加载图片（静态图片已经在import时加载，这里主要是为了统一处理）
+  const imageUrls = featuredBooks.value.map(book => book.image).filter(Boolean) as string[];
+  preloadImages(imageUrls);
 };
 
 /**
@@ -366,6 +414,14 @@ const handleBookClick = (book: BookCard) => {
     router.push(`/product-detail/${book.ubId}`);
   }
 };
+
+// 获取各类书籍数据 - 在组件初始化时就开始加载，不等待挂载
+Promise.all([
+  fetchLiteratureBooks(),
+  fetchArtBooks(),
+  fetchHistoryBooks(),
+  fetchFeaturedBooks(),
+]);
 
 onMounted(async () => {
   // 获取用户信息
@@ -381,14 +437,6 @@ onMounted(async () => {
       isLoggedIn.value = false;
     }
   }
-  
-  // 获取各类书籍数据
-  await Promise.all([
-    fetchLiteratureBooks(),
-    fetchArtBooks(),
-    fetchHistoryBooks(),
-    fetchFeaturedBooks(),
-  ]);
 });
 
 const goProfile = () => {

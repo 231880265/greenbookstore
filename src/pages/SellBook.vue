@@ -1,7 +1,5 @@
 <template>
   <div class="sell-page">
-    <HeaderBar />
-
     <!-- 面包屑 -->
     <BreadcrumbBar :items="[{ label: '我要卖书' }]" />
 
@@ -195,7 +193,6 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import HeaderBar from '@/components/HeaderBar.vue'
 import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
 import Footer from '@/components/Footer.vue'
 import AddressDialog from '@/components/AddressDialog.vue'
