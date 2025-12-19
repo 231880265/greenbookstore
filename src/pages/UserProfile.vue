@@ -134,7 +134,7 @@
   </template>
   
   <script setup lang="ts">
-  import { ref, reactive, onMounted } from 'vue'
+  import { ref, reactive } from 'vue'
   import { useRouter } from 'vue-router'
   import Footer from '@/components/Footer.vue'
   import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
@@ -263,37 +263,56 @@
   }
   
   /**
-   * 初始化数据
+   * 加载用户数据
    */
-  onMounted(async () => {
-    const userData = (await getCurrentUser()).data
-    Object.assign(user, userData)
-    
-    // 获取卖书订单前5
-    console.log('获取卖书订单前5调用接口中······')
-    const soldBookRes = await getTop5UsedBookOrders()
-    console.log('卖书订单前5接口返回数据:', soldBookRes)
-    console.log('卖书订单前5数据列表:', soldBookRes.data)
-    soldBookList.value = soldBookRes.data || []
-    
-    // 获取购书订单前5
-    const orderRes = await getTop5Orders()
-    console.log('购书订单前5接口返回数据:', orderRes)
-    console.log('购书订单前5数据列表:', orderRes.data)
-    orderList.value = orderRes.data || []
-    
-    // 获取收藏前5
-    const favoriteRes = await getTop5Favorites()
-    console.log('收藏前5接口返回数据:', favoriteRes)
-    console.log('收藏前5数据列表:', favoriteRes.data)
-    favoriteList.value = favoriteRes.data || []
-    
-    // 预加载所有图片
+  const loadUserData = async () => {
+    try {
+      const userData = (await getCurrentUser()).data
+      Object.assign(user, userData)
+      return userData
+    } catch (err) {
+      console.error('获取用户信息失败', err)
+      return null
+    }
+  }
+
+  /**
+   * 加载订单和收藏数据
+   */
+  const loadOrderAndFavoriteData = async () => {
+    try {
+      // 获取卖书订单前5
+      console.log('获取卖书订单前5调用接口中······')
+      const soldBookRes = await getTop5UsedBookOrders()
+      console.log('卖书订单前5接口返回数据:', soldBookRes)
+      console.log('卖书订单前5数据列表:', soldBookRes.data)
+      soldBookList.value = soldBookRes.data || []
+      
+      // 获取购书订单前5
+      const orderRes = await getTop5Orders()
+      console.log('购书订单前5接口返回数据:', orderRes)
+      console.log('购书订单前5数据列表:', orderRes.data)
+      orderList.value = orderRes.data || []
+      
+      // 获取收藏前5
+      const favoriteRes = await getTop5Favorites()
+      console.log('收藏前5接口返回数据:', favoriteRes)
+      console.log('收藏前5数据列表:', favoriteRes.data)
+      favoriteList.value = favoriteRes.data || []
+    } catch (err) {
+      console.error('获取订单和收藏数据失败', err)
+    }
+  }
+
+  /**
+   * 预加载所有图片
+   */
+  const preloadAllImages = () => {
     const imageUrls: string[] = []
     
     // 用户头像
-    if (userData.avatar) {
-      imageUrls.push(userData.avatar)
+    if (user.avatar) {
+      imageUrls.push(user.avatar)
     }
     
     // 卖书订单封面
@@ -319,6 +338,15 @@
     
     // 开始预加载
     preloadImages(imageUrls)
+  }
+
+  // 在组件初始化时就开始加载数据，不等待挂载
+  Promise.all([
+    loadUserData(),
+    loadOrderAndFavoriteData()
+  ]).then(() => {
+    // 数据加载完成后再预加载图片
+    preloadAllImages()
   })
   
   /**
