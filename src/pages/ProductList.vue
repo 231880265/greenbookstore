@@ -3,6 +3,7 @@
 import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import { Close, Search } from '@element-plus/icons-vue'
 import HeaderBar from '../components/HeaderBar.vue'
+import BreadcrumbBar from '../components/BreadcrumbBar.vue'
 import {
   getProductList,
   getFavoriteList,
@@ -12,6 +13,10 @@ import {
 } from '@/api'
 import type { FavoriteItem } from '@/api/types'
 import router from "@/router";
+import { useRoute, useRouter } from 'vue-router'
+
+const route = useRoute()
+const routerr = useRouter()
 
 
 interface BookItem {
@@ -52,7 +57,10 @@ const bindingMap = {
   其他: 'OTHER',
 }
 
-const currentCategory = ref<string | null>(null)
+const currentCategory = computed<string | null>(() => {
+  const c = route.params.category
+  return typeof c === 'string' ? c : null
+})
 const showCategoryDropdown = ref(false)
 const isCategoryHover = ref(false)
 let dropdownEl: HTMLElement | null = null
@@ -251,6 +259,7 @@ const loadFavorites = async () => {
 const toggleFavorite = async (book: BookItem) => {
   if (favoritedSet.value.has(book.ubId)) {
     const fid = favoriteIdMap.value[book.ubId]
+    if (!fid) return
     console.log('取消收藏', fid)
     try {
       await removeFavorite(fid)
@@ -312,14 +321,15 @@ function debounce<T extends (...args: any[]) => any>(
 }
 
 // 监听筛选条件变化，重置页码
-watch([filter, currentCategory, searchKeyword], () => {
+watch([filter, searchKeyword], () => {
   currentPage.value = 1
 })
-watch(currentCategory, async (newVal, oldVal) => {
+watch(currentCategory, async (_newVal, oldVal) => {
   if (oldVal !== undefined) {
     await fetchBooks()
+    currentPage.value = 1
   }
-})
+}, { immediate: true })
 
 onMounted(async () => {
   await fetchBooks()
@@ -332,52 +342,48 @@ onMounted(async () => {
     <HeaderBar />
 
     <!-- 面包屑 -->
-    <nav class="breadcrumb">
-      <span class="crumb" @click.prevent="router.push('/')">首页</span>
-      <span class="sep">|</span>
-      <span class="crumb link">商城</span>
-      <span class="sep">|</span>
-
-      <span class="category-container" @mouseenter="isCategoryHover = true" @mouseleave="closeDropdown">
-        <span
-          class="crumb"
-          :class="{ hover: isCategoryHover || showCategoryDropdown }"
-          @mouseenter="crumbEnter"
-          @mouseleave="crumbLeave"
-          @click.stop="openDropdown"
-        >
-          所有分类
-        </span>
-
-        <transition name="fade">
-          <ul
-            v-if="showCategoryDropdown"
-            class="dropdown category-dropdown"
-            @mouseenter="isCategoryHover = true"
-            @mouseleave="closeDropdown"
+    <BreadcrumbBar 
+      :items="[
+        { label: '商城' },
+        { slot: 'category' },
+        ...(currentCategory ? [{ label: Object.keys(categoryMap).find(k => categoryMap[k as keyof typeof categoryMap] === currentCategory) || '' }] : [])
+      ]"
+    >
+      <template #category>
+        <span class="category-container" @mouseenter="isCategoryHover = true" @mouseleave="closeDropdown">
+          <span
+            class="crumb link"
+            :class="{ hover: isCategoryHover || showCategoryDropdown }"
+            @mouseenter="crumbEnter"
+            @mouseleave="crumbLeave"
+            @click.stop="openDropdown"
           >
-            <li
-                v-for="(code, name) in categoryMap"
-                :key="code"
-                :class="{ active: currentCategory === code }"
-                @click.stop="currentCategory = code; closeDropdown()"
-            >
-              {{ name }}
-            </li>
-            <li :class="{ active: currentCategory === null }" @click.stop="currentCategory = null; closeDropdown()">
-              全部分类
-            </li>
-          </ul>
-        </transition>
-      </span>
+            所有分类
+          </span>
 
-      <template v-if="currentCategory">
-        <span class="sep"> > </span>
-        <span class="crumb">
-          {{ Object.keys(categoryMap).find(k => categoryMap[k as keyof typeof categoryMap] === currentCategory) }}
+          <transition name="fade">
+            <ul
+              v-if="showCategoryDropdown"
+              class="dropdown category-dropdown"
+              @mouseenter="isCategoryHover = true"
+              @mouseleave="closeDropdown"
+            >
+              <li
+                  v-for="(code, name) in categoryMap"
+                  :key="code"
+                  :class="{ active: currentCategory === code }"
+                  @click.stop="currentCategory = code; closeDropdown()"
+              >
+                {{ name }}
+              </li>
+              <li :class="{ active: currentCategory === null }" @click.stop="currentCategory = null; closeDropdown()">
+                全部分类
+              </li>
+            </ul>
+          </transition>
         </span>
       </template>
-    </nav>
+    </BreadcrumbBar>
 
     <div class="divider" />
 
@@ -785,33 +791,11 @@ onMounted(async () => {
   background-color: #f8f8f8;
 }
 
-/* 面包屑 */
-.breadcrumb {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 16px 60px 0;
-  font-size: 14px;
-  color: #000;
-  margin-bottom: 20px;
-}
-.crumb {
-  cursor: pointer;
-  transition: color 0.2s;
-  font-size: 15px;
+/* 分类下拉相关样式 */
+.crumb.link.hover {
+  color: #1a3d2a;
 }
 
-.crumb.link {
-  color: #2d583f;
-}
-
-.crumb.hover {
-  color: #b8860b;
-}
-.sep {
-  color: #bbb;
-}
 .dropdown {
   position: absolute;
   top: 100%;

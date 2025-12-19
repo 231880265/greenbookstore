@@ -1,6 +1,14 @@
 <template>
   <HeaderBar />
 
+  <!-- 面包屑 -->
+  <BreadcrumbBar :items="[{ label: '卖书记录' }]" />
+
+  <!-- 页面标题 -->
+  <div class="page-title-section">
+    <h2 class="page-title">卖书订单</h2>
+  </div>
+
   <!-- 吸顶状态 Tabs -->
   <div class="tabs-sticky">
     <div class="tabs-container">
@@ -78,6 +86,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import HeaderBar from '@/components/HeaderBar.vue'
+import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
 import { getUsedBookOrders } from '@/api/index'
 import type { UsedBookOrderVO, UsedBookOrderStatus } from '@/api/types'
 import book1 from "../assets/book1.jpg";
@@ -183,6 +192,20 @@ onMounted(loadUsedOrders)
 
 
 <style scoped>
+/* 页面标题 */
+.page-title-section {
+  width: 80%;
+  margin: 0 auto;
+  padding: 20px 20px 10px;
+}
+
+.page-title {
+  color: #2d583f;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
 .order-page {
   width: 80%;
   margin: 0 auto;

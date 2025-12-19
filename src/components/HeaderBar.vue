@@ -306,7 +306,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, ref, watch, reactive, computed } from "vue";
+import { nextTick, onMounted, ref, watch, reactive } from "vue";
 import { useRouter } from "vue-router";
 import { login, register, uploadImage, getCurrentUser } from "@/api";
 import type { LoginRequest, RegisterRequest, UserDetail } from "@/api/types";
@@ -443,13 +443,29 @@ onMounted(() => {
     }
   };
   
+  // 监听 localStorage 变化（跨标签页同步）
+  const handleStorageChange = (e: StorageEvent) => {
+    if (e.key === TOKEN_KEY) {
+      isLoggedIn.value = !!e.newValue;
+    }
+  };
+  
+  // 监听自定义事件：token 变化（同一窗口内）
+  const handleTokenChange = () => {
+    isLoggedIn.value = !!localStorage.getItem(TOKEN_KEY);
+  };
+  
   window.addEventListener('keydown', handleKeydown);
+  window.addEventListener('storage', handleStorageChange);
+  window.addEventListener('token:changed', handleTokenChange as EventListener);
   // 监听认证要求事件
   window.addEventListener('auth:required', handleAuthRequired as EventListener);
   
   // 清理函数
   return () => {
     window.removeEventListener('keydown', handleKeydown);
+    window.removeEventListener('storage', handleStorageChange);
+    window.removeEventListener('token:changed', handleTokenChange as EventListener);
     window.removeEventListener('auth:required', handleAuthRequired as EventListener);
     // 确保恢复滚动
     document.body.style.overflow = '';
@@ -520,7 +536,8 @@ let loginSuccessTimer: number | null = null;
 
 const defaultAvatarUrl = "https://wonderful1.oss-cn-hangzhou.aliyuncs.com/leaf.jpg";
 
-const isLoggedIn = computed(() => !!localStorage.getItem(TOKEN_KEY));
+// 使用 ref 而不是 computed，因为 localStorage 不是响应式的
+const isLoggedIn = ref(!!localStorage.getItem(TOKEN_KEY));
 const currentUser = ref<UserDetail | null>(null);
 
 // 获取当前用户信息
@@ -540,6 +557,11 @@ const fetchUserInfo = async () => {
     console.log("获取用户信息", res.data);
   } catch (err) {
     console.error('获取用户信息失败', err);
+    // 如果获取用户信息失败（可能是 token 失效），检查 token 是否存在
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) {
+      isLoggedIn.value = false;
+    }
     currentUser.value = null;
     leafCount.value = 0;
   }
@@ -657,6 +679,10 @@ const handleLogin = async () => {
   try {
     const res = await login({ ...loginForm });
     localStorage.setItem(TOKEN_KEY, res.data.toString());
+    // 手动更新登录状态
+    isLoggedIn.value = true;
+    // 触发自定义事件，通知其他组件
+    window.dispatchEvent(new CustomEvent('token:changed'));
     closeAuth();
     // 显示登录成功提示
     loginSuccess.value = true;
@@ -712,10 +738,24 @@ const handleRegister = async () => {
     
     console.log("注册返回信息", registerRes);
     //注册成功后自动登录
-    await handleLogin();
-    //closeAuth();
-    
-    //router.push("/");
+    const loginRes = await login({ telephone: tel, password: registerForm.password });
+    localStorage.setItem(TOKEN_KEY, loginRes.data.toString());
+    // 手动更新登录状态
+    isLoggedIn.value = true;
+    // 触发自定义事件，通知其他组件
+    window.dispatchEvent(new CustomEvent('token:changed'));
+    closeAuth();
+    // 显示登录成功提示
+    loginSuccess.value = true;
+    if (loginSuccessTimer) {
+      clearTimeout(loginSuccessTimer);
+    }
+    loginSuccessTimer = window.setTimeout(() => {
+      loginSuccess.value = false;
+    }, 1500);
+    // 登录成功后获取用户信息
+    await fetchUserInfo();
+    router.push("/");
   } catch (e: any) {
     const msg = e?.message || "";
     authError.value = msg || "注册失败，请稍后重试";

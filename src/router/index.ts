@@ -69,9 +69,10 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/product-list',
+    path: '/product-list/:category?',
     component: ProductList,
     meta: { requiresAuth: true },
+    props: true,
   }
 
 ]
@@ -81,7 +82,19 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes,
+  scrollBehavior(to, from, savedPosition) {
+    // 浏览器前进 / 后退
+    if (savedPosition) {
+      return savedPosition
+    }
+
+    // 其它情况（跳转新页面） → 回到顶部
+    return { top: 0 }
+  },
 })
+
+
+
 // 全局路由守卫：对于需要登录的路由，若无 token 则重定向到首页并告诉 HeaderBar 打开登录弹窗
 router.beforeEach((to, from, next) => {
   const requiresAuth = to.matched.some(r => r.meta && (r.meta as any).requiresAuth);

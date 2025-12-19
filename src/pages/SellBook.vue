@@ -3,13 +3,7 @@
     <HeaderBar />
 
     <!-- 面包屑 -->
-    <section class="breadcrumb-bar">
-      <div class="breadcrumb-inner">
-        <span class="crumb link" @click="$router.push('/')">首页</span>
-        <span class="sep">/</span>
-        <span class="crumb current">我要卖书</span>
-      </div>
-    </section>
+    <BreadcrumbBar :items="[{ label: '我要卖书' }]" />
 
     <main class="sell-main">
       <!-- 顶部：流程提示 + 进度条 -->
@@ -183,63 +177,8 @@
       </section>
     </main>
 
-    <!-- 地址选择弹窗：复用个人中心的逻辑（已有地址 + 新增地址） -->
-    <teleport to="body">
-      <div v-if="addressModalOpen" class="modal-mask" @click.self="addressModalOpen = false">
-        <div class="modal-panel form-panel">
-          <div class="modal-header">
-            <h3>选择地址</h3>
-            <button class="primary-btn" @click="openAddForm">+ 新增地址</button>
-          </div>
-
-          <div class="address-list">
-            <div
-              v-for="item in addressList"
-              :key="item.id"
-              class="address-item"
-              :class="{ active: selectedAddressId === item.id }"
-              @click="onSelectAddress(item)"
-            >
-              <div class="address-main">
-                <div class="name">{{ item.name }} · {{ item.phone }}</div>
-                <div class="detail">
-                  {{ item.province }}{{ item.city }}{{ item.district }}{{ item.detail }}
-                </div>
-              </div>
-            </div>
-
-            <div v-if="!addressList.length" class="empty">暂无地址</div>
-          </div>
-
-          <div class="modal-footer">
-            <button class="outline-btn" @click="addressModalOpen = false">确定</button>
-          </div>
-        </div>
-      </div>
-    </teleport>
-
-    <!-- 新增地址弹窗（精简版） -->
-    <teleport to="body">
-      <div v-if="addressFormOpen" class="modal-mask" @click.self="addressFormOpen = false">
-        <div class="modal-panel form-panel">
-          <h3 class="modal-title">{{ editingAddress ? '编辑地址' : '新增地址' }}</h3>
-
-          <div class="form">
-            <input v-model="addressForm.name" placeholder="收件人姓名" />
-            <input v-model="addressForm.phone" placeholder="手机号" />
-            <input v-model="addressForm.province" placeholder="省" />
-            <input v-model="addressForm.city" placeholder="市" />
-            <input v-model="addressForm.district" placeholder="区" />
-            <input v-model="addressForm.detail" placeholder="详细地址（街道、门牌号等）" />
-          </div>
-
-          <div class="modal-footer">
-            <button class="outline-btn" @click="addressFormOpen = false">取消</button>
-            <button class="primary-btn" @click="submitAddress">保存</button>
-          </div>
-        </div>
-      </div>
-    </teleport>
+    <!-- 地址管理组件 -->
+    <AddressDialog ref="addressDialogRef" :select-mode="true" @select="handleAddressSelect" />
 
     <Footer />
   </div>
@@ -248,9 +187,12 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import HeaderBar from '@/components/HeaderBar.vue'
+import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
 import Footer from '@/components/Footer.vue'
-import { createUsedBook, getSoldBookList, uploadImage, getAddressList, createAddress } from '@/api'
+import AddressDialog from '@/components/AddressDialog.vue'
+import { createUsedBook, getSoldBookList, uploadImage, getAddressList } from '@/api'
 import type { SoldBookItem, AddressItem } from '@/api/types'
+import { showToast } from 'vant'
 
 const platformFactor = 0.6
 
@@ -269,25 +211,36 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const submitting = ref(false)
 
 // 地址选择
-const addressModalOpen = ref(false)
-const addressFormOpen = ref(false)
-const addressList = ref<AddressItem[]>([])
+const addressDialogRef = ref<InstanceType<typeof AddressDialog> | null>(null)
 const selectedAddressId = ref<number | null>(null)
-const addressForm = reactive({
-  name: '',
-  phone: '',
-  province: '',
-  city: '',
-  district: '',
-  detail: '',
-})
-const editingAddress = ref<AddressItem | null>(null)
+const addressList = ref<AddressItem[]>([])
 
 const selectedAddressText = computed(() => {
   const item = addressList.value.find(a => a.id === selectedAddressId.value)
   if (!item) return ''
   return `${item.name} ${item.phone} ${item.province}${item.city || ''}${item.district || ''}${item.detail || ''}`
 })
+
+/**
+ * 处理地址选择
+ */
+const handleAddressSelect = (address: AddressItem) => {
+  selectedAddressId.value = address.id
+  // 刷新地址列表
+  loadAddressList()
+}
+
+/**
+ * 加载地址列表
+ */
+const loadAddressList = async () => {
+  try {
+    const res = await getAddressList()
+    addressList.value = res.data || []
+  } catch (err) {
+    console.error('获取地址列表失败', err)
+  }
+}
 
 // 进度条：根据已填写字段简单模拟
 const progressPercent = computed(() => {
@@ -342,45 +295,21 @@ const onCoverChange = async (e: Event) => {
     form.cover =  String(res.data).trim() || ''
   } catch (err) {
     console.error('上传封面失败', err)
-    alert('上传封面失败，请稍后重试')
+    showToast({ message: '上传封面失败，请稍后重试', duration: 2000 })
   } finally {
     target.value = ''
   }
 }
 
 const openAddressModal = async () => {
-  addressModalOpen.value = true
-  const res = await getAddressList()
-  addressList.value = res.data || []
-}
-
-const onSelectAddress = (item: AddressItem) => {
-  selectedAddressId.value = item.id
-}
-
-const openAddForm = () => {
-  editingAddress.value = null
-  Object.assign(addressForm, {
-    name: '',
-    phone: '',
-    province: '',
-    city: '',
-    district: '',
-    detail: '',
-  })
-  addressFormOpen.value = true
-}
-
-const submitAddress = async () => {
-  await createAddress(addressForm as any)
-  addressFormOpen.value = false
-  const res = await getAddressList()
-  addressList.value = res.data || []
+  await addressDialogRef.value?.open(selectedAddressId.value)
+  // 关闭后刷新地址列表
+  await loadAddressList()
 }
 
 const onSubmit = async () => {
   if (!form.title || !form.isbn || !form.cover || !selectedAddressId.value) {
-    alert('请先完善书名、ISBN、封面和地址信息')
+    showToast({ message: '请先完善书名、ISBN、封面和地址信息', duration: 2000 })
     return
   }
   try {
@@ -405,7 +334,7 @@ const onSubmit = async () => {
       cover: form.cover,
     })
     console.log("创建卖书记录返回信息createUsedBookRes", createUsedBookRes)
-    alert('提交成功，我们会尽快与您联系')
+    showToast({ message: '提交成功，我们会尽快与您联系', duration: 2000 })
     // 重置表单
     Object.assign(form, {
       adId: 1,
@@ -423,7 +352,7 @@ const onSubmit = async () => {
     soldList.value = res.data || []
   } catch (err) {
     console.error('创建卖书记录失败', err)
-    alert('创建卖书记录失败，请稍后重试')
+    showToast({ message: '创建卖书记录失败，请稍后重试', duration: 2000 })
   } finally {
     submitting.value = false
   }
@@ -432,6 +361,8 @@ const onSubmit = async () => {
 onMounted(async () => {
   const res = await getSoldBookList()
   soldList.value = res.data || []
+  // 加载地址列表
+  await loadAddressList()
 })
 </script>
 
@@ -442,43 +373,11 @@ onMounted(async () => {
 }
 
 .sell-main {
-  max-width: 1200px;
+  max-width: 1400px;
   margin: 24px auto;
-  padding: 0 20px 40px;
+  padding: 0 40px 40px;
 }
 
-/* 面包屑 */
-.breadcrumb-bar {
-  border-bottom: 1px solid #eee;
-  background: #fff;
-}
-
-.breadcrumb-inner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 12px 20px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-}
-
-.crumb {
-  color: #666;
-}
-
-.crumb.link {
-  cursor: pointer;
-  color: #2d583f;
-}
-
-.crumb.current {
-  color: #999;
-}
-
-.sep {
-  color: #ccc;
-}
 
 .section-title {
   font-size: 20px;
@@ -489,6 +388,7 @@ onMounted(async () => {
 .section-subtitle {
   font-size: 16px;
   margin: 0 0 12px;
+  font-weight: 600;
 }
 
 .flow-steps {
@@ -501,7 +401,7 @@ onMounted(async () => {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 16px;
   color: #555;
 }
 
@@ -522,7 +422,7 @@ onMounted(async () => {
 }
 
 .progress-label {
-  font-size: 13px;
+  font-size: 16px;
   margin-bottom: 6px;
 }
 
@@ -589,7 +489,7 @@ onMounted(async () => {
 }
 
 .hint {
-  font-size: 12px;
+  font-size: 14px;
   color: #888;
 }
 
@@ -603,19 +503,20 @@ onMounted(async () => {
 .field {
   display: flex;
   flex-direction: column;
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .field span {
   margin-bottom: 4px;
+  font-weight: 500;
 }
 
 .field input,
 .field select {
   border-radius: 999px;
   border: 1px solid #ddd;
-  padding: 6px 10px;
-  font-size: 13px;
+  padding: 8px 12px;
+  font-size: 16px;
   outline: none;
 }
 
@@ -625,8 +526,8 @@ onMounted(async () => {
 }
 
 .tip {
-  margin-top: 2px;
-  font-size: 12px;
+  margin-top: 4px;
+  font-size: 14px;
   color: #999;
 }
 
@@ -643,7 +544,7 @@ onMounted(async () => {
 }
 
 .address-text {
-  font-size: 13px;
+  font-size: 16px;
 }
 
 .address-text.muted {
@@ -654,7 +555,7 @@ onMounted(async () => {
   border-radius: 12px;
   border: 1px solid #eee;
   padding: 14px 16px;
-  font-size: 13px;
+  font-size: 16px;
   margin-bottom: 16px;
 }
 
@@ -683,16 +584,17 @@ onMounted(async () => {
   border: none;
   background: #2d583f;
   color: #fff;
-  padding: 6px 16px;
+  padding: 8px 18px;
   border-radius: 999px;
-  font-size: 13px;
+  font-size: 16px;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .primary-btn.large {
   width: 100%;
-  padding: 10px 0;
-  font-size: 15px;
+  padding: 12px 0;
+  font-size: 16px;
   margin-top: 8px;
 }
 
@@ -705,23 +607,24 @@ onMounted(async () => {
   border-radius: 999px;
   border: 1px solid #c8b196;
   background: #fff;
-  padding: 6px 14px;
-  font-size: 13px;
+  padding: 8px 16px;
+  font-size: 16px;
   cursor: pointer;
+  font-weight: 500;
 }
 
 .small-hint {
   margin-top: 4px;
-  font-size: 12px;
+  font-size: 14px;
   color: #888;
 }
 
 .sold-list-section {
   margin-top: 32px;
-  background: #fff;
+  /* background: #fff; */
   border-radius: 16px;
   padding: 18px 20px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+  /* box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04); */
 }
 
 /* 书籍卡片列表 (横向滚动) */
@@ -804,89 +707,6 @@ onMounted(async () => {
   width: 100%;
 }
 
-/* 地址弹窗样式简化版，复用 profile 页面变量 */
-.modal-mask {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 5000;
-}
-
-.modal-panel {
-  width: 560px;
-  max-height: 80vh;
-  background: #fff;
-  border-radius: 16px;
-  padding: 20px 22px 18px;
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.16);
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  z-index: 5001;
-  overflow: visible;
-}
-
-.form-panel {
-  width: 640px;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.address-list {
-  margin-top: 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  flex: 1;
-  overflow-y: auto;
-}
-
-.address-item {
-  border: 1px solid #eee;
-  border-radius: 12px;
-  padding: 10px 12px;
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.address-item.active {
-  border-color: #2d583f;
-  background: #f6fbf8;
-}
-
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 10px;
-}
-
-.form {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 10px 12px;
-  margin: 12px 0 8px;
-}
-
-.form input {
-  border-radius: 999px;
-  border: 1px solid #ddd;
-  padding: 6px 10px;
-  font-size: 13px;
-  outline: none;
-}
-
-.form input:focus {
-  border-color: #2d583f;
-}
 </style>
 
 

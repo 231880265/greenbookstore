@@ -3,17 +3,7 @@
       <HeaderBar />
   
       <!-- 面包屑 -->
-      <section class="breadcrumb-bar">
-        <div class="breadcrumb-inner">
-          <span class="crumb link" @click="router.push('/')">首页</span>
-          <span class="sep">/</span>
-          <span class="crumb current">个人中心</span>
-  
-          <button class="back-btn" @click="router.push('/')">
-            ← 返回首页
-          </button>
-        </div>
-      </section>
+      <BreadcrumbBar :items="[{ label: '个人中心' }]" />
   
       <main class="profile-main">
         <div class="profile-layout">
@@ -150,6 +140,7 @@
   import { useRouter } from 'vue-router'
   import HeaderBar from '@/components/HeaderBar.vue'
   import Footer from '@/components/Footer.vue'
+  import BreadcrumbBar from '@/components/BreadcrumbBar.vue'
   import AddressDialog from '@/components/AddressDialog.vue'
   import ProfileEditDialog from '@/components/ProfileEditDialog.vue'
   import {
@@ -295,52 +286,6 @@
       background: #fcfbf8;
     }
     
-    /* 面包屑 */
-    .breadcrumb-bar {
-      border-bottom: 1px solid #eee;
-      background: #fff;
-    }
-    
-    .breadcrumb-inner {
-      margin: 0 auto;
-      padding: 12px 20px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 15px;
-    }
-    
-    .crumb {
-      color: #666;
-    }
-    
-    .crumb.link {
-      cursor: pointer;
-      color: #2d583f;
-    }
-    
-    .crumb.current {
-      color: #999;
-    }
-    
-    .sep {
-      color: #ccc;
-    }
-    
-    .back-btn {
-      margin-left: auto;
-      border: 1px solid #ddd;
-      background: #fff;
-      padding: 4px 10px;
-      border-radius: 6px;
-      cursor: pointer;
-      font-size: 14px;
-    }
-    
-    .back-btn:hover {
-      background: #f6f6f6;
-    }
-    
     /* 主体 */
     .profile-main {
       margin: 24px auto;
@@ -357,12 +302,17 @@
     /* 左侧 */
     .profile-left {
       width: 380px;
+      min-width: 380px;
+      max-width: 380px;
+      flex-shrink: 0;
       position: sticky;
       top: 80px;
       align-self: flex-start;
     }
     
     .user-card {
+      width: 100%;
+      box-sizing: border-box;
       border: 1px solid #2d583f;
       border-radius: 14px;
       padding: 20px;

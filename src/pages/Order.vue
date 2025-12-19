@@ -1,5 +1,14 @@
 <template>
   <HeaderBar />
+  
+  <!-- 面包屑 -->
+  <BreadcrumbBar :items="[{ label: '购书订单' }]" />
+
+  <!-- 页面标题 -->
+  <div class="page-title-section">
+    <h2 class="page-title">购书订单</h2>
+  </div>
+
   <div class="tabs-sticky">
     <div class="tabs-container">
       <div class="status-tabs">
@@ -37,7 +46,7 @@
       <!-- 订单头 -->
       <div class="order-header">
         <span>订单号：{{ order.orderId }}</span>
-        <span>下单时间：{{ order.createTime }}</span>
+        <span>下单时间：{{ formatTime(order.createTime) }}</span>
         <span class="status">{{ statusText[order.status] }}</span>
       </div>
 
@@ -58,7 +67,7 @@
         </div>
 
         <div class="col-price">¥{{ item.price }}</div>
-        <div class="col-qty">{{ item.quantity }}</div>
+        <div class="col-qty">x{{ item.quantity }}</div>
         <div class="col-total">¥{{ item.totalPrice }}</div>
       </div>
 
@@ -67,7 +76,7 @@
         <span>
           共 {{ order.orderItems.length }} 件商品，
           订单合计：
-          <strong>¥{{ order.totalAmount }}</strong>
+          <strong class="total-amount">¥{{ order.totalAmount }}</strong>
         </span>
       </div>
     </div>
@@ -81,6 +90,7 @@
 
 <script setup lang="ts">
 import HeaderBar from '@/components/HeaderBar.vue';
+import BreadcrumbBar from '@/components/BreadcrumbBar.vue';
 import { ref, onMounted } from 'vue'
 import { getMyOrders } from '@/api/index' // 暂时注释掉，使用本地假数据调试
 import type { OrderStatus } from '@/api/types'
@@ -89,6 +99,16 @@ import book2Img from "../assets/book2.jpg" ;
 import book3Img from "../assets/book3.jpg";
 import book4Img from "../assets/book4.jpg"; 
 import { useRouter } from 'vue-router'
+
+const formatTime = (time?: string) => {
+  if (!time) return ''
+  const date = new Date(time)
+
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}
+          ${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
 
 const router = useRouter()
 
@@ -205,6 +225,20 @@ onMounted(loadOrders)
 </script>
 
 <style scoped>
+/* 页面标题 */
+.page-title-section {
+  width: 80%;
+  margin: 0 auto;
+  padding: 20px 20px 10px;
+}
+
+.page-title {
+  color: #2d583f;
+  font-size: 24px;
+  font-weight: 600;
+  margin: 0;
+}
+
 .order-page {
   width: 80%;
   margin: 0 auto;
@@ -303,6 +337,12 @@ onMounted(loadOrders)
 .col-qty { flex: 1; text-align: center; }
 .col-total { flex: 1; text-align: center; }
 
+.total-amount {
+  color: #1b5e20;
+  /* font-size: 18px;
+  margin-left: 4px; */
+}
+
 .order-block.clickable {
   cursor: pointer;
 }
@@ -316,11 +356,25 @@ onMounted(loadOrders)
   margin-bottom: 20px;
   transition: box-shadow 0.25s;
   border-radius: 6px;
+  transition:
+    box-shadow 0.25s ease,
+    transform 0.25s ease,
+    border-color 0.25s ease;
 }
 
 .order-block:hover {
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+  border-color: #cfe1d6;
 }
+
+.order-block:hover .order-row {
+  background: #f8faf8;
+}
+
+/* .order-block:hover {
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.05);
+} */
 
 .order-header {
   padding: 10px 16px;
@@ -344,14 +398,6 @@ onMounted(loadOrders)
 
   transition:
     background-color 0.2s ease,
-    transform 0.2s ease,
-    box-shadow 0.2s ease;
-}
-
-.order-row:hover {
-  background: #f8faf8;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.04);
 }
 
 

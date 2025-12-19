@@ -10,6 +10,7 @@
           v-for="item in topCategories"
           :key="item"
           class="category-item"
+          @click="handleMoreClick(item)"
         >
           {{ item }}
         </div>
@@ -88,7 +89,7 @@ import { getCurrentUser } from "@/api";
 import type { UserDetail } from "@/api/types";
 /** 顶部导航分类：一行 10 个（与后端枚举 ProductCategory 对应） **/
 const topCategories = [
-  "地理",           // DILI
+  "小说",           // DILI
   "法律",           // FALV
   "经济",           // JINGJI
   "历史",           // LISHI
@@ -99,6 +100,18 @@ const topCategories = [
   "政治",           // ZHENGZHI
   "哲学 / 心理学"   // ZHEXUEXINLIXUE
 ];
+const CATEGORY_MAP: Record<string, string> = {
+  小说: "XIAOSHUO",
+  法律: "FALV",
+  经济: "JINGJI",
+  历史: "LISHI",
+  社会科学: "SHEKE",
+  生活: "SHENGHUO",
+  文学: "WENXUE",
+  艺术: "YISHU",
+  政治: "ZHENGZHI",
+  "哲学 / 心理学": "ZHEXUEXINLIXUE",
+};
 
 // 模拟书籍数据（包含价格）
 const fictionBooks = [
@@ -190,7 +203,8 @@ const handleMoreClick = (categoryName: string) => {
   } else {
     // 其他分类可以跳转到对应分类的书籍列表
     // 这里可以根据需要实现分类筛选功能
-    router.push({ path: "/product-list", query: { category: categoryName } });
+    const categoryCode = CATEGORY_MAP[categoryName];
+    router.push({ path: `/product-list/${categoryCode}` });
   }
 };
 
