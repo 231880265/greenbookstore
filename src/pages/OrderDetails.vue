@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, watch, computed, onBeforeUnmount } from 'vue';
+import { ref, onMounted, computed, onBeforeUnmount } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import HeaderBar from "../components/HeaderBar.vue";
 import BreadcrumbBar from "../components/BreadcrumbBar.vue";
@@ -54,21 +54,11 @@ const orderDetails = ref<OrderDetails | null>(null);
 // 选中的地址详情
 const selectedAddress = ref<any | null>(null)
 
-// 格式化地址显示
-const formattedAddress = computed(() => {
-  console.log('格式化地址', orderDetails.value?.adId)
-  const a = selectedAddress.value
-  if (!a) return orderDetails.value?.adId ? `地址ID: ${orderDetails.value?.adId}` : '—'
-  // 可能字段：province, city, district, detail, name, phone
-  const parts = [a.province, a.city, a.district, a.detail].filter(Boolean)
-  return `${parts.join(' ')} ${a.name ? ' 联系人:' + a.name : ''} ${a.phone ? a.phone : ''}`.trim()
-})
-
-// 控制物流信息的展开和收起
-const isLogisticsOpen = ref(false);
+// 控制物流信息的展开和收起（暂无使用）
 
 // 新增：用于控制进度条动态展示的变量
 const displayedStep = ref(-1) // 当前已经展示到的步骤索引（动画过程中增长）
+const selectedStep = ref<number>(-1) // 仅在动画到达目标后显示对应的详情
 const isCanceled = ref(false) // 标记是否已取消
 
 // 根据订单状态决定目标步骤索引（PENDING=0, PAID=1, SHIPPED=2, COMPLETED=3）
@@ -95,10 +85,11 @@ const clearAnimation = () => {
 
 const animateTo = (target: number, cancelled = false) => {
   clearAnimation()
-  // 如果目标小于等于当前已展示，则直接设定并返回
+  // 如果目标小于等于当前已展示，则直接设定并返回（同时显示详情）
   if (target <= displayedStep.value) {
     displayedStep.value = target
     if (cancelled) isCanceled.value = true
+    selectedStep.value = target
     return
   }
 
@@ -107,13 +98,25 @@ const animateTo = (target: number, cancelled = false) => {
   for (let step = start; step <= target; step++) {
     const t = setTimeout(() => {
       displayedStep.value = step
+      // 仅当到达目标时才展示详情（避免动画过程中切换详情）
       if (step === target) {
         if (cancelled) isCanceled.value = true
+        selectedStep.value = target
         clearAnimation()
       }
     }, stepDelay * (step - start + 1))
     timers.push(t)
   }
+}
+
+// 格式化时间，供界面显示
+const formatTime = (time?: string) => {
+  if (!time) return ''
+  const date = new Date(time)
+
+  const pad = (n: number) => String(n).padStart(2, '0')
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`
 }
 
 // 新增：步骤文本数组（用于渲染节点）
@@ -123,96 +126,50 @@ const steps = computed(() =>
         : ['拍下宝贝', '买家付款', '卖家发货', '确认收货']
 );
 
-
 // 获取订单详情（调用后端新接口）
-const makePlaceholder = (): OrderDetails => ({
-  orderId: String(orderIdParam || 10001),
-  totalAmount: 120.0,
-  paymentMethod: 'ALIPAY',
-  status: 'PAID',
-  createTime: '2025-04-12T14:30:00',
-  adId: 0,
-  orderItems: [
-    {
-      ubId: 1,
-      title: '示例商品：计算机网络教材（回收版）',
-      writer: '示例商家',
-      publisher: '示例店铺',
-      cover: '/src/assets/book1.jpg',
-      quantity: 1,
-      price: 60.0,
-      totalPrice: 60.0,
-    },
-  ],
-  trackingNumber: 'YT123456789',
-  courier: '中通快递',
-  payTime: '2025-11-02 10:12:00',
-  shipTime: '2025-11-05 08:20:00',
-  completeTime: '2025-11-21 12:53:23',
-  leaf: 0,
-  cover: '/src/assets/book1.jpg'
-})
-
-const selectedStep = ref<number>(-1)
-
 const fetchOrderDetails = async () => {
   try {
-    if (!orderIdParam) {
-      orderDetails.value = makePlaceholder()
-      const target = mapStatusToStep(orderDetails.value?.status)
-      animateTo(target)
-      return
-    }
 
     const res: any = await getMyOrderById(orderIdParam)
-    const data = res?.data || res?.data?.data || res
+    console.log('获取订单详情', res)
+    // 优先取常见封装层 data.data -> data -> res
+    const data = res?.data?.data ?? res?.data ?? res
+
     if (!data) {
-      orderDetails.value = makePlaceholder()
+      // 接口无数据时保持为空，不使用本地死数据
+      orderDetails.value = null
     } else {
-      console.log(data)
-      // 若有 adId，去 /api/address 获取地址详情并匹配
+      // 兼容字段名：如果后端返回 paymentTime，映射到 payTime
+      if (typeof data.paymentTime !== 'undefined' && typeof data.payTime === 'undefined') {
+        data.payTime = data.paymentTime
+      }
+
+      // 直接使用后端返回的原始数据（不与占位数据合并）
+      orderDetails.value = data as OrderDetails
+
+      // 若有 adId，查询地址列表并匹配（在 orderDetails 赋值后再去查）
       if (orderDetails.value?.adId) {
         try {
-          console.log('获取地址列表')
           const addrRes: any = await getAddressList()
           const list: AddressItem[] = addrRes?.data || []
-          selectedAddress.value =
-              list.find(a => Number(a.id) === Number(orderDetails.value!.adId)) || null
-          console.log('匹配到的地址', selectedAddress.value)
+          selectedAddress.value = list.find(a => Number(a.id) === Number(orderDetails.value!.adId)) || null
         } catch (e) {
           console.error('获取地址列表失败', e)
           selectedAddress.value = null
         }
       }
-      // 直接使用后端返回的字段（兼容性合并占位字段），并映射常见命名差异
-      const merged: any = {  ...data }
-      // 后端可能返回 paymentTime 字段
-      merged.payTime = data.paymentTime ?? data.payTime ?? merged.payTime
-      merged.createTime = data.createTime ?? merged.createTime
-      merged.leaf = typeof data.leaf !== 'undefined' ? data.leaf : merged.leaf
-      merged.cover = data.cover ?? merged.cover
-      // 保证 adId 为数字或原值
-      merged.adId = typeof data.adId !== 'undefined' ? data.adId : merged.adId
-
-      orderDetails.value = merged
     }
 
-    const target = mapStatusToStep(orderDetails.value?.status)
+    const target = mapStatusToStep(orderDetails.value?.status as string | undefined)
     displayedStep.value = -1
     animateTo(target)
-    selectedStep.value = target   // 👈 默认选中当前节点
   } catch (e) {
     console.error('获取订单详情失败', e)
-    orderDetails.value = makePlaceholder()
-    const target = mapStatusToStep(orderDetails.value?.status)
+    // 出错时置空数据，不使用占位数据
+    orderDetails.value = null
+    const target = mapStatusToStep(orderDetails.value?.status as string | undefined)
     displayedStep.value = -1
     animateTo(target)
-  }
-}
-
-const handleStepClick = (idx: number) => {
-  if (displayedStep.value >= idx) {
-    selectedStep.value = idx
   }
 }
 
@@ -245,8 +202,7 @@ onBeforeUnmount(() => {
             <template v-for="(label, idx) in steps" :key="idx">
               <div
                   class="h-node"
-                  :class="{ active: displayedStep >= idx, current: selectedStep === idx, 'cancel-node': label === '取消订单' }"
-                  @click="handleStepClick(idx)"
+                  :class="{ active: displayedStep >= idx, current: displayedStep === idx, 'cancel-node': label === '取消订单' }"
               >
                 <div class="h-dot">{{ (displayedStep > idx || displayedStep === idx) ? '' : (idx + 1) }}</div>
                 <div class="h-label">{{ label }}</div>
@@ -260,14 +216,14 @@ onBeforeUnmount(() => {
           <div class="steps-details">
             <div v-if="selectedStep === 0" class="detail-card">
               <h3>订单已提交，等待付款</h3>
-              <p class="muted">订单号：20251121001　|　下单时间：{{ orderDetails?.createTime }}</p>
+              <p class="muted">订单号：20251121001　|　下单时间：{{ formatTime(orderDetails?.createTime) }}</p>
               <ul>
                 <li>收货信息：
-                  <span v-if="selectedAddress">
-                    {{ selectedAddress.name }} {{ selectedAddress.telephone }}<br />
-                    {{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}
-                    {{ selectedAddress.detail }}
-                  </span>
+                  <div v-if="selectedAddress" class="address-lines">
+                    <div class="line">{{ selectedAddress.name }}　{{ selectedAddress.telephone || selectedAddress.phone }}</div>
+                    <div class="line">{{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}</div>
+                    <div class="line">{{ selectedAddress.detail }}</div>
+                  </div>
                 </li>
                 <li>订单金额：¥{{ orderDetails?.totalAmount }}</li>
                 <li>配送方式：中通快递（标快）</li>
@@ -280,7 +236,7 @@ onBeforeUnmount(() => {
               <h3>付款成功，等待商家发货</h3>
               <ul>
                 <li>支付方式：{{ orderDetails?.paymentMethod }}</li>
-                <li>支付时间：{{ orderDetails?.payTime ?? orderDetails?.createTime }}</li>
+                <li>支付时间：{{ formatTime(orderDetails?.payTime ?? orderDetails?.createTime) }}</li>
                 <li>发票类型：电子普通发票（个人）</li>
                 <li>商家承诺：付款后 24 小时内发货，超时自动赔付 3 元优惠券</li>
               </ul>
@@ -292,7 +248,7 @@ onBeforeUnmount(() => {
               <div class="shipping-summary">
                 <div><strong>承运网点：</strong>苏州园区一部（0512-6666 8888）</div>
                 <div><strong>揽件员：</strong>王师傅 138****1234</div>
-                <div><strong>发货时间：</strong>{{ orderDetails?.shipTime ?? '2025-11-05 08:20:00' }}</div>
+                <div><strong>发货时间：</strong>{{ formatTime(orderDetails?.shipTime ?? '2025-11-05T08:20:00') }}</div>
                 <div><strong>预计到达：</strong>2-4 个工作日</div>
               </div>
               <div class="timeline">
@@ -331,9 +287,17 @@ onBeforeUnmount(() => {
 
             <div v-if="selectedStep === 3" class="detail-card">
               <h3>已签收，交易完成</h3>
-              <p class="muted">签收时间：{{ orderDetails?.completeTime ?? orderDetails?.createTime }}　|　签收人：本人（前台代收）</p>
+              <p class="muted">签收人：本人（前台代收）</p>
               <ul>
-                <li>签收地址：江苏省苏州市虎丘区竹园路 209 号 3 栋 2 单元 801</li>
+                <li>收货信息：
+                  <span>{{ selectedAddress.name }},
+                    {{ selectedAddress.telephone || selectedAddress.phone }},
+                    {{ selectedAddress.province }}
+                    {{ selectedAddress.city }}
+                    {{ selectedAddress.district }}
+                    {{ selectedAddress.detail }}
+                  </span>
+                </li>
                 <li>包裹状态：完好无损，已拍照留档</li>
                 <li>售后服务：7 天无理由退货（运费险已生效）</li>
                 <li>评价奖励：晒图返 2 元红包 + 10 积分</li>
@@ -342,32 +306,39 @@ onBeforeUnmount(() => {
           </div>
         </div>
 
+        <div class="divider"></div>
+        <!-- 商品信息 -->
+        <div class="product-info">
+
+          <div v-if="!(orderDetails?.orderItems?.length)" class="no-data">
+            <p>暂无商品信息</p>
+          </div>
+
+          <div v-else class="product-list">
+            <div class="product-item" v-for="item in (orderDetails?.orderItems ?? [])" :key="item.ubId || item.id || item.title">
+              <img :src="item.cover" alt="Product" class="product-img" />
+              <div class="product-details">
+                <h3 class="title">{{ item.title }}</h3>
+                <div class="meta">{{ item.writer }} <span class="sep">|</span> {{ item.publisher }}</div>
+                <div class="price-row">
+                  <div class="unit">单价: <span class="unit-price">¥{{ item.price?.toFixed ? item.price.toFixed(2) : item.price }}</span></div>
+                  <div class="quantity">数量: <span class="qty">{{ item.quantity }}</span></div>
+                  <div class="subtotal">小计: <span class="subtotal-price">¥{{ item.totalPrice?.toFixed ? item.totalPrice.toFixed(2) : item.totalPrice }}</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
       <!-- 右侧信息栏 -->
       <div class="sidebar">
-        <!-- 商品信息 -->
-        <div class="product-info">
-          <div class="store-badge">
-            <span class="badge">订单商品</span>
-          </div>
-
-          <div class="product-item">
-            <img :src="orderDetails?.orderItems[0]?.cover" alt="Product" class="product-img" />
-            <div class="product-details">
-              <h3>{{ orderDetails?.orderItems[0]?.title }}</h3>
-              <p class="price">¥{{ orderDetails?.orderItems[0]?.totalPrice }}</p>
-              <p class="quantity">x{{ orderDetails?.orderItems[0]?.quantity }}</p>
-            </div>
-          </div>
-        </div>
-        <!-- 分割线 -->
-        <div class="divider"></div>
         <div class="section">
           <h3>付款详情</h3>
           <ul>
             <li><span>商品总价：</span> ¥{{ orderDetails?.totalAmount }}</li>
-            <li><span>实付款：</span> ¥{{ orderDetails?.totalAmount }}</li>
+            <li><span>小绿叶：</span> {{ orderDetails?.leaf }}片</li>
           </ul>
         </div>
 
@@ -377,17 +348,15 @@ onBeforeUnmount(() => {
         <div class="section">
           <h3>订单信息</h3>
           <ul>
-            <li><span>收货信息：</span>
-              <span v-if="selectedAddress">
-                {{ selectedAddress.name }} {{ selectedAddress.telephone }}<br />
-                {{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}
-                {{ selectedAddress.detail }}
-              </span>
-              <span v-else>—</span>
+            <li><span>订单编号：</span> 2817912794342151{{ orderDetails?.orderId}}</li>
+            <li>收货信息：
+              <div v-if="selectedAddress" class="address-lines">
+                <div class="line">{{ selectedAddress.name }},{{ selectedAddress.telephone || selectedAddress.phone }}</div>
+                <div class="line">{{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}</div>
+                <div class="line">{{ selectedAddress.detail }}</div>
+              </div>
             </li>
-            <li><span>创建时间：</span> {{ orderDetails?.createTime }}</li>
-            <li><span>付款时间：</span> {{ orderDetails?.payTime ?? orderDetails?.createTime }}</li>
-            <li><span>小绿叶：</span> {{ orderDetails?.leaf ?? 0 }}片</li>
+            <li><span>创建时间：</span> {{ formatTime(orderDetails?.createTime) }}</li>
           </ul>
         </div>
 
@@ -409,7 +378,7 @@ onBeforeUnmount(() => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background-color: #f8f5ef;
+  background-color: #fcfbf8;
 }
 
 .order-details-layout {
@@ -440,7 +409,6 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   background-color: #ffffff;
   justify-content: flex-end; /* 内容靠右 */
-  height: 700px;
 }
 
 /* 调整横向步骤条在固定主栏内的最大宽度，不再影响左右栏 */
@@ -460,22 +428,8 @@ onBeforeUnmount(() => {
   margin: 12px 0 0 24px; /* 左对齐，不再居中 */
 }
 
-.page-title {
-  margin: -40px 0 0 0;
-  color: #2D583F;
-  font-size: 15px;
-  font-weight: bold;
-}
-
 .recruit-steps { display:flex; gap:24px; }
-.steps-left { width:140px; display:flex; flex-direction:column; align-items:flex-start; padding-left: 8px }
-.step { position:relative; display:flex; flex-direction:column; align-items:flex-start; margin:12px 0; }
-.dot { width:40px; height:40px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-weight:bold; transition: background 240ms ease, transform 240ms ease, color 240ms ease; }
-.step.active .dot { background:#b5dcc7; color:#fff; transform: scale(1.05); }
-.label { margin-top:8px; font-size:13px; color:#333; margin-left:8px }
-.connector { width:4px; height:40px; background:#e6e6e6; margin:8px 0 8px 18px; transition: background 240ms ease; }
-.connector.filled { background:#b5dcc7; }
-.steps-right { flex:1; min-width: 0 }
+.step.active .dot { background: #214d17; color:#fff; transform: scale(1.05); }
 .detail-card { background:#fff; padding:16px; border-radius:6px; margin-bottom:12px; box-shadow:0 1px 4px rgba(0,0,0,0.06); }
 
 /* 交易成功提示样式 */
@@ -505,52 +459,9 @@ onBeforeUnmount(() => {
   color: #666;
 }
 
-.expanded-logistics {
-  margin-top: 10px;
-  padding: 10px;
-  background-color: rgba(200, 177, 150, 0.18);
-  border-left: 3px solid #ffffff;
-  border-radius: 4px;
-  font-size: 14px;
-}
-
-.link {
-  color: #5fa262;
-  text-decoration: underline;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 10px;
-  margin: 20px 0;
-  flex-wrap: wrap;
-}
-
 .divider {
   margin: 20px 0;
   border-top: 1px solid rgba(14, 14, 14, 0.57);
-}
-
-.btn-primary {
-  background-color: #B5DCC7;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-secondary {
-  background-color: #f0f0f0;
-  color: #333;
-  border: 1px solid #ccc;
-  padding: 8px 16px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.btn-secondary:hover {
-  background-color: #e0e0e0;
 }
 
 .product-info {
@@ -691,17 +602,10 @@ onBeforeUnmount(() => {
 }
 .h-node { display:flex; flex-direction:column; align-items:center; width:120px; text-align:center }
 .h-dot { position:relative; width:48px; height:48px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-weight:bold; transition: background 240ms ease, transform 240ms ease, color 240ms ease }
-.h-node.active .h-dot { background:#b5dcc7; color:#fff; transform:scale(1.05) }
-.h-node.current .h-dot { transform:scale(1.18); box-shadow:0 8px 20px rgba(45,88,63,0.16) }
-.h-label { margin-top:8px; font-size:13px; color:#333 }
-.h-connector { height:8px; flex:1; background:#e6e6e6; margin:0 28px; border-radius:4px; transition:background 240ms ease }
-.h-connector.filled { background:#b5dcc7 }
-.steps-details { width:100%; max-width:1100px }
-
-/* 在已有样式后追加 */
 .h-node.active .h-dot {
-  background: #b5dcc7;
-  color: transparent;          /* 隐藏数字 */
+  background: #3d6b40;
+  color:#fff;
+  transform:scale(1.05)
 }
 .h-node.active .h-dot::after {
   content: '✓';
@@ -712,6 +616,21 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 18px;
   line-height: 1;
+}
+.h-node.current .h-dot {
+  transform:scale(1.18);
+  box-shadow:0 8px 20px rgba(45,88,63,0.16)
+}
+.h-label { margin-top:8px; font-size:13px; color:#333 }
+.h-connector {
+  height: 8px;
+  flex: 1.5;
+  /* background: #e6e6e6; */
+  margin: 0 0 20px 0;
+  border-radius: 4px;
+  transition: background 240ms ease;
+}
+.h-connector.filled { background: #3d6b40
 }
 
 /* 取消节点样式 */
@@ -728,5 +647,19 @@ onBeforeUnmount(() => {
   color: #fff;
   font-size: 18px;
   line-height: 1;
+}
+
+.steps-details { width:100%; max-width:1100px }
+
+.address-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.line {
+  color: #333;
+  font-size: 14px;
+  line-height: 1.4;
 }
 </style>

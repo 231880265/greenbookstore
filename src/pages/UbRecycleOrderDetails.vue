@@ -6,6 +6,7 @@ import BreadcrumbBar from '../components/BreadcrumbBar.vue'
 import Footer from '../components/Footer.vue'
 import { getUsedBookOrderById } from '../api/index'
 import type { UsedBookOrderVO } from '../api/types'
+import { getAddressList } from '@/api/index'
 
 const route = useRoute()
 const id = Number(route.params.orderId || route.query.orderId || 0)
@@ -27,12 +28,16 @@ const clearAnimation = () => {
     timers = []
   }
 }
+// 添加 selectedStep 变量（在其他 ref 声明附近）
+const selectedStep = ref<number>(-1)
 
+// 修改 animateTo 函数，添加 selectedStep 更新逻辑
 const animateTo = (target: number) => {
   clearAnimation()
   // 如果目标小于等于当前已展示，则直接设定并返回
   if (target <= displayedStep.value) {
     displayedStep.value = target
+    selectedStep.value = target // 添加这行
     return
   }
 
@@ -41,9 +46,18 @@ const animateTo = (target: number) => {
   for (let step = start; step <= target; step++) {
     const t = setTimeout(() => {
       displayedStep.value = step
-      if (step === target) clearAnimation()
+      if (step === target) {
+        selectedStep.value = target // 添加这行
+        clearAnimation()
+      }
     }, stepDelay * (step - start + 1))
     timers.push(t)
+  }
+}
+// 添加步骤点击处理函数
+const handleStepClick = (idx: number) => {
+  if (displayedStep.value >= idx) {
+    selectedStep.value = idx
   }
 }
 
@@ -76,17 +90,11 @@ const makePlaceholder = (orderId: number) => ({
   payMethod: '平台余额'
 } as any)
 
+// 选中的地址详情
+const selectedAddress = ref<any | null>(null)
+
 const fetchOrder = async () => {
   try {
-    if (!id) {
-      console.warn('缺少 orderId，使用占位数据')
-      order.value = makePlaceholder(0)
-      status.value = order.value.status
-      // 触发动画到对应步骤
-      const target = statusToStep(status.value)
-      animateTo(target)
-      return
-    }
 
     const res: any = await getUsedBookOrderById(id)
     const data: UsedBookOrderVO | undefined = res?.data?.data || res?.data || res
@@ -100,12 +108,24 @@ const fetchOrder = async () => {
     order.value = { ...makePlaceholder(order.value?.id ?? id), ...order.value }
 
     status.value = order.value?.status ?? ''
+    // 如果订单里有 adId，就去查地址
+    if (order.value?.adId) {
+      try {
+        const addrRes: any = await getAddressList()
+        const list = addrRes?.data || []
+        selectedAddress.value = list.find(
+            (a: any) => Number(a.id) === Number(order.value!.adId)
+        ) || null
+      } catch (e) {
+        console.error('获取地址列表失败', e)
+        selectedAddress.value = null
+      }
+    }
 
     // 根据状态触发进度动画
     const target = statusToStep(status.value)
     displayedStep.value = -1
     animateTo(target)
-    selectedStep.value = target // 👈 默认选中当前节点
 
     // 根据状态构建物流/进度详情（示例数据）
     if (status.value === 'CHECKING') {
@@ -162,12 +182,6 @@ const statusLabel = computed(() => {
   }
 })
 
-const selectedStep = ref<number>(-1)
-const handleStepClick = (idx: number) => {
-  if (displayedStep.value >= idx) {
-    selectedStep.value = idx
-  }
-}
 </script>
 
 <template>
@@ -196,6 +210,7 @@ const handleStepClick = (idx: number) => {
 
               <div v-if="idx < steps.length - 1" class="h-connector" :class="{ filled: displayedStep > idx }"></div>
             </template>
+
           </div>
 
           <div class="steps-details">
@@ -258,7 +273,7 @@ const handleStepClick = (idx: number) => {
               <p class="isbn">ISBN：{{ order?.isbn }}</p>
               <p class="status-line"><strong>订单状态：</strong>{{ statusLabel }}</p>
               <p class="price">
-                回收价：¥{{ order?.price }}
+                <span>回收价：¥{{ order?.price }}</span>
                 <span class="list">原价 ¥{{ order?.listPrice }}</span>
               </p>
               <p>成色等级：{{ order?.usedDegree }}成新</p>
@@ -268,8 +283,16 @@ const handleStepClick = (idx: number) => {
           <!-- 下排：移到下方的字段 -->
           <div class="bottom-row">
             <p>下单时间：{{ order?.createdAt ?? '2025-11-01 09:00' }}</p>
-            <p>寄回地址：{{ order?.address ?? '苏州市虎丘区某街道 12 号' }}</p>
-            <p>快递单号：{{ order?.trackingNumber ?? 'YT123456789CN' }}</p>
+            <p><span>订单编号：</span> 2817912794342151{{ order?.orderId}}</p>
+            <p>收货信息：
+              <span>{{ selectedAddress.name }},
+                    {{ selectedAddress.telephone || selectedAddress.phone }},
+                    {{ selectedAddress.province }}
+                    {{ selectedAddress.city }}
+                    {{ selectedAddress.district }}
+                    {{ selectedAddress.detail }}
+              </span>
+            </p>
             <p>收款方式：{{ order?.payMethod ?? '平台余额' }}</p>
           </div>
         </div>
@@ -283,11 +306,16 @@ const handleStepClick = (idx: number) => {
 
 <style scoped>
 /* 替换为 OrderDetails.vue 中的完整样式，以保证横向进度条与布局一致 */
-.recycle-order-page { display:flex; flex-direction:column; min-height:100vh; background-color: #f8f5ef}
+.recycle-order-page {
+  display:flex;
+  flex-direction:column;
+  min-height:100vh;
+  background-color: #fcfbf8
+}
 .order-details-layout { display:flex; gap:20px; margin-top:40px; margin-bottom:20px; max-width:1400px; margin-left:auto; margin-right:auto;}
 .main-content { flex:0 0 820px; width:820px; padding:0 20px; min-height:0 }
 .sidebar { flex:0 0 360px; width:360px; margin-left:auto; padding:20px; box-sizing:border-box }
-.steps-row { display:flex; align-items:center; justify-content:space-between; width:100%; max-width:100%; padding:12px 12px; box-sizing:border-box }
+.steps-row { display:flex; align-items:center; justify-content:space-between; width:100%; max-width:100%; padding: 12px 12px; box-sizing:border-box }
 .steps-details { width:100%; max-width:100% }
 .recruit-steps { display:flex; gap:24px }
 .steps-left { width:140px; display:flex; flex-direction:column; align-items:flex-start; padding-left:8px }
@@ -321,21 +349,55 @@ const handleStepClick = (idx: number) => {
 .timeline-item .time { font-size:12px; color:#888 }
 .recruit-steps.horizontal { display:flex; flex-direction:column; gap:18px; align-items:center }
 .steps-details { width:100%; max-width:1100px }
-.h-connector { height:8px; flex:1; background:#e6e6e6; margin:0 28px; border-radius:4px; transition:background 240ms ease }
-.h-connector.filled { background:#b5dcc7 }
 .h-node { display:flex; flex-direction:column; align-items:center; width:120px; text-align:center }
 .h-dot { position:relative; width:48px; height:48px; border-radius:50%; background:#f0f0f0; display:flex; align-items:center; justify-content:center; font-weight:bold; transition: background 240ms ease, transform 240ms ease, color 240ms ease }
-.h-label { margin-top:8px; font-size:13px; color:#333 }
-.h-node.active .h-dot { background:#b5dcc7; color:#fff; transform:scale(1.05) }
-.h-node.active .h-dot::after { content: '✓'; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); color:#fff; font-size:18px; line-height:1 }
-.h-node.current .h-dot { /* 你想要的任何颜色 */
-  transform: scale(1.18);
-  box-shadow: 0 0 3px 3px rgba(107, 137, 107, 0.5);
+.h-node.active .h-dot {
+  background: #3d6b40;
+  color:#fff;
+  transform:scale(1.05)
 }
-.h-node.cancel-node .h-dot { background:#c4c4c4; color:transparent }
-.h-node.cancel-node .h-dot::after { content:'✕'; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%); color:#fff; font-size:18px; line-height:1 }
-/* 保留原有封面/面板样式 */
-/* 让卡片整体纵向排列 */
+.h-node.active .h-dot::after {
+  content: '✓';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+}
+.h-node.current .h-dot {
+  transform:scale(1.18);
+  box-shadow:0 8px 20px rgba(45,88,63,0.16)
+}
+.h-label { margin-top:8px; font-size:13px; color:#333 }
+.h-connector {
+  height: 8px;
+  flex: 1.5;
+  /* background: #e6e6e6; */
+  margin: 0 0 20px 0;
+  border-radius: 4px;
+  transition: background 240ms ease;
+}
+.h-connector.filled {
+  background: #3d6b40
+}
+
+/* 取消节点样式 */
+.h-node.cancel-node .h-dot {
+  background: #c4c4c4;
+  color: transparent;
+}
+.h-node.cancel-node .h-dot::after {
+  content: '✕';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: #fff;
+  font-size: 18px;
+  line-height: 1;
+}
 .order-card {
   display: flex;
   flex-direction: column;
@@ -380,6 +442,20 @@ const handleStepClick = (idx: number) => {
 .title { margin:0 0 6px 0 }
 .price { color:#d32; font-weight:bold }
 .price .list { color:#999; font-size:12px; margin-left:8px }
+
+/* 调整：让回收价和原价在两行显示并美化 */
+.price {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.price span { display: block; }
+.price .list {
+  color: #888;
+  font-size: 13px;
+  font-weight: 400;
+}
 .info-grid { display:grid; grid-template-columns:repeat(3, 1fr); gap:12px; margin-top:12px }
 .shipping-summary { display:flex; flex-direction:column; gap:6px; margin:12px 0 }
 .result-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:8px; margin-top:12px }
