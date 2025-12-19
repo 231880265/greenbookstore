@@ -1,18 +1,12 @@
 <template>
     <div class="page-container">
         <HeaderBar />
-        <BreadcrumbBar 
-            v-if="!productDetail"
-            :items="[{ label: '商城', path: '/product-list' }, { label: '商品详情' }]" 
-        />
-        <BreadcrumbBar 
-            v-if="productDetail"
-            :items="[
-                { label: '商城', path: '/product-list' },
-                ...(productDetail.category ? [{ label: getCategoryName(productDetail.category) }] : []),
-                { label: productDetail.title }
-            ]" 
-        />
+        <BreadcrumbBar v-if="!productDetail" :items="[{ label: '商城', path: '/product-list' }, { label: '商品详情' }]" />
+        <BreadcrumbBar v-if="productDetail" :items="[
+            { label: '商城', path: '/product-list' },
+            ...(productDetail.category ? [{ label: getCategoryName(productDetail.category) }] : []),
+            { label: productDetail.title }
+        ]" />
         <div class="content">
 
             <!-- 骨架屏 -->
@@ -90,8 +84,9 @@
                     </div>
                     <div class="description-container">
                         <div class="title">内容简介</div>
-                        <van-text-ellipsis class="product-description" rows="14" :content="productDetail.description"
-                            expand-text="展开" collapse-text="收起" />
+                        <van-text-ellipsis class="product-description" :class="{ expanded: isDescriptionExpanded }"
+                            rows="14" :content="productDetail.description" expand-text="展开" collapse-text="收起"
+                            @click="toggleDescriptionExpand" />
                     </div>
                 </div>
             </div>
@@ -209,6 +204,13 @@ async function addProductToCart() {
 /*-- 收藏相关 --*/
 const isFavorited = ref(false);
 let favId = 0;
+
+// 描述展开状态
+const isDescriptionExpanded = ref(false);
+
+function toggleDescriptionExpand() {
+    isDescriptionExpanded.value = !isDescriptionExpanded.value;
+}
 
 // Load favorite status on component mount
 getFavoriteList().then(response => {
@@ -363,13 +365,37 @@ async function toggleFavorite() {
         line-height: 1.6;
         margin-top: 8px;
         height: 360px;
-        overflow: scroll;
+        overflow: auto;
+        padding-right: 6px;
 
+        /* 默认隐藏滚动条 */
         &::-webkit-scrollbar {
+            width: 0;
+        }
+
+        &::-webkit-scrollbar-thumb {
+            background-color: #d0d0d0;
+            border-radius: 3px;
+
+            &:hover {
+                background-color: #b0b0b0;
+            }
+        }
+
+        &::-webkit-scrollbar-track {
+            background-color: #f5f5f5;
+        }
+
+        &::-webkit-scrollbar-button {
             display: none;
         }
 
-        scrollbar-width: none;
+        /* 展开时显示滚动条 */
+        &.expanded {
+            &::-webkit-scrollbar {
+                width: 6px;
+            }
+        }
     }
 }
 
