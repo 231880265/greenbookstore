@@ -310,8 +310,20 @@ const statusLabel = computed(() => {
   min-height:100vh;
   background-color: #fcfbf8
 }
-.order-details-layout { display:flex; gap:20px; margin-top:40px; margin-bottom:20px; max-width:1400px; margin-left:auto; margin-right:auto;}
-.main-content { flex:0 0 820px; width:820px; padding:0 20px; min-height:0 }
+.order-details-layout {
+  display:flex; gap:20px;
+  margin-top:40px;
+  margin-bottom:20px;
+  max-width:1400px;
+  margin-left:auto;
+  margin-right:auto;
+}
+.main-content {
+  flex:0 0 820px;
+  width:500px;
+  padding:0 20px;
+  min-height:0
+}
 .sidebar { flex:0 0 360px; width:360px; margin-left:auto; padding:20px; box-sizing:border-box }
 .steps-row { display:flex; align-items:center; justify-content:space-between; width:100%; max-width:100%; padding: 12px 12px; box-sizing:border-box }
 .steps-details { width:100%; max-width:100% }
@@ -467,5 +479,88 @@ const statusLabel = computed(() => {
   .order-details-layout { flex-direction:column }
   .main-content { width:100% }
   .sidebar { width:100% }
+}
+
+/* ========= 左侧“已完成”卡片美化 ========= */
+.steps-details .detail-card:last-child {
+  background: linear-gradient(180deg, #ffffff 0%, #f8faf8 100%);
+  border: 1px solid #e6ece6;
+  border-radius: 8px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(45, 88, 63, 0.06);
+}
+
+/* 标题区 */
+.steps-details .detail-card:last-child h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 600;
+  color: #2d583f;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+
+/* 副标题 */
+.steps-details .detail-card:last-child .muted {
+  margin: 0 0 16px;
+  font-size: 13px;
+  color: #888;
+}
+
+/* 列表 */
+.steps-details .detail-card:last-child ul {
+  margin: 0 0 20px;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.steps-details .detail-card:last-child li {
+  position: relative;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #444;
+  line-height: 1.6;
+}
+
+.steps-details .detail-card:last-child li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 7px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #b5dcc7;
+}
+
+/* 时间线 */
+.steps-details .detail-card:last-child .timeline {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px dashed #e0e0e0;
+}
+
+.steps-details .detail-card:last-child .timeline-item {
+  display: flex;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: none;
+}
+
+.steps-details .detail-card:last-child .timeline-item .time {
+  flex-shrink: 0;
+  width: 130px;
+  font-size: 12px;
+  color: #999;
+}
+
+.steps-details .detail-card:last-child .timeline-item .desc {
+  font-size: 13px;
+  color: #555;
 }
 </style>

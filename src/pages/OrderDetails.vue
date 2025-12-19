@@ -288,7 +288,6 @@ onBeforeUnmount(() => {
             <div v-if="selectedStep === 3" class="detail-card done-card">
               <!-- 顶部状态 -->
               <div class="done-header">
-                <span class="done-icon">✓</span>
                 <div>
                   <h3>已签收，交易完成</h3>
                   <p class="done-sub">签收人：本人（前台代收） · {{ formatTime(orderDetails?.completeTime || orderDetails?.shipTime) }}</p>
@@ -333,7 +332,7 @@ onBeforeUnmount(() => {
           </div>
 
           <div v-else class="product-list">
-            <div class="product-item" v-for="item in (orderDetails?.orderItems ?? [])" :key="item.ubId || item.id || item.title">
+            <div class="product-item" v-for="item in (orderDetails?.orderItems ?? [])" :key="item.ubId  || item.title">
               <img :src="item.cover" alt="Product" class="product-img" />
               <div class="product-info">
                 <h3 class="title">{{ item.title }}</h3>
@@ -376,7 +375,7 @@ onBeforeUnmount(() => {
           <h3>订单信息</h3>
           <ul>
             <li><span>订单编号：</span> 2817912794342151{{ orderDetails?.orderId}}</li>
-            <li>收货信息：
+            <li><span>收获信息：</span>
               <div v-if="selectedAddress" class="address-lines">
                 <div class="line">{{ selectedAddress.name }},{{ selectedAddress.telephone || selectedAddress.phone }}</div>
                 <div class="line">{{ selectedAddress.province }}{{ selectedAddress.city }}{{ selectedAddress.district }}</div>
@@ -850,5 +849,68 @@ onBeforeUnmount(() => {
 
 .btn.primary:hover {
   background: #214d17;
+}
+
+/* ========= 右侧“订单信息”卡片纯美化 ========= */
+.sidebar .section:nth-of-type(2) {   /* 第二个 section 就是订单信息 */
+  background: #fff;
+  border-radius: 8px;
+  padding: 20px 24px;
+  box-shadow: 0 1px 4px rgba(0,0,0,.06);
+}
+
+.sidebar .section:nth-of-type(2) h3 {
+  margin: 0 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #222;
+}
+
+.sidebar .section:nth-of-type(2) ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sidebar .section:nth-of-type(2) li {
+  margin: 0 0 12px;
+  display: flex;
+  align-items: baseline;
+  line-height: 1.6;
+  font-size: 14px;
+  color: #333;
+}
+
+/* 让“收货信息”那一行整行占满并换行 */
+.sidebar .section:nth-of-type(2) li:last-child {
+  display: block;
+}
+
+.sidebar .section:nth-of-type(2) li > span:first-child {
+  flex-shrink: 0;
+  width: 72px;
+  margin-right: 12px;
+  font-size: 13px;
+  color: #666;
+  font-weight: normal;
+}
+
+/* 地址内部再微调 */
+.sidebar .section:nth-of-type(2) .address-lines {
+  margin-top: 6px;
+  padding-left: 84px;   /* 72+12 与标签对齐 */
+}
+
+.sidebar .section:nth-of-type(2) .address-lines .line {
+  font-size: 14px;
+  color: #333;
+  line-height: 1.6;
+}
+
+/* 订单编号用等宽字体更专业 */
+.sidebar .section:nth-of-type(2) li:first-child .line:last-child,
+.sidebar .section:nth-of-type(2) li:first-child span:last-child {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: #222;
 }
 </style>
