@@ -13,9 +13,9 @@ import {
 import type { FavoriteItem } from '@/api/types'
 import router from "@/router";
 import { useRoute, useRouter } from 'vue-router'
+const routerr = useRouter()
 
 const route = useRoute()
-const routerr = useRouter()
 
 
 interface BookItem {
@@ -471,7 +471,12 @@ onMounted(async () => {
       <!-- 右侧网格 -->
       <div class="right-area">
         <main class="grid">
-          <div v-for="book in pagedBooks" :key="book.ubId" class="card">
+          <div
+              v-for="book in pagedBooks"
+              :key="book.ubId"
+              class="card"
+              @click="routerr.push(`/product-detail/${book.ubId}`)"
+          >
             <div class="img-wrap">
               <img :src="book.cover" :alt="book.title" />
             </div>
