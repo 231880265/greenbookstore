@@ -86,7 +86,12 @@ import book12Img from "../assets/book12.jpg";
 import book13Img from "../assets/book13.jpg";
 import book14Img from "../assets/book14.jpg";
 import book15Img from "../assets/book15.jpg";
-import { getCurrentUser, getProductList, getProductDetail } from "@/api";
+import book16Img from "../assets/book16.jpg";
+import book17Img from "../assets/book17.jpg";
+import book18Img from "../assets/book18.jpg";
+import book19Img from "../assets/book19.jpg";
+import book20Img from "../assets/book20.jpg";
+import { getCurrentUser, getProductDetail } from "@/api";
 import type { UserDetail, Product } from "@/api/types";
 
 /**
@@ -284,43 +289,37 @@ const fetchHistoryBooks = async () => {
 };
 
 /**
- * 获取推荐书籍（从各个分类中选取一些热门书籍）
+ * 获取推荐书籍（使用 book16-20 的封面，模拟名称和价格）
  */
 const fetchFeaturedBooks = async () => {
-  try {
-    // 从文学、艺术、历史等分类中各取一些书籍
-    const [literatureRes, artRes, historyRes] = await Promise.all([
-      getProductList("WENXUE").catch(() => ({ data: [] })),
-      getProductList("YISHU").catch(() => ({ data: [] })),
-      getProductList("LISHI").catch(() => ({ data: [] })),
-    ]);
-    
-    const allBooks: BookCard[] = [
-      ...literatureRes.data.slice(0, 2).map(convertToBookCard),
-      ...artRes.data.slice(0, 2).map(convertToBookCard),
-      ...historyRes.data.slice(0, 2).map(convertToBookCard),
-    ];
-    
-    // 如果书籍不足，补充一些默认书籍
-    if (allBooks.length < 6) {
-      const defaultBooks: BookCard[] = [
-        { title: "百年孤独", image: book12Img, price: 35.00 },
-        { title: "时间简史", image: book13Img, price: 62.00 },
-      ];
-      allBooks.push(...defaultBooks.slice(0, 6 - allBooks.length));
-    }
-    
-    featuredBooks.value = allBooks.slice(0, 6);
-  } catch (error) {
-    console.error("获取推荐书籍失败:", error);
-    // 如果接口失败，使用默认书籍
-    featuredBooks.value = [
-      { title: "百年孤独", image: book12Img, price: 35.00 },
-      { title: "时间简史", image: book13Img, price: 62.00 },
-      { title: "艺术的故事", image: book14Img, price: 128.00 },
-      { title: "史记", image: book15Img, price: 78.00 },
-    ];
-  }
+  // 使用 book16-20 的封面创建模拟数据（没有 ubId，不可点击）
+  featuredBooks.value = [
+    { 
+      title: "格外的活法", 
+      image: book16Img, 
+      price: 25.00 
+    },
+    { 
+      title: "看不见的中东", 
+      image: book17Img, 
+      price: 27.00 
+    },
+    { 
+      title: "哲学家的最后一刻", 
+      image: book18Img, 
+      price: 22.00 
+    },
+    { 
+      title: "我是寨子里长大的女孩", 
+      image: book19Img, 
+      price: 32.00 
+    },
+    { 
+      title: "父亲的解放日志", 
+      image: book20Img, 
+      price: 30.00 
+    },
+  ];
 };
 
 /**
