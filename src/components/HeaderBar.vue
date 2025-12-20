@@ -321,7 +321,7 @@ import scanImg from "@/assets/scan.png";
 
 const router = useRouter();
 
-const leafCount = ref(12);
+const leafCount = ref(0);
 
 const searchOpen = ref(false);
 const keyword = ref("");
@@ -611,6 +611,7 @@ watch(isLoggedIn, (loggedIn) => {
     fetchUserInfo();
   } else {
     currentUser.value = null;
+    leafCount.value = 0; // 退出登录时清零小绿叶
   }
 }, { immediate: true });
 
@@ -733,6 +734,8 @@ const handleLogin = async () => {
     // 登录成功后获取用户信息
     await fetchUserInfo();
     router.push("/");
+    window.location.reload()
+
   } catch (e: any) {
     const msg = e?.message || "";
     if (msg.includes("用户名") || msg.includes("密码")) {

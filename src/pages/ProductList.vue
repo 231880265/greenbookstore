@@ -11,11 +11,10 @@ import {
   searchBooks
 } from '@/api'
 import type { FavoriteItem } from '@/api/types'
-import router from "@/router";
 import { useRoute, useRouter } from 'vue-router'
+const routerr = useRouter()
 
 const route = useRoute()
-const routerr = useRouter()
 
 
 interface BookItem {
@@ -265,29 +264,29 @@ const loadFavorites = async () => {
   }
 }
 
-const toggleFavorite = async (book: BookItem) => {
-  if (favoritedSet.value.has(book.ubId)) {
-    const fid = favoriteIdMap.value[book.ubId]
-    console.log('取消收藏', fid)
-    try {
-      await removeFavorite(fid)
-      favoritedSet.value.delete(book.ubId)
-      delete favoriteIdMap.value[book.ubId]
-    } catch (e) {
-      console.error('取消收藏失败', e)
-    }
-  } else {
-    try {
-      console.log('收藏', book.ubId)
-      const response = await addFavorite(book.ubId)
-      console.log('收藏成功', response.data)
-      favoritedSet.value.add(book.ubId)
-      favoriteIdMap.value[book.ubId] = response.data
-    } catch (e) {
-      console.error('收藏失败', e)
-    }
-  }
-}
+// const toggleFavorite = async (book: BookItem) => {
+//   if (favoritedSet.value.has(book.ubId)) {
+//     const fid = favoriteIdMap.value[book.ubId]
+//     console.log('取消收藏', fid)
+//     try {
+//       await removeFavorite(fid)
+//       favoritedSet.value.delete(book.ubId)
+//       delete favoriteIdMap.value[book.ubId]
+//     } catch (e) {
+//       console.error('取消收藏失败', e)
+//     }
+//   } else {
+//     try {
+//       console.log('收藏', book.ubId)
+//       const response = await addFavorite(book.ubId)
+//       console.log('收藏成功', response.data)
+//       favoritedSet.value.add(book.ubId)
+//       favoriteIdMap.value[book.ubId] = response.data
+//     } catch (e) {
+//       console.error('收藏失败', e)
+//     }
+//   }
+// }
 
 /* ---------- 搜索 ---------- */
 //TODO:这里目前是前端自己的筛选，而不是调用了后端搜索接口的版本
@@ -471,23 +470,14 @@ onMounted(async () => {
       <!-- 右侧网格 -->
       <div class="right-area">
         <main class="grid">
-          <div v-for="book in pagedBooks" :key="book.ubId" class="card">
+          <div
+              v-for="book in pagedBooks"
+              :key="book.ubId"
+              class="card"
+              @click="routerr.push(`/product-detail/${book.ubId}`)"
+          >
             <div class="img-wrap">
               <img :src="book.cover" :alt="book.title" />
-              <span
-                  class="favorite-btn"
-                  :class="{ active: favoritedSet.has(book.ubId) }"
-                  @click.stop="toggleFavorite(book)"
-              >
-                <svg viewBox="0 0 24 24" width="18" height="18">
-                  <path
-                      :fill="favoritedSet.has(book.ubId) ? '#e53935' : 'none'"
-                      stroke="#e53935"
-                      stroke-width="2"
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                  />
-                </svg>
-              </span>
             </div>
             <div class="meta">
               <p class="author">{{ book.writer }}</p>
@@ -868,5 +858,32 @@ onMounted(async () => {
   left: 0; /* 相对于 category-container */
   top: calc(100% - 2px); /* 稍微重叠，避免鼠标经过中缝导致 mouseleave */
   margin: 0; /* 去掉 margin 导致的空隙 */
+}
+/* ---------- 绿色分页 ---------- */
+:root {
+  --pagination-bg: #2e7d32;      /* 背景绿 */
+  --pagination-hover: #1b5e20;   /* 悬停绿 */
+  --pagination-text: #ffffff;    /* 文字/图标色 */
+}
+
+/* 背景色 */
+:deep(.el-pagination.is-background .btn-prev),
+:deep(.el-pagination.is-background .btn-next),
+:deep(.el-pagination.is-background .el-pager li) {
+  background-color: var(--pagination-bg) !important;
+  color: var(--pagination-text) !important;
+  border: none;
+}
+
+/* 悬停/聚焦 */
+:deep(.el-pagination.is-background .btn-prev:hover),
+:deep(.el-pagination.is-background .btn-next:hover),
+:deep(.el-pagination.is-background .el-pager li:hover) {
+  background-color: var(--pagination-hover) !important;
+}
+
+/* 当前页 */
+:deep(.el-pagination.is-background .el-pager li.is-active) {
+  background-color: var(--pagination-hover) !important;
 }
 </style>

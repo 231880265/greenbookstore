@@ -161,14 +161,16 @@ const fetchOrderDetails = async () => {
 
     const target = mapStatusToStep(orderDetails.value?.status as string | undefined)
     displayedStep.value = -1
-    animateTo(target)
+    selectedStep.value = target      // 立即展示对应详情
+    animateTo(target)                // 动画仍保留，只是不再影响详情
   } catch (e) {
     console.error('获取订单详情失败', e)
     // 出错时置空数据，不使用占位数据
     orderDetails.value = null
     const target = mapStatusToStep(orderDetails.value?.status as string | undefined)
     displayedStep.value = -1
-    animateTo(target)
+    selectedStep.value = target      // 立即展示对应详情
+    animateTo(target)                // 动画仍保留，只是不再影响详情
   }
 }
 

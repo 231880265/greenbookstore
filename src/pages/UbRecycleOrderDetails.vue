@@ -124,7 +124,8 @@ const fetchOrder = async () => {
     // 根据状态触发进度动画
     const target = statusToStep(status.value)
     displayedStep.value = -1
-    animateTo(target)
+    selectedStep.value = target      // 立即展示对应详情
+    animateTo(target)                // 动画仍保留，只是不再影响详情
 
     // 根据状态构建物流/进度详情（示例数据）
     if (status.value === 'CHECKING') {
