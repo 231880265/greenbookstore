@@ -5,8 +5,8 @@
       <div class="left-area">
         <div class="search-pill" @click="openSearch" title="搜索书名 / 作者 / ISBN">
           <span class="placeholder">搜索书名 / 作者 / ISBN</span>
-          <svg class="icon-svg-search" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="icon-svg-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
@@ -22,8 +22,8 @@
       <div class="right-nav">
         <!-- 去卖书 -->
         <div class="icon-wrapper sell-book" title="我要卖书" @click="goSellBook">
-          <svg t="1766159966302" class="icon-svg" viewBox="0 0 1024 1024" version="1.1" xmlns="http://www.w3.org/2000/svg"
-            p-id="10154" width="200" height="200">
+          <svg t="1766159966302" class="icon-svg" viewBox="0 0 1024 1024" version="1.1"
+            xmlns="http://www.w3.org/2000/svg" p-id="10154" width="200" height="200">
             <path
               d="M853.333333 21.333333H170.666667C123.733333 21.333333 85.333333 59.733333 85.333333 106.666667v810.666666c0 46.933333 38.4 85.333333 85.333334 85.333334h682.666666c46.933333 0 85.333333-38.4 85.333334-85.333334V106.666667c0-46.933333-38.4-85.333333-85.333334-85.333334zM170.666667 106.666667h85.333333v810.666666H170.666667V106.666667z m682.666666 810.666666H341.333333V106.666667h512v810.666666z"
               fill="#707070" p-id="10155"></path>
@@ -36,20 +36,18 @@
 
         <!-- 积分示例 -->
         <div class="leaf-wrapper" title="我的绿叶积分">
-          <svg class="leaf-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path
-              d="M16 8C16 12 12 20 12 20C12 20 8 12 8 8C8 5.79086 9.79086 4 12 4C14.2091 4 16 5.79086 16 8Z"
-              fill="#2d583f" stroke="#2d583f" stroke-width="1.5"
-            />
+          <svg class="leaf-icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 8C16 12 12 20 12 20C12 20 8 12 8 8C8 5.79086 9.79086 4 12 4C14.2091 4 16 5.79086 16 8Z"
+              fill="#2d583f" stroke="#2d583f" stroke-width="1.5" />
           </svg>
           <span class="leaf-num">{{ leafCount }}</span>
         </div>
 
         <!-- 购物车 -->
         <div class="icon-wrapper" title="购物车" @click="goToCart">
-          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <svg class="icon-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round">
             <circle cx="9" cy="21" r="1"></circle>
             <circle cx="20" cy="21" r="1"></circle>
             <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
@@ -57,30 +55,12 @@
         </div>
 
         <!-- 个人中心 -->
-        <div
-          ref="userIconWrapperRef"
-          class="user-icon-wrapper"
-          @click="onUserIconClick"
-          @mouseenter="handleUserMenuEnter"
-          @mouseleave="handleUserMenuLeave"
-        >
+        <div ref="userIconWrapperRef" class="user-icon-wrapper" @click="onUserIconClick"
+          @mouseenter="handleUserMenuEnter" @mouseleave="handleUserMenuLeave">
           <div class="user-avatar-container">
-            <img
-              v-if="isLoggedIn"
-              :src="currentUser?.avatar ?? defaultAvatarUrl"
-              class="user-avatar-img"
-              alt="用户头像"
-            />
-            <svg
-              v-else
-              class="user-avatar-icon"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
+            <img v-if="isLoggedIn" :src="currentUser?.avatar ?? defaultAvatarUrl" class="user-avatar-img" alt="用户头像" />
+            <svg v-else class="user-avatar-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
               <circle cx="12" cy="7" r="4"></circle>
             </svg>
@@ -93,30 +73,15 @@
     <!-- 用户下拉菜单（使用 teleport 传送到 body，避免被遮挡） -->
     <teleport to="body">
       <transition name="dropdown-fade">
-        <div
-          v-if="isLoggedIn && showUserMenu"
-          class="user-dropdown-menu"
-          :style="dropdownMenuStyle"
-          @mouseenter="showUserMenu = true"
-          @mouseleave="showUserMenu = false"
-          @click.stop
-        >
-          <div
-            class="dropdown-item"
-            @click.stop="goToAllSoldOrders"
-          >
+        <div v-if="isLoggedIn && showUserMenu" class="user-dropdown-menu" :style="dropdownMenuStyle"
+          @mouseenter="showUserMenu = true" @mouseleave="showUserMenu = false" @click.stop>
+          <div class="dropdown-item" @click.stop="goToAllSoldOrders">
             <span>卖书记录</span>
           </div>
-          <div
-            class="dropdown-item"
-            @click.stop="goToAllOrders"
-          >
+          <div class="dropdown-item" @click.stop="goToAllOrders">
             <span>购书订单</span>
           </div>
-          <div
-            class="dropdown-item"
-            @click.stop="goToAllFavorites"
-          >
+          <div class="dropdown-item" @click.stop="goToAllFavorites">
             <span>我的收藏</span>
           </div>
         </div>
@@ -126,24 +91,14 @@
     <!-- 搜索抽屉和遮罩层 -->
     <teleport to="body">
       <!-- 灰色遮罩层 - 没有transition，立即显示/隐藏 -->
-      <div 
-        v-if="searchOpen" 
-        class="mask-overlay" 
-        @click="closeSearch"
-      ></div>
-      
+      <div v-if="searchOpen" class="mask-overlay" @click="closeSearch"></div>
+
       <!-- 抽屉 - 有transition动画 -->
       <transition name="drawer">
         <div v-if="searchOpen" class="search-drawer">
           <div class="search-top">
-            <input
-              ref="inputRef"
-              v-model="keyword"
-              class="search-input"
-              placeholder="搜索书名 / 作者 / ISBN"
-              @keydown.esc="closeSearch"
-              @keydown.enter.prevent="doSearch(keyword)"
-            />
+            <input ref="inputRef" v-model="keyword" class="search-input" placeholder="搜索书名 / 作者 / ISBN"
+              @keydown.esc="closeSearch" @keydown.enter.prevent="doSearch(keyword)" />
             <button class="close-btn" @click="closeSearch" aria-label="关闭">✕</button>
           </div>
 
@@ -152,12 +107,7 @@
             <div class="col">
               <div class="col-title">大家都在搜</div>
               <div class="chips">
-                <button
-                  class="chip"
-                  v-for="item in hotList"
-                  :key="item"
-                  @click="doSearch(item)"
-                >
+                <button class="chip" v-for="item in hotList" :key="item" @click="doSearch(item)">
                   {{ item }}
                 </button>
               </div>
@@ -167,11 +117,7 @@
             <div class="col">
               <div class="col-title row">
                 <span>历史记录</span>
-                <button
-                  v-if="historyList.length"
-                  class="clear-btn"
-                  @click="clearHistory"
-                >
+                <button v-if="historyList.length" class="clear-btn" @click="clearHistory">
                   清空
                 </button>
               </div>
@@ -181,12 +127,7 @@
               </div>
 
               <div v-else class="chips">
-                <button
-                  class="chip muted"
-                  v-for="item in historyList"
-                  :key="item"
-                  @click="doSearch(item)"
-                >
+                <button class="chip muted" v-for="item in historyList" :key="item" @click="doSearch(item)">
                   {{ item }}
                 </button>
               </div>
@@ -222,11 +163,7 @@
               </label>
               <label class="field">
                 <span>密码</span>
-                <input
-                  v-model="loginForm.password"
-                  type="password"
-                  placeholder="至少8位，包含字母和数字"
-                />
+                <input v-model="loginForm.password" type="password" placeholder="至少8位，包含字母和数字" />
               </label>
               <p v-if="authError" class="auth-error">{{ authError }}</p>
               <button class="auth-primary-btn" @click="handleLogin">登录</button>
@@ -271,19 +208,11 @@
               </label>
               <label class="field">
                 <span>密码</span>
-                <input
-                  v-model="registerForm.password"
-                  type="password"
-                  placeholder="至少8位，包含字母和数字"
-                />
+                <input v-model="registerForm.password" type="password" placeholder="至少8位，包含字母和数字" />
               </label>
               <label class="field">
                 <span>确认密码</span>
-                <input
-                  v-model="registerForm.confirmPassword"
-                  type="password"
-                  placeholder="请再次输入密码"
-                />
+                <input v-model="registerForm.confirmPassword" type="password" placeholder="请再次输入密码" />
               </label>
               <p v-if="authError" class="auth-error">{{ authError }}</p>
               <button class="auth-primary-btn" @click="handleRegister" :disabled="uploadingAvatar">
@@ -373,18 +302,35 @@ const clearHistory = () => {
   saveHistory();
 };
 
+// 阻止滚动事件
+const preventScroll = (e: Event) => {
+  e.preventDefault();
+};
+
+// 阻止导致滚动的键盘按键
+const preventScrollKeys = (e: KeyboardEvent) => {
+  const scrollKeys = ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'PageUp', 'PageDown', ' ', 'Home', 'End'];
+  if (scrollKeys.includes(e.key)) {
+    e.preventDefault();
+  }
+};
+
 const openSearch = async () => {
   searchOpen.value = true;
-  // 阻止body滚动
-  document.body.style.overflow = 'hidden';
+  // 阻止滚轮、触摸和键盘导致的滚动
+  document.addEventListener('wheel', preventScroll, { passive: false });
+  document.addEventListener('touchmove', preventScroll, { passive: false });
+  document.addEventListener('keydown', preventScrollKeys, { passive: false });
   await nextTick();
   inputRef.value?.focus();
 };
 
 const closeSearch = () => {
   searchOpen.value = false;
-  // 恢复body滚动
-  document.body.style.overflow = '';
+  // 移除滚动限制
+  document.removeEventListener('wheel', preventScroll);
+  document.removeEventListener('touchmove', preventScroll);
+  document.removeEventListener('keydown', preventScrollKeys);
 };
 
 // 跳转到卖书页
@@ -445,24 +391,24 @@ const handleAuthRequired = (event: CustomEvent) => {
 // 监听组件卸载，确保恢复滚动
 onMounted(() => {
   loadHistory();
-  
+
   // 注意：不在这里调用 fetchUserInfo()，因为 watch(isLoggedIn, { immediate: true }) 已经会在挂载时执行
   // 这样可以避免重复请求导致头像和绿叶数量刷新
-  
+
   // 添加键盘监听
   const handleKeydown = (e: KeyboardEvent) => {
     if (searchOpen.value && e.key === 'Escape') {
       closeSearch();
     }
   };
-  
+
   // 监听 localStorage 变化（跨标签页同步）
   const handleStorageChange = (e: StorageEvent) => {
     if (e.key === TOKEN_KEY) {
       isLoggedIn.value = !!e.newValue;
     }
   };
-  
+
   // 监听自定义事件：token 变化（同一窗口内）
   const handleTokenChange = () => {
     const newToken = localStorage.getItem(TOKEN_KEY);
@@ -472,21 +418,23 @@ onMounted(() => {
       lastFetchToken.value = null;
     }
   };
-  
+
   window.addEventListener('keydown', handleKeydown);
   window.addEventListener('storage', handleStorageChange);
   window.addEventListener('token:changed', handleTokenChange as EventListener);
   // 监听认证要求事件
   window.addEventListener('auth:required', handleAuthRequired as EventListener);
-  
+
   // 清理函数
   return () => {
     window.removeEventListener('keydown', handleKeydown);
     window.removeEventListener('storage', handleStorageChange);
     window.removeEventListener('token:changed', handleTokenChange as EventListener);
     window.removeEventListener('auth:required', handleAuthRequired as EventListener);
-    // 确保恢复滚动
-    document.body.style.overflow = '';
+    // 确保移除滚动限制
+    document.removeEventListener('wheel', preventScroll);
+    document.removeEventListener('touchmove', preventScroll);
+    document.removeEventListener('keydown', preventScrollKeys);
   };
 });
 
@@ -568,18 +516,18 @@ const fetchUserInfo = async () => {
     leafCount.value = 0;
     return;
   }
-  
+
   // 如果正在请求中，避免重复请求
   if (fetchingUserInfo.value) {
     return;
   }
-  
+
   // 如果 token 没变且已有用户信息，不重复请求
   const currentToken = localStorage.getItem(TOKEN_KEY);
   if (currentToken === lastFetchToken.value && currentUser.value) {
     return;
   }
-  
+
   fetchingUserInfo.value = true;
   try {
     const res = await getCurrentUser();
@@ -623,8 +571,10 @@ const openAuth = (tab: "login" | "register" = "login") => {
   authTab.value = tab;
   authOpen.value = true;
   authError.value = null;
-  // 阻止背景滚动和点击
-  document.body.style.overflow = 'hidden';
+  // 阻止滚轮、触摸和键盘导致的滚动
+  document.addEventListener('wheel', preventScroll, { passive: false });
+  document.addEventListener('touchmove', preventScroll, { passive: false });
+  document.addEventListener('keydown', preventScrollKeys, { passive: false });
 };
 
 /**
@@ -633,8 +583,10 @@ const openAuth = (tab: "login" | "register" = "login") => {
 const closeAuth = () => {
   authOpen.value = false;
   authError.value = null;
-  // 恢复背景滚动
-  document.body.style.overflow = '';
+  // 移除滚动限制
+  document.removeEventListener('wheel', preventScroll);
+  document.removeEventListener('touchmove', preventScroll);
+  document.removeEventListener('keydown', preventScrollKeys);
 };
 
 const onUserIconClick = () => {
@@ -651,7 +603,7 @@ const onUserIconClick = () => {
  */
 const updateDropdownPosition = () => {
   if (!userIconWrapperRef.value) return;
-  
+
   const rect = userIconWrapperRef.value.getBoundingClientRect();
   dropdownMenuStyle.value = {
     top: `${rect.bottom + 8}px`,
@@ -776,7 +728,7 @@ const handleRegister = async () => {
   console.log("注册发送信息", payload);
   try {
     const registerRes = await register(payload);
-    
+
     console.log("注册返回信息", registerRes);
     //注册成功后自动登录
     const loginRes = await login({ telephone: tel, password: registerForm.password });
@@ -872,6 +824,7 @@ const handleAvatarChange = async (event: Event) => {
   font-size: 14px;
   color: #9a9a9a;
 }
+
 .icon-svg-search {
   width: 18px;
   height: 18px;
@@ -1392,6 +1345,7 @@ const handleAvatarChange = async (event: Event) => {
 .link-btn:hover {
   text-decoration: underline;
 }
+
 .qr-area {
   display: flex;
   flex-direction: column;
